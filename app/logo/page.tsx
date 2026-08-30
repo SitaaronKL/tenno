@@ -72,12 +72,36 @@ const marks: { name: string; note: string; svg: React.ReactNode }[] = [
   },
 ];
 
+
+const names: { name: string; why: string; tagline: string }[] = [
+  { name: "Tenno", why: "What every player is called. Short, known, the current repo name. Risk: generic, many Tenno.* apps exist.", tagline: "Your Warframe, always on" },
+  { name: "Ordis", why: "The ship AI that nags you about the world. Perfect for a notifier that texts you. Risk: DE owns the character name.", tagline: "Operator, a fissure has appeared" },
+  { name: "Cephalon", why: "The class of AIs in the game. Fits an agent product, less trademark heat than Ordis.", tagline: "Your personal Cephalon" },
+  { name: "Voidwatch", why: "Original, descriptive: it watches the void for you. Clean domain odds.", tagline: "We watch the void so you can play" },
+  { name: "Relay", why: "In game hubs where Baro visits. Also literally what the app does: relays events to you.", tagline: "Every event, relayed to you" },
+  { name: "Lotus Line", why: "The Lotus guides you over comms, and you text a line. Two words, wordmark friendly.", tagline: "Text the Lotus" },
+];
+
 export default function LogoPage() {
   return (
     <main className="min-h-screen bg-neutral-950 p-10 text-neutral-100">
       <h1 className="text-2xl font-semibold">Tenno logo candidates</h1>
       <p className="mt-1 text-sm text-neutral-400">Accent is #f5b942 (void gold). Each mark is shown at 96px, 32px and 16px.</p>
-      <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <h2 className="mt-10 text-lg font-medium">Names</h2>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {names.map((n, i) => (
+          <section key={n.name} className="rounded-xl border border-neutral-800 bg-neutral-900 p-5">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8">{marks[i % marks.length].svg}</div>
+              <span className="text-2xl font-bold tracking-tight">{n.name.toLowerCase()}</span>
+            </div>
+            <p className="mt-2 text-sm italic text-neutral-300">{n.tagline}</p>
+            <p className="mt-2 text-sm text-neutral-400">{n.why}</p>
+          </section>
+        ))}
+      </div>
+      <h2 className="mt-10 text-lg font-medium">Marks</h2>
+      <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {marks.map((m) => (
           <section key={m.name} className="rounded-xl border border-neutral-800 bg-neutral-900 p-6">
             <div className="flex items-end gap-6">
