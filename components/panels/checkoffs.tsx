@@ -111,7 +111,7 @@ export function Checkoff({
       checked={done.has(id)}
       onCheckedChange={() => toggle(id, expiresAt)}
       aria-label={label}
-      className={cn("shrink-0", className)}
+      className={cn("inline-flex shrink-0 align-middle", className)}
     />
   );
 }

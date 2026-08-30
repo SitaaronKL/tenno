@@ -47,7 +47,7 @@ export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
       title={`Nightwave, Season ${nightwave.season}`}
       icon={MoonIcon}
       // The total is not the point on a long list, only what is still to run is.
-      count={`${remaining(keys, done)} left`}
+      count={`${keys.length - remaining(keys, done)} / ${keys.length}`}
       action={
         <span className="flex items-center gap-3">
           <Countdown target={nightwave.expiresAt} now={now} />

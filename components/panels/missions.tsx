@@ -39,8 +39,8 @@ export function MissionSetPanel({
       title={set === "sortie" ? "Sortie" : data?.boss ?? "Archon Hunt"}
       icon={LayoutGridIcon}
       className={CLASS}
-      // Three stages is a short list, so the pill says how many of them are left.
-      count={data ? `${remaining(keys, done)} of ${keys.length} left` : undefined}
+      // The pill reads done over total, the same on every box with check offs.
+      count={data ? `${keys.length - remaining(keys, done)} / ${keys.length}` : undefined}
       action={
         <span className="flex items-center gap-3">
           {data ? <Countdown target={data.expiresAt} now={now} /> : null}

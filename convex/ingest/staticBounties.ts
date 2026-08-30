@@ -55,6 +55,8 @@ export function withStaticBounties(
   const filled = [...live];
   for (const board of DATA.boards) {
     if (live.some((b) => b.syndicate === board.syndicate)) continue;
+    // A board whose jobs carry no rewards in the drop tables is not a real board yet.
+    if (board.jobs.every((job) => job.rewardTable.length === 0)) continue;
     const upstream = expiries[board.syndicate] ?? 0;
     filled.push({
       syndicate: board.syndicate,
