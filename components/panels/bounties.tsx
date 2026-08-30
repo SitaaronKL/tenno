@@ -86,7 +86,14 @@ const SHORT: Record<string, string> = {
 
 export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
   const now = useNow();
-  const open = bounties.filter((b) => b.expiresAt > now);
+  // DE lists the next rotation beside the current one, one board per syndicate is enough.
+  const open = Array.from(
+    bounties
+      .filter((b) => b.expiresAt > now)
+      .sort((a, b) => a.expiresAt - b.expiresAt)
+      .reduce((m, b) => (m.has(b.syndicate) ? m : m.set(b.syndicate, b)), new Map<string, Bounty>())
+      .values(),
+  );
   const [pick, setPick] = useState<string | null>(null);
   const options = open.map((b) => ({ value: b.syndicate, label: SHORT[b.syndicate] ?? b.syndicate }));
   const board = open.find((b) => b.syndicate === pick) ?? open[0];
@@ -97,16 +104,17 @@ export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
       icon={WorkflowIcon}
       count={board ? `${board.jobs.length}` : undefined}
       className="md:col-span-2 lg:col-span-3"
-      action={
-        open.length > 1 ? (
-          <Segmented label="Bounty board" options={options} value={board.syndicate} onChange={setPick} />
-        ) : undefined
-      }
+      action={board ? <Countdown target={board.expiresAt} now={now} /> : undefined}
     >
       {!board ? (
         <Empty>No bounties offered.</Empty>
       ) : (
         <>
+          {open.length > 1 ? (
+            <div className="mb-2 flex justify-start">
+              <Segmented label="Bounty board" options={options} value={board.syndicate} onChange={setPick} />
+            </div>
+          ) : null}
           <div className="mb-2 flex items-center gap-2 text-sm">
             <span className="truncate font-medium">{board.syndicate}</span>
             <span className="truncate text-xs text-muted-foreground">{board.node}</span>
@@ -114,7 +122,6 @@ export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
             {board.static ? (
               <span className="shrink-0 text-xs text-muted-foreground">fixed board</span>
             ) : null}
-            <Countdown target={board.expiresAt} now={now} className="ml-auto" />
           </div>
           <ul className="divide-y divide-border">
             {board.jobs.map((job, index) => (

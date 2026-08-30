@@ -5,8 +5,7 @@ import { useState } from "react";
 import { Segmented } from "@/components/segmented";
 import type { ArchonHunt, Sortie } from "@/lib/contracts/worldstate";
 import { LayoutGridIcon } from "@/components/icons/layout-grid";
-import { cn } from "@/lib/utils";
-import { Checkoff, doneRow, remaining, sortieKey, useCheckoffs } from "./checkoffs";
+import { CheckoffRow, remaining, sortieKey, useCheckoffs } from "./checkoffs";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
@@ -36,6 +35,7 @@ export function MissionSetPanel({
 
   return (
     <Panel
+      id="mission-set"
       title={set === "sortie" ? "Sortie" : data?.boss ?? "Archon Hunt"}
       icon={LayoutGridIcon}
       className={CLASS}
@@ -56,15 +56,12 @@ export function MissionSetPanel({
             {data.missions.map((m) => {
               const id = sortieKey(set, data.key, m.node);
               return (
-                <li
+                <CheckoffRow
                   key={m.node}
-                  className={cn("flex items-center gap-2 py-2", done.has(id) && doneRow)}
+                  id={id}
+                  expiresAt={data.expiresAt}
+                  label={`${m.missionType}, ${m.node}`}
                 >
-                  <Checkoff
-                    id={id}
-                    expiresAt={data.expiresAt}
-                    label={`${m.missionType}, ${m.node}`}
-                  />
                   <div className="min-w-0">
                     <p className="truncate">
                       <span className="font-medium">{m.missionType}</span>{" "}
@@ -74,7 +71,7 @@ export function MissionSetPanel({
                       <p className="truncate text-xs text-muted-foreground">{m.modifier}</p>
                     ) : null}
                   </div>
-                </li>
+                </CheckoffRow>
               );
             })}
           </ul>

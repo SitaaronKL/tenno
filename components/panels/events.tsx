@@ -26,6 +26,7 @@ export function EventsPanel({ invasions, alerts }: { invasions: Invasion[]; aler
 
   return (
     <Panel
+      id="events"
       title={kind === "invasions" ? "Invasions" : "Alerts"}
       icon={TornadoIcon}
       count={count}

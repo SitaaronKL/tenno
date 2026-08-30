@@ -118,3 +118,31 @@ export function Checkoff({
     />
   );
 }
+
+// A whole row is the target, the box inside it is the visual. Clicking either toggles once.
+export function CheckoffRow({
+  id,
+  expiresAt,
+  label,
+  className,
+  children,
+}: {
+  id: string;
+  expiresAt: number;
+  label: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const { done, toggle } = useCheckoffs();
+  return (
+    <li
+      onClick={() => toggle(id, expiresAt)}
+      className={cn("flex cursor-pointer items-center gap-2 py-2", done.has(id) && doneRow, className)}
+    >
+      <span onClick={(e) => e.stopPropagation()} className="flex items-center">
+        <Checkoff id={id} expiresAt={expiresAt} label={label} />
+      </span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </li>
+  );
+}

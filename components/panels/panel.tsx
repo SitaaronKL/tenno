@@ -80,6 +80,7 @@ function Chevron({ collapsed }: { collapsed: boolean }) {
 
 export function Panel({
   title,
+  id,
   icon: Icon,
   count,
   action,
@@ -87,6 +88,8 @@ export function Panel({
   className,
 }: {
   title: string;
+  // Stable key for the saved collapse state when the title changes with a toggle.
+  id?: string;
   icon?: PanelIcon;
   count?: number | string;
   action?: ReactNode;
@@ -95,7 +98,7 @@ export function Panel({
 }) {
   const icon = useRef<IconHandle>(null);
   const bodyId = useId();
-  const name = panelKey(title);
+  const name = panelKey(id ?? title);
   // The server snapshot is always open, so the markup matches, then the saved choice lands.
   const collapsed = useSyncExternalStore(
     subscribe,
