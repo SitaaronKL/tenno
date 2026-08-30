@@ -26,6 +26,7 @@ type Delivery = {
   phone: string | null;
   photonUserId: string | null;
   phoneVerified: boolean;
+  attempts: number;
 };
 
 // One line per match, used by both the instant message and the digest.
@@ -61,6 +62,7 @@ export const loadDelivery = internalQuery({
       phone: profile?.phone ?? null,
       photonUserId: profile?.photonUserId ?? null,
       phoneVerified: profile?.phoneVerifiedAt !== undefined,
+      attempts: notification.attempts ?? 0,
     };
   },
 });
@@ -150,6 +152,7 @@ export const pendingDigestFor = internalQuery({
           phone: profile?.phone ?? null,
           photonUserId: profile?.photonUserId ?? null,
           phoneVerified: profile?.phoneVerifiedAt !== undefined,
+          attempts: notification.attempts ?? 0,
         });
       }
     }
@@ -170,18 +173,39 @@ export const recordDigest = internalMutation({
   },
 });
 
+const MAX_ATTEMPTS = 3;
+
+// A provider blip should not lose a match, so the send is queued again with a backoff.
+export const retryLater = internalMutation({
+  args: { notificationId: v.id("notifications"), attempts: v.number(), error: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { notificationId, attempts, error }) => {
+    const delay = 60_000 * 2 ** (attempts - 1);
+    await ctx.db.patch("notifications", notificationId, {
+      attempts,
+      nextAttemptAt: Date.now() + delay,
+      error,
+    });
+    await ctx.scheduler.runAfter(delay, internal.notify.send, { notificationId });
+    return null;
+  },
+});
+
 export const mark = internalMutation({
   args: {
     notificationIds: v.array(v.id("notifications")),
     status: v.union(v.literal("sent"), v.literal("failed"), v.literal("skipped")),
     error: v.optional(v.string()),
+    attempts: v.optional(v.number()),
   },
   returns: v.null(),
-  handler: async (ctx, { notificationIds, status, error }) => {
+  handler: async (ctx, { notificationIds, status, error, attempts }) => {
     for (const id of notificationIds) {
       await ctx.db.patch("notifications", id, {
         status,
         error,
+        attempts,
+        nextAttemptAt: undefined,
         sentAt: status === "sent" ? Date.now() : undefined,
       });
     }
@@ -247,13 +271,24 @@ export const send = internalAction({
           url: siteUrl(),
         },
       });
-      await ctx.runMutation(internal.notify.mark, { notificationIds: [notificationId], status: "sent" });
-    } catch (e) {
       await ctx.runMutation(internal.notify.mark, {
         notificationIds: [notificationId],
-        status: "failed",
-        error: e instanceof Error ? e.message : String(e),
+        status: "sent",
+        attempts: delivery.attempts + 1,
       });
+    } catch (e) {
+      const attempts = delivery.attempts + 1;
+      const error = e instanceof Error ? e.message : String(e);
+      if (attempts < MAX_ATTEMPTS) {
+        await ctx.runMutation(internal.notify.retryLater, { notificationId, attempts, error });
+      } else {
+        await ctx.runMutation(internal.notify.mark, {
+          notificationIds: [notificationId],
+          status: "failed",
+          error,
+          attempts,
+        });
+      }
     }
     return null;
   },

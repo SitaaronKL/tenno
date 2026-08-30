@@ -6,7 +6,11 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 
 // The provider boundaries are mocked, the payloads they are handed are what these tests assert.
-const sent = vi.hoisted(() => ({ emails: [] as { to: string; subject: string }[], texts: [] as { to: string; text: string }[] }));
+const sent = vi.hoisted(() => ({
+  emails: [] as { to: string; subject: string }[],
+  texts: [] as { to: string; text: string }[],
+  failuresLeft: 0,
+}));
 
 vi.mock("./email", async () => {
   const { internalAction } = await import("./_generated/server");
@@ -16,6 +20,10 @@ vi.mock("./email", async () => {
       args: { to: v.string(), subject: v.string(), react: v.any() },
       returns: v.string(),
       handler: async (_ctx, { to, subject }) => {
+        if (sent.failuresLeft > 0) {
+          sent.failuresLeft -= 1;
+          throw new Error("provider is having a moment");
+        }
         sent.emails.push({ to, subject });
         return "test-email-id";
       },
@@ -48,6 +56,7 @@ const modules = import.meta.glob("./**/*.ts");
 function setup() {
   sent.emails.length = 0;
   sent.texts.length = 0;
+  sent.failuresLeft = 0;
   const t = convexTest(schema, modules);
   rateLimiter.register(t);
   return t;
@@ -175,6 +184,37 @@ describe("notify.digest", () => {
 });
 
 describe("notify.send", () => {
+  test("a provider blip is retried, the user still gets the mail", async () => {
+    const t = setup();
+    sent.failuresLeft = 1;
+    const { eventId } = await seed(t, { profile: null });
+
+    vi.useFakeTimers();
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    vi.useRealTimers();
+
+    const rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("sent");
+    expect(rows[0].attempts).toBe(2);
+    expect(sent.emails).toHaveLength(1);
+  });
+
+  test("a provider that stays down leaves the notification failed, not retrying forever", async () => {
+    const t = setup();
+    sent.failuresLeft = 10;
+    const { eventId } = await seed(t, { profile: null });
+
+    vi.useFakeTimers();
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    vi.useRealTimers();
+
+    const rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("failed");
+    expect(rows[0].attempts).toBe(3);
+  });
+
   test("an unverified phone is never texted, the user sees why", async () => {
     const t = setup();
     const { eventId } = await seed(t, {
