@@ -13,6 +13,9 @@ import { BaroPanel } from "./baro";
 import { NightwavePanel } from "./nightwave";
 import { EventsPanel } from "./events";
 import { BountiesPanel, bountiesOf } from "./bounties";
+import { IncursionsPanel } from "./incursions";
+import { WeeklyPanel } from "./weekly";
+import { ActiveEvents } from "./active-events";
 import { CheckoffsProvider } from "./checkoffs-store";
 
 // Bento: six columns on desktop, and each card claims the width its content needs.
@@ -51,8 +54,8 @@ export function DashboardGrid() {
           ))}
         </div>
         <div className={GRID}>
-          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-4" />
-          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-2" />
+          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-6" />
+          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-3" />
           <Skeleton className="h-56 w-full rounded-xl md:col-span-2 lg:col-span-3" />
           <Skeleton className="h-56 w-full rounded-xl md:col-span-2 lg:col-span-3" />
         </div>
@@ -84,6 +87,7 @@ export function Panels({ state }: { state: WorldState }) {
   return (
     <div>
       {state.stale && <StaleNotice state={state} />}
+      <ActiveEvents events={state.events ?? []} />
       <div className={GRID}>
         {shown("box.fissures") ? <FissuresPanel fissures={state.fissures} /> : null}
         {shown("box.bounties") ? <BountiesPanel bounties={bountiesOf(state)} /> : null}
@@ -94,6 +98,8 @@ export function Panels({ state }: { state: WorldState }) {
           <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
         ) : null}
         {shown("box.archimedea") ? <ArchimedeaPanel archimedea={state.archimedea ?? []} /> : null}
+        {shown("box.weekly") ? <WeeklyPanel circuit={state.circuit} darvo={state.darvo} /> : null}
+        {shown("box.incursions") ? <IncursionsPanel incursions={state.incursions ?? []} /> : null}
         {state.baro?.active && shown("box.baro") ? <BaroPanel baro={state.baro} /> : null}
         {shown("box.nightwave") ? <NightwavePanel nightwave={state.nightwave} /> : null}
       </div>

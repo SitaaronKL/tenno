@@ -62,4 +62,30 @@ describe("hidden boxes", () => {
     expect(screen.queryByText("Nightwave")).not.toBeInTheDocument();
     expect(screen.getByText("Bounties")).toBeInTheDocument();
   });
+
+  it("skips the boxes the extras slice added when they are turned off", () => {
+    render(
+      <HiddenSet hidden={new Set(["box.incursions", "box.weekly"])}>
+        <Panels state={state({ incursions: ["Tyana Pass (Mars)"] })} />
+      </HiddenSet>,
+    );
+    expect(screen.queryByText("Incursions")).not.toBeInTheDocument();
+    expect(screen.queryByText("Weekly")).not.toBeInTheDocument();
+  });
+});
+
+describe("daily and weekly extras", () => {
+  it("shows the incursion and weekly boxes, and names a running event", () => {
+    render(
+      <Panels
+        state={state({
+          incursions: ["Tyana Pass (Mars)"],
+          events: [{ key: "a", name: "Tactical Alert: Dog Days", expiresAt: now + 86_400_000 }],
+        })}
+      />,
+    );
+    expect(screen.getByText("Incursions")).toBeInTheDocument();
+    expect(screen.getByText("Weekly")).toBeInTheDocument();
+    expect(screen.getByText(/Tactical Alert: Dog Days/)).toBeInTheDocument();
+  });
 });

@@ -40,6 +40,11 @@ export const SUGGESTIONS: Suggestion[] = [
     },
   },
   {
+    label: "Arbitration is Defense or Interception",
+    description: "The two arbitration mission types worth an hour of your evening",
+    filter: { kind: "arbitration", missionTypes: ["Defense", "Interception"], tiers: null },
+  },
+  {
     label: "Daily reset",
     description: "Sorties, dailies and the Steel Path honours roll at 00:00 UTC",
     filter: { kind: "reset", period: "daily" },

@@ -45,6 +45,7 @@ export function ArchimedeaPanel({ archimedea }: { archimedea: Archimedea[] }) {
     : [];
   return (
     <Panel
+      id="archimedea"
       title={TITLES[variant]}
       count={data ? `${keys.length - remaining(keys, done)} / ${keys.length}` : undefined}
       icon={AtomIcon}

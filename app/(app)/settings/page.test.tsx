@@ -77,6 +77,10 @@ describe("settings", () => {
   });
 
   it("fills in the browser timezone and a nine local digest on the first load", async () => {
+    // The runner's clock is UTC, the test needs a browser that reports a real zone.
+    const resolved = vi
+      .spyOn(Intl.DateTimeFormat.prototype, "resolvedOptions")
+      .mockReturnValue({ timeZone: "America/New_York" } as Intl.ResolvedDateTimeFormatOptions);
     profile.timezone = "UTC";
     renderPage();
 
@@ -85,6 +89,7 @@ describe("settings", () => {
     );
     expect(screen.getByLabelText("Timezone")).toHaveTextContent("America/New_York");
     expect(screen.getByLabelText("Digest hour")).toHaveTextContent("09:00");
+    resolved.mockRestore();
   });
 
   it("does not touch a timezone the user already chose", async () => {

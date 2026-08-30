@@ -8,7 +8,7 @@ import { EarthIcon } from "@/components/icons/earth";
 import { TornadoIcon } from "@/components/icons/tornado";
 import { AtomIcon } from "@/components/icons/atom";
 import { TimerIcon } from "@/components/icons/timer";
-import type { Baro, Cycle } from "@/lib/contracts/worldstate";
+import type { Arbitration, Baro, Cycle } from "@/lib/contracts/worldstate";
 import { useHidden } from "@/components/hidden";
 import { cn } from "@/lib/utils";
 import { Countdown, SOON_MS } from "./countdown";
@@ -60,6 +60,30 @@ function Tile({
   );
 }
 
+// Each world's phases in order with their length in minutes. DE only reports the phase it is in,
+// so between pulls the tile walks the cycle forward itself instead of saying expired.
+const PHASES: Record<Cycle["world"], [string, number][]> = {
+  cetus: [["day", 100], ["night", 50]],
+  cambion: [["fass", 100], ["vome", 50]],
+  vallis: [["warm", 400 / 60], ["cold", 1200 / 60]],
+  earth: [["day", 240], ["night", 240]],
+  duviri: [["joy", 120], ["anger", 120], ["envy", 120], ["sorrow", 120], ["fear", 120]],
+  zariman: [["corpus", 150], ["grineer", 150]],
+};
+
+export function rollCycle(cycle: Cycle, now: number): Cycle {
+  if (cycle.expiresAt > now) return cycle;
+  const phases = PHASES[cycle.world];
+  let index = Math.max(0, phases.findIndex(([state]) => state === cycle.state.toLowerCase()));
+  let expiresAt = cycle.expiresAt;
+  // Bounded walk, a snapshot is never more than a few phases old.
+  for (let step = 0; step < 64 && expiresAt <= now; step += 1) {
+    index = (index + 1) % phases.length;
+    expiresAt += phases[index][1] * 60_000;
+  }
+  return { ...cycle, state: phases[index][0], expiresAt };
+}
+
 // Daily reset is 00:00 UTC, weekly is Monday 00:00 UTC, both are fixed by the game.
 export function nextDailyReset(now: number): number {
   const d = new Date(now);
@@ -71,7 +95,15 @@ export function nextWeeklyReset(now: number): number {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysToMonday);
 }
 
-export function CycleTiles({ cycles, baro }: { cycles: Cycle[]; baro?: Baro | null }) {
+export function CycleTiles({
+  cycles,
+  baro,
+  arbitration,
+}: {
+  cycles: Cycle[];
+  baro?: Baro | null;
+  arbitration?: Arbitration | null;
+}) {
   const now = useNow();
   const hidden = useHidden();
   const shown = (key: string) => !hidden.has(key);
@@ -79,10 +111,13 @@ export function CycleTiles({ cycles, baro }: { cycles: Cycle[]; baro?: Baro | nu
   const rows = order
     .map((w) => cycles.find((c) => c.world === w))
     .filter((c): c is Cycle => Boolean(c))
-    .filter((c) => shown(`tile.${c.world}`));
+    .filter((c) => shown(`tile.${c.world}`))
+    .map((c) => rollCycle(c, now));
 
   const resets = shown("tile.daily") || shown("tile.weekly");
-  if (rows.length === 0 && !resets && !(baro && shown("tile.baro"))) return null;
+  const extras =
+    resets || (baro && shown("tile.baro")) || (arbitration && shown("tile.arbitration"));
+  if (rows.length === 0 && !extras) return null;
 
   return (
     <ul aria-label="World cycles" className="ml-auto grid shrink-0 grid-cols-[repeat(5,max-content)] gap-1.5 lg:mr-8">
@@ -94,6 +129,16 @@ export function CycleTiles({ cycles, baro }: { cycles: Cycle[]; baro?: Baro | nu
           expiresAt={baro.active ? baro.expiresAt : baro.startsAt}
           now={now}
           verb={baro.active ? "leaves" : "arrives"}
+        />
+      ) : null}
+      {arbitration && shown("tile.arbitration") ? (
+        <Tile
+          icon={AtomIcon}
+          label="Arbitration"
+          state={arbitration.missionType}
+          expiresAt={arbitration.expiresAt}
+          now={now}
+          verb="rotates"
         />
       ) : null}
       {shown("tile.daily") ? (
@@ -120,5 +165,5 @@ export function CycleTiles({ cycles, baro }: { cycles: Cycle[]; baro?: Baro | nu
 export function CycleTilesLive() {
   const state = useQuery(api.worldstate.get, { platform: "pc" });
   if (!state) return null;
-  return <CycleTiles cycles={state.cycles} baro={state.baro} />;
+  return <CycleTiles cycles={state.cycles} baro={state.baro} arbitration={state.arbitration} />;
 }

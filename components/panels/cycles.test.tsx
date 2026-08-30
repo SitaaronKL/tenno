@@ -40,4 +40,61 @@ describe("the tile row", () => {
     expect(screen.queryByText("Daily reset")).not.toBeInTheDocument();
     expect(screen.getByText("Orb Vallis")).toBeInTheDocument();
   });
+
+  it("drops the arbitration tile too", () => {
+    render(
+      <HiddenSet hidden={new Set(["tile.arbitration"])}>
+        <CycleTiles
+          cycles={cycles}
+          arbitration={{
+            node: "Hydron (Sedna)",
+            missionType: "Defense",
+            faction: "Grineer",
+            tier: "B",
+            expiresAt: Date.now() + 1_200_000,
+          }}
+        />
+      </HiddenSet>,
+    );
+    expect(screen.queryByText("Arbitration")).not.toBeInTheDocument();
+  });
+});
+
+describe("arbitration tile", () => {
+  it("sits with the cycle tiles, named by its mission type", () => {
+    render(
+      <CycleTiles
+        cycles={[]}
+        arbitration={{
+          node: "Hydron (Sedna)",
+          missionType: "Defense",
+          faction: "Grineer",
+          tier: "B",
+          expiresAt: Date.now() + 1_200_000,
+        }}
+      />,
+    );
+    expect(screen.getByText("Arbitration")).toBeInTheDocument();
+    expect(screen.getByText("Defense")).toBeInTheDocument();
+  });
+
+  it("leaves the tile out when the schedule has run out", () => {
+    render(<CycleTiles cycles={[]} arbitration={null} />);
+    expect(screen.queryByText("Arbitration")).not.toBeInTheDocument();
+  });
+});
+
+describe("cycle roll forward", () => {
+  it("walks an expired Cetus night into the next day with the right end time", async () => {
+    const { rollCycle } = await import("./cycles");
+    const end = Date.UTC(2026, 7, 30, 8, 0);
+    const rolled = rollCycle({ world: "cetus", state: "night", expiresAt: end }, end + 10 * 60_000);
+    expect(rolled.state).toBe("day");
+    expect(rolled.expiresAt).toBe(end + 100 * 60_000);
+  });
+  it("leaves a live cycle alone", async () => {
+    const { rollCycle } = await import("./cycles");
+    const c = { world: "earth" as const, state: "day", expiresAt: Date.now() + 60_000 };
+    expect(rollCycle(c, Date.now())).toEqual(c);
+  });
 });

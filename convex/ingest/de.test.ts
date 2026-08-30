@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import raw from "./__fixtures__/de.json";
 import { bountyMissionType, normalizeDe } from "./de";
+import { currentArbitration, todaysIncursions } from "./schedules";
 
 // Fixture was captured live from api.warframe.com/cdn/worldState.php on 2026-08-30.
 const FETCHED_AT = Date.parse("2026-08-30T04:21:00.000Z");
@@ -259,6 +260,45 @@ describe("Archimedea", () => {
       "Devil's Bargain",
       "Artillery Beacons",
       "Competitive Streak",
+    ]);
+  });
+});
+
+describe("daily and weekly extras", () => {
+  test("shows the six Steel Path Incursions for the UTC day of the snapshot", () => {
+    expect(state.incursions).toEqual(todaysIncursions(FETCHED_AT));
+    expect(state.incursions).toHaveLength(6);
+  });
+
+  test("shows the arbitration running at the snapshot's hour", () => {
+    expect(state.arbitration).toEqual(currentArbitration(FETCHED_AT));
+    expect(state.arbitration?.expiresAt).toBe(Date.parse("2026-08-30T05:00:00.000Z"));
+  });
+
+  test("reads the Circuit's frames and weapons out of EndlessXpSchedule", () => {
+    expect(state.circuit).toEqual({
+      normal: ["Nidus", "Octavia", "Harrow"],
+      steelPath: ["Vectis", "Stug", "Ballistica", "Destreza", "Obex"],
+      expiresAt: 1788134400000,
+    });
+  });
+
+  test("names Darvo's deal and says how much of it is left", () => {
+    expect(state.darvo).toEqual({
+      item: "Akbronco",
+      discount: 30,
+      stock: 164,
+      expiresAt: 1788066000000,
+    });
+  });
+
+  test("names the running event from Goals, with its expiry", () => {
+    expect(state.events).toEqual([
+      {
+        key: "6a71fe700000000000000000",
+        name: "Tactical Alert: Dog Days",
+        expiresAt: 1788879600000,
+      },
     ]);
   });
 });

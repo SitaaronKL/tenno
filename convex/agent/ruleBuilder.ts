@@ -13,9 +13,10 @@ export const SYSTEM =
   "Turn the user's sentence into one Warframe notification rule. Pick the kind that matches, leave a filter " +
   "field null when the user did not ask for it, default mode to instant and channels to email. Give the rule a " +
   "short name. The kinds are fissure, invasion, alert, baro, sortie, archonHunt, cycle, nightwave, bounty, " +
-  "archimedea and reset. A cycle rule takes leadMinutes when the user wants warning before the state begins, " +
+  "archimedea, arbitration and reset. A cycle rule takes leadMinutes when the user wants warning before the state begins, " +
   "a bounty rule takes syndicates, the board level 1 to 5 and mission types, an archimedea rule takes the " +
-  "variant deep or temporal plus deviations and risks, and a reset rule is daily or weekly.";
+  "variant deep or temporal plus deviations and risks, an arbitration rule takes mission types and node " +
+  "tiers S to F, and a reset rule is daily or weekly.";
 
 // The draft is never saved, so a bad model answer must fail here, not downstream.
 export function toRuleInput(raw: unknown) {
