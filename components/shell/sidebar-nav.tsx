@@ -8,7 +8,7 @@ import { NAV_ITEMS } from "./nav";
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Main" className="flex flex-col gap-1 p-3">
+    <nav aria-label="Main" className="flex flex-col gap-0.5 p-3">
       {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
         const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -17,14 +17,16 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             key={item.href}
             href={item.href}
             onClick={onNavigate}
+            title={item.label}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              active && "bg-accent text-accent-foreground",
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors duration-150 ease-out hover:bg-surface-2 hover:text-foreground md:justify-center lg:justify-start",
+              active && "bg-accent-soft text-primary hover:bg-accent-soft hover:text-primary",
             )}
           >
-            <Icon className="size-4" aria-hidden="true" />
-            {item.label}
+            <Icon className="size-4 shrink-0" aria-hidden="true" />
+            {/* The label stays in the accessible name when the rail collapses to icons. */}
+            <span className="truncate md:sr-only lg:not-sr-only">{item.label}</span>
           </Link>
         );
       })}
