@@ -33,6 +33,14 @@ const MISSION_TYPES = [
 ];
 // The board prints five rows, tier 1 is the lowest level bounty on it.
 const BOUNTY_LEVELS = ["any", "1", "2", "3", "4", "5"] as const;
+// The two weekly sets, plus "any" for a player who runs both.
+const ARCHIMEDEA_VARIANTS = [
+  { value: "any", label: "Any" },
+  { value: "deep", label: "Deep" },
+  { value: "temporal", label: "Temporal" },
+] as const;
+type ArchimedeaVariant = (typeof ARCHIMEDEA_VARIANTS)[number]["value"];
+
 const WORLDS = ["cetus", "vallis", "cambion", "earth", "duviri", "zariman"] as const;
 const CHANNEL_LABELS: Record<string, string> = { email: "Email", imessage: "iMessage" };
 
@@ -185,6 +193,13 @@ export function RuleForm({
   const [level, setLevel] = useState<(typeof BOUNTY_LEVELS)[number]>(
     f?.kind === "bounty" && f.level !== null ? (String(f.level) as (typeof BOUNTY_LEVELS)[number]) : "any",
   );
+  const [variant, setVariant] = useState<ArchimedeaVariant>(
+    f?.kind === "archimedea" && f.variant !== null ? f.variant : "any",
+  );
+  const [deviations, setDeviations] = useState<string[]>(
+    f?.kind === "archimedea" ? (f.deviations ?? []) : [],
+  );
+  const [risks, setRisks] = useState<string[]>(f?.kind === "archimedea" ? (f.risks ?? []) : []);
   const [period, setPeriod] = useState<"daily" | "weekly">(f?.kind === "reset" ? f.period : "daily");
   const [mode, setMode] = useState<"instant" | "digest">(initial?.mode ?? "instant");
   const [channels, setChannels] = useState<string[]>(initial?.channels ?? ["email"]);
@@ -221,6 +236,13 @@ export function RuleForm({
           syndicates: some(names),
           level: level === "any" ? null : Number(level),
           missionTypes: some(missionTypes),
+        };
+      case "archimedea":
+        return {
+          kind,
+          variant: variant === "any" ? null : variant,
+          deviations: some(deviations),
+          risks: some(risks),
         };
       case "reset":
         return { kind, period };
@@ -324,6 +346,25 @@ export function RuleForm({
             </Chip>
             <Chip label="Mission types" value={missionTypes.length ? joinOr(missionTypes) : "any mission"}>
               <CheckboxList options={MISSION_TYPES} values={missionTypes} onChange={setMissionTypes} />
+            </Chip>
+          </>
+        )}
+
+        {kind === "archimedea" && (
+          <>
+            <Chip label="Set" value={variant === "any" ? "any set" : `${variant} set`}>
+              <RadioList
+                name="archimedea-variant"
+                value={variant}
+                onChange={setVariant}
+                options={ARCHIMEDEA_VARIANTS.map((o) => ({ value: o.value, label: o.label }))}
+              />
+            </Chip>
+            <Chip label="Deviations" value={deviations.length ? joinOr(deviations) : "any deviation"}>
+              <TagInput label="Deviations" values={deviations} onChange={setDeviations} />
+            </Chip>
+            <Chip label="Risks" value={risks.length ? joinOr(risks) : "any risk"}>
+              <TagInput label="Risks" values={risks} onChange={setRisks} />
             </Chip>
           </>
         )}

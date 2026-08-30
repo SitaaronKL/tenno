@@ -23,6 +23,9 @@ function oneOf(allowed: string[] | null, value: string): boolean {
   return allowed.some((a) => a.trim().toLowerCase() === value.trim().toLowerCase());
 }
 
+const some = (values: string[] | null): string[] | null =>
+  values && values.length > 0 ? values : null;
+
 function rewardItems(reward: unknown): string[] {
   const r = rec(reward);
   return [str(r.item)].filter((s) => s.length > 0);
@@ -81,6 +84,19 @@ export function matches(filter: RuleFilter, event: MatchEvent): boolean {
       if (wanted.length === 0) return false;
       if (filter.missionTypes === null || filter.missionTypes.length === 0) return true;
       return wanted.some((j) => oneOf(filter.missionTypes, str(j.missionType)));
+    }
+    case "archimedea": {
+      if (filter.variant !== null && filter.variant !== str(p.variant)) return false;
+      const missions = arr(p.missions).map(rec);
+      const deviations = some(filter.deviations);
+      if (deviations && !containsAny(deviations, missions.map((m) => str(m.deviation)))) return false;
+      const risks = some(filter.risks);
+      if (risks) {
+        // Elite's extra risks are part of the week too, a player filtering on one wants both forms.
+        const all = missions.flatMap((m) => arr(m.risks).map(str)).concat(arr(p.eliteBonus).map(str));
+        if (!containsAny(risks, all)) return false;
+      }
+      return true;
     }
     case "reset":
       return str(p.period) === filter.period;

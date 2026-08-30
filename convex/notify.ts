@@ -73,6 +73,8 @@ function summarize(event: Doc<"worldEvents"> | null): string {
       return `Nightwave season ${String(p.season ?? "")}, new acts are up`;
     case "cycle":
       return `${text(p.world)} is ${text(p.state)}`;
+    case "archimedea":
+      return `${p.variant === "temporal" ? "Temporal" : "Deep"} Archimedea, new week`;
     default:
       return event?.kind ?? "event";
   }

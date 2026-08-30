@@ -79,6 +79,26 @@ export interface Bounty {
   static?: boolean;
 }
 
+// One mission in a weekly Archimedea set. DE ships no star chart node for these, so node is optional.
+export interface ArchimedeaMission {
+  missionType: string;
+  node?: string;
+  deviation: string;
+  risks: string[];
+}
+
+// Deep Archimedea (Sanctum Anatomica, Cavia) and Temporal Archimedea (Hollvania, The Hex).
+export interface Archimedea {
+  key: string;
+  variant: "deep" | "temporal";
+  expiresAt: number;
+  missions: ArchimedeaMission[];
+  personalModifiers: string[];
+  // What elite adds on top of each mission's risks, one entry per mission in the same order.
+  // Several extra risks on one mission read as one comma joined entry so the order still lines up.
+  eliteBonus?: string[];
+}
+
 export interface Cycle {
   world: "cetus" | "vallis" | "cambion" | "earth" | "duviri" | "zariman";
   state: string;
@@ -107,4 +127,6 @@ export interface WorldState {
   cycles: Cycle[];
   // Optional so world state rows written before bounties existed still read back.
   bounties?: Bounty[];
+  // Optional so world state rows written before Archimedea existed still read back.
+  archimedea?: Archimedea[];
 }

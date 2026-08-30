@@ -58,6 +58,14 @@ export const BountyFilter = z.object({
   missionTypes: z.array(z.string()).nullable(),
 });
 
+// Deep is the Cavia set, temporal is the Hex set. Deviations and risks match the printed names.
+export const ArchimedeaFilter = z.object({
+  kind: z.literal("archimedea"),
+  variant: z.enum(["deep", "temporal"]).nullable(),
+  deviations: z.array(z.string()).nullable(),
+  risks: z.array(z.string()).nullable(),
+});
+
 // Daily is 00:00 UTC, weekly is Monday 00:00 UTC.
 export const ResetFilter = z.object({
   kind: z.literal("reset"),
@@ -76,6 +84,7 @@ export const RuleFilter = z.discriminatedUnion("kind", [
   CycleFilter,
   NightwaveFilter,
   BountyFilter,
+  ArchimedeaFilter,
   ResetFilter,
 ]);
 

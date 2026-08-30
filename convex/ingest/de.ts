@@ -1,5 +1,7 @@
 import type {
   Alert,
+  Archimedea,
+  ArchimedeaMission,
   ArchonHunt,
   Baro,
   Bounty,
@@ -370,6 +372,54 @@ function bounties(raw: Raw, at: number): Bounty[] {
   return withStaticBounties(live, boardExpiries(raw), at);
 }
 
+// Conquests are the two weekly Archimedea sets. CT_LAB is Cavia in the Sanctum, CT_HEX is the Hex
+// in Hollvania, and a type we do not know is left out rather than shown without a name.
+const CONQUEST_VARIANTS: Record<string, Archimedea["variant"]> = {
+  CT_LAB: "deep",
+  CT_HEX: "temporal",
+};
+
+// Deviations, risks and personal modifiers are bare ids in the same language table as everything else.
+function modifierName(id: unknown): string {
+  return named(id).value;
+}
+
+function archimedea(raw: Raw): Archimedea[] {
+  const out: Archimedea[] = [];
+  for (const c of arr(raw.Conquests)) {
+    const variant = CONQUEST_VARIANTS[str(c.Type)];
+    if (!variant) continue;
+    const expiresAt = ms(c.Expiry);
+    const missions: ArchimedeaMission[] = [];
+    const eliteBonus: string[] = [];
+    for (const m of arr(c.Missions)) {
+      const difficulties = arr(m.difficulties);
+      const normal = difficulties.find((d) => str(d.type) === "CD_NORMAL") ?? difficulties[0];
+      if (!normal) continue;
+      const risks = (Array.isArray(normal.risks) ? normal.risks : []).map(modifierName);
+      missions.push({
+        missionType: missionType(m.missionType),
+        deviation: modifierName(normal.deviation),
+        risks,
+      });
+      // Elite repeats the normal risks and appends its own, so the tail is what elite adds.
+      const hard = difficulties.find((d) => str(d.type) === "CD_HARD");
+      const extra = (Array.isArray(hard?.risks) ? hard.risks : []).slice(risks.length).map(modifierName);
+      eliteBonus.push(extra.join(", "));
+    }
+    const set: Archimedea = {
+      key: `${variant}:${expiresAt}`,
+      variant,
+      expiresAt,
+      missions,
+      personalModifiers: (Array.isArray(c.Variables) ? c.Variables : []).map(modifierName),
+    };
+    if (eliteBonus.some((e) => e !== "")) set.eliteBonus = eliteBonus;
+    out.push(set);
+  }
+  return out;
+}
+
 function syndicateExpiry(raw: Raw, tag: string): number {
   const found = arr(raw.SyndicateMissions).find((s) => str(s.Tag) === tag);
   return found ? ms(found.Expiry) : 0;
@@ -484,5 +534,6 @@ export function normalizeDe(raw: Raw, fetchedAt: number = Date.now()): WorldStat
     nightwave: nightwave(raw),
     cycles: cycles(raw, fetchedAt),
     bounties: bounties(raw, fetchedAt),
+    archimedea: archimedea(raw),
   };
 }

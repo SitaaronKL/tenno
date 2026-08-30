@@ -4,6 +4,49 @@ import type { RuleFilter } from "../lib/contracts/rule";
 
 const cases: { name: string; filter: RuleFilter; event: { kind: string; payload: unknown }; want: boolean }[] = [
   {
+    name: "archimedea deviation the player hates, either variant",
+    filter: { kind: "archimedea", variant: null, deviations: ["Glyph Inflation"], risks: null },
+    event: {
+      kind: "archimedea",
+      payload: {
+        variant: "deep",
+        missions: [{ missionType: "Defense", deviation: "Glyph Inflation", risks: ["Fortified Foes"] }],
+      },
+    },
+    want: true,
+  },
+  {
+    name: "archimedea of the wrong variant",
+    filter: { kind: "archimedea", variant: "temporal", deviations: null, risks: null },
+    event: { kind: "archimedea", payload: { variant: "deep", missions: [] } },
+    want: false,
+  },
+  {
+    name: "archimedea deviation that is not in this week's set",
+    filter: { kind: "archimedea", variant: null, deviations: ["Mitosis"], risks: null },
+    event: {
+      kind: "archimedea",
+      payload: {
+        variant: "deep",
+        missions: [{ missionType: "Defense", deviation: "Glyph Inflation", risks: [] }],
+      },
+    },
+    want: false,
+  },
+  {
+    name: "archimedea risk that only elite adds still counts",
+    filter: { kind: "archimedea", variant: null, deviations: null, risks: ["Entanglement"] },
+    event: {
+      kind: "archimedea",
+      payload: {
+        variant: "deep",
+        missions: [{ missionType: "Survival", deviation: "Parasitic Towers", risks: ["Devil's Bargain"] }],
+        eliteBonus: ["Entanglement"],
+      },
+    },
+    want: true,
+  },
+  {
     name: "fissure tier and mission type match",
     filter: { kind: "fissure", tiers: ["Axi"], missionTypes: ["Survival"], steelPath: null, storm: null },
     event: { kind: "fissure", payload: { tier: "Axi", missionType: "Survival", steelPath: false, storm: false } },

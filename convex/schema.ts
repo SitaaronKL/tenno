@@ -123,6 +123,24 @@ const bounty = v.object({
   static: v.optional(v.boolean()),
 });
 
+const archimedea = v.object({
+  key: v.string(),
+  variant: v.union(v.literal("deep"), v.literal("temporal")),
+  expiresAt: v.number(),
+  missions: v.array(
+    v.object({
+      missionType: v.string(),
+      // Optional, DE ships no star chart node for an Archimedea mission.
+      node: v.optional(v.string()),
+      deviation: v.string(),
+      risks: v.array(v.string()),
+    }),
+  ),
+  personalModifiers: v.array(v.string()),
+  // Optional, only a payload that draws an elite distinction carries it.
+  eliteBonus: v.optional(v.array(v.string())),
+});
+
 const cycle = v.object({
   world: cycleWorld,
   state: v.string(),
@@ -148,6 +166,8 @@ export const worldStateValidator = v.object({
   cycles: v.array(cycle),
   // Optional so world state rows written before bounties existed still validate.
   bounties: v.optional(v.array(bounty)),
+  // Optional so world state rows written before Archimedea existed still validate.
+  archimedea: v.optional(v.array(archimedea)),
 });
 
 export default defineSchema({
