@@ -16,3 +16,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 Commits: plain messages only. Never add Co-Authored-By lines or session links.
+
+Tests: vitest, red then green, co located beside the file under test (foo.test.ts next to foo.ts). No central tests folder.
+Upstream: api.warframestat.us can lag by hours, always check its timestamp and fall back to https://api.warframe.com/cdn/worldState.php.
