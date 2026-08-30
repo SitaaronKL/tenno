@@ -26,6 +26,7 @@ import type * as goals from "../goals.js";
 import type * as http from "../http.js";
 import type * as ingest_apply from "../ingest/apply.js";
 import type * as ingest_bounties from "../ingest/bounties.js";
+import type * as ingest_bountyCycle from "../ingest/bountyCycle.js";
 import type * as ingest_de from "../ingest/de.js";
 import type * as ingest_names from "../ingest/names.js";
 import type * as ingest_normalize from "../ingest/normalize.js";
@@ -76,6 +77,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   "ingest/apply": typeof ingest_apply;
   "ingest/bounties": typeof ingest_bounties;
+  "ingest/bountyCycle": typeof ingest_bountyCycle;
   "ingest/de": typeof ingest_de;
   "ingest/names": typeof ingest_names;
   "ingest/normalize": typeof ingest_normalize;

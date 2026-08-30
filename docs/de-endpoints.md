@@ -23,6 +23,8 @@ Companion doc: `docs/warframe-api.md` covers WarframeStat.us, warframe.market an
 | 13 | Steel Path Incursion schedule | `browse.wf/sp-incursions.txt` (browse.wf, not DE) | none | text, `epochDay;SolNode,...` | Last-Modified 2025-01-14, runs to 2028 | 100 KB | low |
 | 14 | Arbitration schedule | `browse.wf/arbys.txt` (browse.wf, not DE) | none | text, `epochHour,SolNode` | Last-Modified 2024-12-25, about five years ahead | 940 KB | low |
 | 15 | Arbitration node tiers | `browse.wf/supplemental-data/arbyTiers.js` (browse.wf, not DE) | none | JS object literal | Last-Modified 2026-04-21 | 1.5 KB | low |
+| 16 | Fixed board bounty rotation | `oracle.browse.wf/bounty-cycle` (browse.wf, not DE) | none | JSON, CORS `*` | `max-age=8998`, rolls with the 2.5 hour cycle | 2.3 KB | medium, one person's server |
+| 17 | Star chart regions | `browse.wf/warframe-public-export-plus/ExportRegions.json` | none | JSON, CORS `*` | Cloudflare HIT | 444 KB | low, it is DE's own export |
 
 ## 1. worldState.php
 
@@ -116,6 +118,32 @@ Sections by `<h3 id>`: missionRewards, relicRewards, keyRewards, transientReward
 DE's world state lists four boards with zero jobs, so nothing downstream can show them: Zariman (The Holdfasts), Entrati Lab (Cavia), Vox Solaris (the Profit Taker phases) and Höllvania (The Hex). Those boards never rotate their level bands or their pools, and the drop tables are the only place the pools are written down. Sections used: `zarimanRewards`, `entratiLabRewards`, `hexRewards` and the `PROFIT-TAKER` rows of `solarisBountyRewards`. Each row is `bountyLevel` ("Level  50 - 55 Zariman Bounty", note the double space) plus `rewards` keyed by rotation `A`, `B`, `C`, each drop carrying `itemName`, `rarity`, `chance` and `stage`. Today all four boards publish rotation C only, one final stage pool per level band.
 
 `scripts/build-static-bounties.mjs` downloads `https://drops.warframestat.us/data/all.json`, trims those rows to syndicate, node, level band and per rotation `[{ item, chance }]`, and writes `convex/ingest/staticBounties.json` (about 10 KB) with the source URL and the `modified` stamp from `info.json` inside it. Current snapshot: `modified` 1782419611000, 2026-06-25T20:33:31Z, hash `a0ece5e9be2e2d55c75040720ef3226a`. `convex/ingest/staticBounties.ts` fills a board from that file when upstream sends it with no jobs, keeping the expiry upstream printed for the board so the rotation still cycles.
+
+## 5a. The fixed board rotation, from browse.wf's oracle
+
+DE's world state lists the Zariman, Cavia and Hex boards with no jobs at all, so the drop tables are the only
+thing that fills them and every row reads "Bounty". The node a job runs on and its bonus objective are not in
+DE's file at any endpoint: browse.wf's oracle watches the game and publishes them. Their About page says the
+raw data is free to use with credit, so: **the fixed board bounty rotation comes from browse.wf.**
+
+`GET https://oracle.browse.wf/bounty-cycle` answers
+`{ expiry (ms), rot, vaultRot, zarimanFaction, bounties: { ZarimanSyndicate, EntratiLabSyndicate, HexSyndicate:
+[{ node, challenge, ally? }] } }`, cached for 2.5 hours, which is one rotation.
+
+`convex/ingest/pull.ts` fetches it once per rotation after the DE pull, never from the browser, and keeps the
+answer on the snapshot as `bountyCycle` so the next pull inside the same rotation reuses it. Their oracle is
+one person's server, so a failure keeps the held cycle and the boards fall back to the drop table version.
+
+`convex/ingest/bountyCycle.ts` maps each board's jobs, in the level order the drop table prints, onto the
+rotation's entries in the same order: the mission type and the node name come from the node through
+`convex/ingest/de-names.json`, and the challenge path becomes a short label (`ZarimanFloodCompleteWavesEasy`
+reads "Void Flood, complete waves"), with a camel case split for a stem the table does not name. `rot` is the
+reward rotation the boards are on, so the panel lists that pool first. Vox Solaris has no entry in the cycle
+and keeps the drop table version.
+
+The node lookup needed the Höllvania nodes, which WFCD does not carry yet, so `scripts/build-de-names.mjs`
+also reads `ExportRegions.json` and `dict.en.json` from browse.wf's mirror of DE's Public Export. WFCD still
+wins where it has the node, its spellings are the ones the community uses.
 
 ## 5b. Steel Path Incursions and Arbitration, mirrored from browse.wf
 

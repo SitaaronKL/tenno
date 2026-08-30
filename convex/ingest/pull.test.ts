@@ -1,5 +1,6 @@
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import cycle from "./__fixtures__/bounty-cycle.json";
 import de from "./__fixtures__/de.json";
 import warframestat from "./__fixtures__/pc.json";
 import schema from "../schema";
@@ -21,10 +22,19 @@ function respond(body: unknown, type = "text/html") {
   });
 }
 
-function routes(handlers: { de: () => Response; warframestat: () => Response }) {
-  vi.stubGlobal("fetch", (url: string) =>
-    Promise.resolve(String(url).includes("warframe.com") ? handlers.de() : handlers.warframestat()),
-  );
+// browse.wf's oracle is the third upstream, it carries the fixed board rotation and nothing else.
+function routes(handlers: {
+  de: () => Response;
+  warframestat: () => Response;
+  cycle?: () => Response;
+}) {
+  vi.stubGlobal("fetch", (url: string) => {
+    const at = String(url);
+    if (at.includes("browse.wf")) {
+      return Promise.resolve((handlers.cycle ?? (() => respond(cycle, "application/json")))());
+    }
+    return Promise.resolve(at.includes("warframe.com") ? handlers.de() : handlers.warframestat());
+  });
 }
 
 async function storedSource(t: ReturnType<typeof convexTest>) {
@@ -153,7 +163,8 @@ describe("a 200 that is not world state", () => {
     const t = convexTest(schema, modules);
     await t.action(internal.ingest.pull.pull, { platform: "pc" });
 
-    expect(seen).toHaveLength(2);
+    // DE, warframestat and browse.wf's bounty cycle.
+    expect(seen).toHaveLength(3);
     for (const agent of seen) expect(agent).toMatch(/Mozilla/);
   });
 
@@ -168,5 +179,61 @@ describe("a 200 that is not world state", () => {
     await t.action(internal.ingest.pull.pull, { platform: "pc" });
 
     expect((await storedSource(t)).source).toBe("warframestat");
+  });
+});
+
+describe("the fixed board rotation", () => {
+  const holdfasts = async (t: ReturnType<typeof convexTest>) =>
+    (await storedSource(t)).bounties!.find((b: { syndicate: string }) => b.syndicate === "The Holdfasts")!;
+
+  test("the Zariman board comes out with mission types, not Bounty", async () => {
+    routes({ de: () => respond(de), warframestat: () => respond(warframestat, "application/json") });
+    const t = convexTest(schema, modules);
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+
+    const board = await holdfasts(t);
+    expect(board.rotation).toBe("A");
+    expect(board.expiresAt).toBe(cycle.expiry);
+    expect(board.jobs.map((j: { missionType?: string }) => j.missionType)).toEqual([
+      "Void Flood",
+      "Mobile Defense",
+      "Void Armageddon",
+      "Extermination",
+      "Void Cascade",
+    ]);
+    expect(board.jobs[0].challenge).toBe("Void Flood, complete waves");
+  });
+
+  test("their cache is respected, one fetch per rotation", async () => {
+    let fetched = 0;
+    routes({
+      de: () => respond(de),
+      warframestat: () => respond(warframestat, "application/json"),
+      cycle: () => {
+        fetched += 1;
+        return respond(cycle, "application/json");
+      },
+    });
+    const t = convexTest(schema, modules);
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+
+    expect(fetched).toBe(1);
+    expect((await holdfasts(t)).rotation).toBe("A");
+  });
+
+  test("the oracle going down leaves the drop table board alone", async () => {
+    routes({
+      de: () => respond(de),
+      warframestat: () => respond(warframestat, "application/json"),
+      cycle: () => new Response("down", { status: 502 }),
+    });
+    const t = convexTest(schema, modules);
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+
+    const board = await holdfasts(t);
+    expect(board.rotation).toBeUndefined();
+    expect(board.jobs[0].missionType).toBeUndefined();
+    expect(board.jobs).toHaveLength(5);
   });
 });

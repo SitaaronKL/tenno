@@ -1,10 +1,12 @@
 import { v } from "convex/values";
-import { internalAction } from "../_generated/server";
+import { internalAction, internalQuery } from "../_generated/server";
 import { internal } from "../_generated/api";
-import type { WorldState } from "../../lib/contracts/worldstate";
+import type { BountyCycle, WorldState } from "../../lib/contracts/worldstate";
 import { normalize } from "./normalize";
 import { DE_ENDPOINT, normalizeDe } from "./de";
+import { BOUNTY_CYCLE_ENDPOINT, parseCycle, withBountyCycle } from "./bountyCycle";
 import { vPlatform } from "../lib/validators";
+import { bountyCycleValidator, worldStateValidator } from "../schema";
 
 const WARFRAMESTAT = "https://api.warframestat.us";
 
@@ -46,6 +48,39 @@ async function candidate(
   }
 }
 
+// browse.wf caches the rotation for 2.5 hours and it only changes when the rotation does, so the
+// stored one is reused until its own expiry passes. Their oracle is one server, never a hard failure.
+export const bountyCycle = internalAction({
+  args: { platform: vPlatform },
+  returns: v.union(bountyCycleValidator, v.null()),
+  handler: async (ctx, args): Promise<BountyCycle | null> => {
+    const state: WorldState | null = await ctx.runQuery(internal.ingest.pull.snapshot, {
+      platform: args.platform,
+    });
+    const held = state?.bountyCycle ?? null;
+    if (held && held.expiry > Date.now()) return held;
+    try {
+      return parseCycle(await json(BOUNTY_CYCLE_ENDPOINT, "browse.wf"));
+    } catch (error) {
+      console.warn(`browse.wf bounty cycle unavailable: ${error}`);
+      return held;
+    }
+  },
+});
+
+// The action cannot read the database itself, and the cycle is only worth refetching per rotation.
+export const snapshot = internalQuery({
+  args: { platform: vPlatform },
+  returns: v.union(worldStateValidator, v.null()),
+  handler: async (ctx, args) => {
+    const row = await ctx.db
+      .query("worldState")
+      .withIndex("by_platform", (q) => q.eq("platform", args.platform))
+      .unique();
+    return row ? row.data : null;
+  },
+});
+
 // DE is the source of truth and is seconds fresh. Warframestat parses the same feed but can lag
 // by hours, so it is only worth reading when DE will not answer or answers with something else.
 export const pull = internalAction({
@@ -68,6 +103,10 @@ export const pull = internalAction({
       console.error("no upstream answered with plausible world state, keeping the last snapshot");
       return null;
     }
+
+    // The fixed boards only get their real mission types once the rotation is in hand.
+    const cycle = await ctx.runAction(internal.ingest.pull.bountyCycle, { platform: args.platform });
+    state = withBountyCycle(state, cycle);
 
     await ctx.runMutation(internal.ingest.apply.apply, { platform: args.platform, state });
     // worldstate.get carries no clock, so expiry is applied here, right after the write.
