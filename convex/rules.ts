@@ -15,6 +15,20 @@ const rateLimiter = new RateLimiter(rateLimiterComponent, {
   notifications: { kind: "fixed window", rate: 30, period: HOUR },
 });
 
+// The rule document as every caller reads it, so a renamed field fails at the boundary.
+export const vRuleDoc = v.object({
+  _id: v.id("rules"),
+  _creationTime: v.number(),
+  userId: v.id("users"),
+  name: v.string(),
+  filter: vRuleFilter,
+  mode: v.union(v.literal("instant"), v.literal("digest")),
+  channels: v.array(v.union(v.literal("email"), v.literal("imessage"))),
+  enabled: v.boolean(),
+  source: v.union(v.literal("manual"), v.literal("ai")),
+  createdAt: v.number(),
+});
+
 const ruleInputArgs = {
   name: v.string(),
   filter: vRuleFilter,
@@ -24,7 +38,7 @@ const ruleInputArgs = {
 
 export const list = query({
   args: {},
-  returns: v.array(v.any()),
+  returns: v.array(vRuleDoc),
   handler: async (ctx) => {
     const { userId } = await requireUser(ctx);
     return await ctx.db
@@ -37,7 +51,7 @@ export const list = query({
 // The iMessage agent has no session, it acts for the user its verified phone belongs to.
 export const listForUser = internalQuery({
   args: { userId: v.id("users") },
-  returns: v.array(v.any()),
+  returns: v.array(vRuleDoc),
   handler: async (ctx, { userId }) => {
     return await ctx.db
       .query("rules")

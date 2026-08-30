@@ -159,7 +159,10 @@ export default defineSchema({
   photonInbound: defineTable({
     messageId: v.string(),
     receivedAt: v.number(),
-  }).index("by_message", ["messageId"]),
+  })
+    .index("by_message", ["messageId"])
+    // A dedupe row is only useful while a redelivery is still possible, retention reads this.
+    .index("by_received", ["receivedAt"]),
 
   worldState: defineTable({
     platform,

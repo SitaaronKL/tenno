@@ -50,8 +50,8 @@ export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
               </AccordionTrigger>
               <AccordionContent>
                 <ul className="divide-y divide-border">
-                  {b.jobs.map((job) => (
-                    <li key={job.level} className="flex items-baseline gap-2 py-2">
+                  {b.jobs.map((job, index) => (
+                    <li key={`${job.level}-${index}`} className="flex items-baseline gap-2 py-2">
                       <span className="w-24 shrink-0 font-medium">{job.level}</span>
                       <span className="min-w-0 flex-1">
                         <TruncatedCell

@@ -16,6 +16,22 @@ type EmailBody =
       props: { items: { ruleName: string; title: string; detail?: string }[]; url: string };
     };
 
+// One shape for a delivery, so a producer that drops a field fails here and not downstream.
+export const vDelivery = v.object({
+  notificationId: v.id("notifications"),
+  userId: v.string(),
+  channel: v.union(v.literal("email"), v.literal("imessage")),
+  ruleName: v.string(),
+  kind: v.string(),
+  line: v.string(),
+  email: v.string(),
+  phone: v.union(v.string(), v.null()),
+  photonUserId: v.union(v.string(), v.null()),
+  phoneVerified: v.boolean(),
+  attempts: v.number(),
+  expiresAtText: v.optional(v.string()),
+});
+
 type Delivery = {
   notificationId: Id<"notifications">;
   userId: string;
@@ -85,7 +101,7 @@ function expiryText(event: Doc<"worldEvents"> | null, timezone: string): string 
 
 export const loadDelivery = internalQuery({
   args: { notificationId: v.id("notifications") },
-  returns: v.any(),
+  returns: v.union(vDelivery, v.null()),
   handler: async (ctx, { notificationId }): Promise<Delivery | null> => {
     const notification = await ctx.db.get("notifications", notificationId);
     if (!notification || notification.status !== "pending") return null;
@@ -167,7 +183,7 @@ export const dueUsers = internalQuery({
 // Digest rows for one user, found through by_user_status so a busy neighbour cannot starve them.
 export const pendingDigestFor = internalQuery({
   args: { userId: v.id("users") },
-  returns: v.any(),
+  returns: v.array(vDelivery),
   handler: async (ctx, { userId }): Promise<Delivery[]> => {
     const out: Delivery[] = [];
     const profile = await ctx.db

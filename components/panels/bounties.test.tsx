@@ -46,3 +46,25 @@ describe("Bounties card", () => {
     expect(screen.getByText("No bounties offered.")).toBeInTheDocument();
   });
 });
+
+describe("a board that lists the same level range twice", () => {
+  it("renders both jobs rather than collapsing them into one", async () => {
+    const user = userEvent.setup();
+    const board = [
+      {
+        syndicate: "Entrati",
+        node: "Necralisk (Deimos)",
+        expiresAt: Date.now() + 3_600_000,
+        jobs: [
+          { level: "30 - 40", minLevel: 30, maxLevel: 40, standing: 4000, rewards: ["Arcane"] },
+          { level: "30 - 40", minLevel: 30, maxLevel: 40, standing: 5000, rewards: ["Vault mod"] },
+        ],
+      },
+    ];
+    render(<BountiesPanel bounties={board} />);
+    await user.click(screen.getByRole("button", { name: /Entrati/ }));
+
+    expect(screen.getByText("Arcane")).toBeInTheDocument();
+    expect(screen.getByText("Vault mod")).toBeInTheDocument();
+  });
+});
