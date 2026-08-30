@@ -4,6 +4,7 @@ import { useState } from "react";
 import { describe, expect, it } from "vitest";
 
 import type { Circuit } from "@/lib/contracts/worldstate";
+import { PALLADINO_WARES } from "@/lib/palladino";
 import { Checkoffs } from "./checkoffs";
 import { WeeklyPanel } from "./weekly";
 
@@ -32,6 +33,8 @@ function Harness() {
   );
 }
 
+const TOTAL = 3 + PALLADINO_WARES.length;
+
 describe("weekly box", () => {
   it("names Teshin's offering, both Circuit rows and the Iron Wake trade", () => {
     render(<Harness />);
@@ -39,16 +42,43 @@ describe("weekly box", () => {
     expect(screen.getByText("Teshin's Steel Path Honors")).toBeInTheDocument();
     expect(screen.getByText("Nidus, Octavia, Harrow")).toBeInTheDocument();
     expect(screen.getByText("Vectis, Stug, Ballistica")).toBeInTheDocument();
-    expect(screen.getByText("10 Riven Slivers for a veiled Riven")).toBeInTheDocument();
+    expect(screen.getByText("Palladino's Iron Wake")).toBeInTheDocument();
   });
 
-  it("counts the four weekly tasks done over total", async () => {
+  it("counts every weekly task done over total", async () => {
     render(<Harness />);
-    expect(screen.getByText("0 / 4")).toBeInTheDocument();
+    expect(screen.getByText(`0 / ${TOTAL}`)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("checkbox", { name: "Palladino's Iron Wake, 10 Riven Slivers for a veiled Riven" }));
+    await userEvent.click(
+      screen.getByRole("checkbox", { name: /Teshin's Steel Path Honors/ }),
+    );
+    expect(screen.getByText(`1 / ${TOTAL}`)).toBeInTheDocument();
+  });
+});
 
-    expect(screen.getByText("1 / 4")).toBeInTheDocument();
-    expect(screen.getByText("10 Riven Slivers for a veiled Riven").closest("li")).toHaveClass("line-through");
+describe("Palladino's Iron Wake row", () => {
+  it("keeps her wares away until the row is opened", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    expect(screen.queryByText("6,000 Endo")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Palladino's Iron Wake/ }));
+    expect(screen.getByText("6,000 Endo")).toBeInTheDocument();
+    expect(screen.getByText("150,000 Credits")).toBeInTheDocument();
+    expect(screen.getAllByText("Riven Mod")).toHaveLength(2);
+    expect(screen.getAllByText("10 slivers").length).toBeGreaterThan(0);
+  });
+
+  it("ticks one ware off on its own", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole("button", { name: /Palladino's Iron Wake/ }));
+
+    const endo = screen.getByRole("checkbox", { name: "6,000 Endo for 10 Riven Slivers" });
+    await user.click(endo);
+
+    expect(screen.getByText(`1 / ${TOTAL}`)).toBeInTheDocument();
+    expect(screen.getByText("6,000 Endo").closest("li")).toHaveClass("line-through");
+    expect(screen.getByText("150,000 Credits").closest("li")).not.toHaveClass("line-through");
   });
 });

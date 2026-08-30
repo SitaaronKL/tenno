@@ -1,0 +1,21 @@
+{
+  "source": "https://wiki.warframe.com/w/Riven_Sliver",
+  "api": "https://wiki.warframe.com/api.php?action=parse&page=Riven_Sliver&prop=wikitext&format=json",
+  "section": "Usage",
+  "fetchedAt": "2026-08-30",
+  "note": "Palladino trades in Iron Wake on Earth after Chains of Harrow. Limits reset Monday 00:00 UTC.",
+  "currency": "Riven Sliver",
+  "wares": [
+    { "key": "riven-1", "item": "Riven Mod", "slivers": 10 },
+    { "key": "riven-2", "item": "Riven Mod", "slivers": 10 },
+    { "key": "cipher", "item": "Veiled Riven Cipher", "slivers": 10 },
+    { "key": "transmuter", "item": "Riven Transmuter", "slivers": 10 },
+    { "key": "endo", "item": "6,000 Endo", "slivers": 10 },
+    { "key": "credits", "item": "150,000 Credits", "slivers": 5 },
+    { "key": "kuva", "item": "35,000 Kuva", "slivers": 10 },
+    { "key": "requiem-1", "item": "Requiem I Relic", "slivers": 10 },
+    { "key": "requiem-2", "item": "Requiem II Relic", "slivers": 10 },
+    { "key": "requiem-3", "item": "Requiem III Relic", "slivers": 10 },
+    { "key": "requiem-4", "item": "Requiem IV Relic", "slivers": 10 }
+  ]
+}
