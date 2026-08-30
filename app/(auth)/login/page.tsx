@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LogoMark } from "@/components/shell/logo-mark";
 
 // A sign in route only appears where the deployment has its keys.
 const on = (value: string | undefined) => value === "true";
@@ -62,11 +63,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-svh flex-1 items-center justify-center p-6">
-      <Card className="w-full max-w-sm">
+    <div className="relative flex min-h-svh flex-1 items-center justify-center overflow-hidden p-6">
+      {/* Same gold wash as the landing hero, so sign in feels like the same place. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_at_top,var(--accent-soft),transparent_65%)]"
+      />
+      <Card className="relative w-full max-w-sm">
         {sentTo ? (
           <>
-            <CardHeader>
+            <CardHeader className="items-center text-center">
+              <LogoMark size={32} className="mb-2" />
               <CardTitle>Check your email</CardTitle>
               <CardDescription>
                 We sent a sign in link to {sentTo}. The link expires in 15 minutes.
@@ -80,7 +87,8 @@ export default function LoginPage() {
           </>
         ) : (
           <>
-            <CardHeader>
+            <CardHeader className="items-center text-center">
+              <LogoMark size={32} className="mb-2" />
               <CardTitle>Sign in to Voidwatch</CardTitle>
               <CardDescription>Warframe world state, watched your way.</CardDescription>
             </CardHeader>
@@ -112,7 +120,7 @@ export default function LoginPage() {
                 </form>
               )}
               {guest && (
-                <Button onClick={onGuest} variant="ghost" size="sm" disabled={busy}>
+                <Button onClick={onGuest} variant="link" size="sm" disabled={busy}>
                   Continue as guest
                 </Button>
               )}

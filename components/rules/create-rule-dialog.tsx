@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil } from "lucide-react";
+import { SquarePenIcon } from "@/components/icons/square-pen";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -100,7 +100,7 @@ export function CreateRuleDialog({
                     Save rule
                   </Button>
                   <Button type="button" variant="outline" onClick={() => setEditing(true)}>
-                    <Pencil aria-hidden="true" /> Edit
+                    <SquarePenIcon size={14} aria-hidden="true" /> Edit
                   </Button>
                 </div>
               </div>

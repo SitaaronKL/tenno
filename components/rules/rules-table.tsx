@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, MessageSquare, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { AtSignIcon } from "@/components/icons/at-sign";
+import { MessageSquareIcon } from "@/components/icons/message-square";
+import { GripHorizontalIcon } from "@/components/icons/grip-horizontal";
+import { SquarePenIcon } from "@/components/icons/square-pen";
+import { XIcon } from "@/components/icons/x";
 import { Switch } from "@/components/ui/switch";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -15,7 +19,7 @@ import { ruleSentence } from "@/components/rules/sentence";
 import { useRemoveRule, useUpdateRule, type Rule } from "@/components/rules/api";
 import { cn } from "@/lib/utils";
 
-const CHANNEL_ICONS = { email: Mail, imessage: MessageSquare } as const;
+const CHANNEL_ICONS = { email: AtSignIcon, imessage: MessageSquareIcon } as const;
 
 function created(at: number): string {
   return new Date(at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
@@ -40,7 +44,13 @@ function RuleRow({ rule }: { rule: Rule }) {
       <div className="hidden items-center gap-2 text-muted-foreground sm:flex">
         {rule.channels.map((c) => {
           const Icon = CHANNEL_ICONS[c];
-          return <Icon key={c} className="size-4" aria-label={c === "email" ? "Email" : "iMessage"} />;
+          const label = c === "email" ? "Email" : "iMessage";
+          return (
+            <span key={c} className="flex items-center">
+              <Icon size={16} aria-hidden="true" />
+              <span className="sr-only">{label}</span>
+            </span>
+          );
         })}
       </div>
       <span className="hidden shrink-0 rounded-full bg-surface-2 px-2.5 py-0.5 text-xs text-muted-foreground sm:inline">
@@ -55,17 +65,17 @@ function RuleRow({ rule }: { rule: Rule }) {
           aria-label={`Actions for ${rule.name}`}
           className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }))}
         >
-          <MoreHorizontal className="size-4" aria-hidden="true" />
+          <GripHorizontalIcon size={16} aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setEditing(true)}>
-            <Pencil aria-hidden="true" /> Edit
+            <SquarePenIcon size={14} aria-hidden="true" /> Edit
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
             onClick={() => void remove({ id: rule._id })}
           >
-            <Trash2 aria-hidden="true" /> Delete
+            <XIcon size={14} aria-hidden="true" /> Delete
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

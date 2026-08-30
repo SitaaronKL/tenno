@@ -5,7 +5,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import QRCode from "qrcode";
-import { Check, Copy, LogOut, Trash2 } from "lucide-react";
+import { CheckIcon } from "@/components/icons/check";
+import { CopyIcon } from "@/components/icons/copy";
+import { LogoutIcon } from "@/components/icons/logout";
+import { XIcon } from "@/components/icons/x";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -65,7 +68,7 @@ function CopyButton({ value }: { value: string }) {
         setTimeout(() => setCopied(false), 1500);
       }}
     >
-      {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
+      {copied ? <CheckIcon size={14} className="text-success" /> : <CopyIcon size={14} />}
     </Button>
   );
 }
@@ -100,7 +103,7 @@ function SignOutButton() {
         router.push("/login");
       }}
     >
-      <LogOut aria-hidden="true" /> Sign out
+      <LogoutIcon size={14} aria-hidden="true" /> Sign out
     </Button>
   );
 }
@@ -243,7 +246,7 @@ function SettingsForm({
               void save({ phone: null });
             }}
           >
-            <Trash2 aria-hidden="true" /> Remove phone
+            <XIcon size={14} aria-hidden="true" /> Remove phone
           </Button>
           <SignOutButton />
         </CardContent>

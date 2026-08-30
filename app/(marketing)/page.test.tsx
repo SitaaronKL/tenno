@@ -7,6 +7,6 @@ describe("landing page", () => {
     render(<LandingPage />);
     expect(screen.getByText(/never miss a fissure/i)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /get started/i })).toHaveAttribute("href", "/login");
-    expect(screen.getByRole("link", { name: /open the dashboard/i })).toHaveAttribute("href", "/dashboard");
+    expect(screen.getByRole("link", { name: /see the dashboard/i })).toHaveAttribute("href", "/dashboard");
   });
 });

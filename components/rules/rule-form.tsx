@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDownIcon } from "@/components/icons/chevron-down";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,7 +39,7 @@ function Chip({
         className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 align-middle text-sm font-medium text-foreground ring-1 ring-border transition-colors duration-150 ease-out hover:bg-accent-soft hover:text-primary"
       >
         {value}
-        <ChevronDown className="size-3 text-muted-foreground" aria-hidden="true" />
+        <ChevronDownIcon size={12} className="text-muted-foreground" aria-hidden="true" />
       </PopoverTrigger>
       <PopoverContent align="start" className="w-64">
         <p className="text-xs text-muted-foreground">{label}</p>

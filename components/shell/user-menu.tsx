@@ -3,7 +3,9 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LogOut, Moon, Sun } from "lucide-react";
+import { LogoutIcon } from "@/components/icons/logout";
+import { MoonIcon } from "@/components/icons/moon";
+import { SunIcon } from "@/components/icons/sun";
 import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
@@ -42,9 +44,9 @@ export function UserMenu() {
           onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
         >
           {resolvedTheme === "dark" ? (
-            <Sun className="size-4" aria-hidden="true" />
+            <SunIcon size={16} aria-hidden="true" />
           ) : (
-            <Moon className="size-4" aria-hidden="true" />
+            <MoonIcon size={16} aria-hidden="true" />
           )}
           {resolvedTheme === "dark" ? "Light theme" : "Dark theme"}
         </DropdownMenuItem>
@@ -54,7 +56,7 @@ export function UserMenu() {
             router.push("/login");
           }}
         >
-          <LogOut className="size-4" aria-hidden="true" />
+          <LogoutIcon size={16} aria-hidden="true" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

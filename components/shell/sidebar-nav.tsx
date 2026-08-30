@@ -24,7 +24,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               active && "bg-accent-soft text-primary hover:bg-accent-soft hover:text-primary",
             )}
           >
-            <Icon className="size-4 shrink-0" aria-hidden="true" />
+            <Icon size={16} className="shrink-0" aria-hidden="true" />
             {/* The label stays in the accessible name when the rail collapses to icons. */}
             <span className="truncate md:sr-only lg:not-sr-only">{item.label}</span>
           </Link>

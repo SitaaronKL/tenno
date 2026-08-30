@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { MenuIcon } from "@/components/icons/menu";
 import { buttonVariants } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -42,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 aria-label="Open navigation"
                 className={cn(buttonVariants({ variant: "ghost", size: "icon" }), "md:hidden")}
               >
-                <Menu className="size-4" aria-hidden="true" />
+                <MenuIcon size={16} aria-hidden="true" />
               </SheetTrigger>
               <SheetContent side="left" className="w-60 p-0">
                 <SheetTitle className="flex h-14 items-center px-5 text-base">

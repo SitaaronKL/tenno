@@ -1,18 +1,23 @@
 "use client";
 
-import { Globe, Orbit, Skull, Snowflake, Sun, Swords } from "lucide-react";
+import { SunIcon } from "@/components/icons/sun";
+import { SnowflakeIcon } from "@/components/icons/snowflake";
+import { BoneIcon } from "@/components/icons/bone";
+import { EarthIcon } from "@/components/icons/earth";
+import { TornadoIcon } from "@/components/icons/tornado";
+import { AtomIcon } from "@/components/icons/atom";
 import type { Cycle } from "@/lib/contracts/worldstate";
 import { cn } from "@/lib/utils";
 import { Countdown, SOON_MS } from "./countdown";
 import { useNow } from "./use-now";
 
-const WORLDS: Record<Cycle["world"], { label: string; icon: typeof Sun }> = {
-  cetus: { label: "Cetus", icon: Sun },
-  vallis: { label: "Orb Vallis", icon: Snowflake },
-  cambion: { label: "Cambion Drift", icon: Skull },
-  earth: { label: "Earth", icon: Globe },
-  duviri: { label: "Duviri", icon: Swords },
-  zariman: { label: "Zariman", icon: Orbit },
+const WORLDS: Record<Cycle["world"], { label: string; icon: typeof SunIcon }> = {
+  cetus: { label: "Cetus", icon: SunIcon },
+  vallis: { label: "Orb Vallis", icon: SnowflakeIcon },
+  cambion: { label: "Cambion Drift", icon: BoneIcon },
+  earth: { label: "Earth", icon: EarthIcon },
+  duviri: { label: "Duviri", icon: TornadoIcon },
+  zariman: { label: "Zariman", icon: AtomIcon },
 };
 
 export function CycleTiles({ cycles }: { cycles: Cycle[] }) {
@@ -38,7 +43,7 @@ export function CycleTiles({ cycles }: { cycles: Cycle[] }) {
             )}
           >
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Icon className="size-3.5" aria-hidden="true" />
+              <Icon size={14} aria-hidden="true" />
               <span className="truncate text-xs">{WORLDS[c.world].label}</span>
             </div>
             <p className="mt-2 text-sm font-medium capitalize">{c.state}</p>

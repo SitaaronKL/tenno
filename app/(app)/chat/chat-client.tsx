@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
-import { Check, Send } from "lucide-react";
+import { CheckIcon } from "@/components/icons/check";
+import { SendIcon } from "@/components/icons/send";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,7 +22,7 @@ const SUGGESTIONS = [
 function ToolRow() {
   return (
     <p className="flex items-center gap-2 text-xs text-muted-foreground">
-      <Check className="size-3 text-success" aria-hidden="true" />
+      <CheckIcon size={12} className="text-success" aria-hidden="true" />
       Checked world state
     </p>
   );
@@ -153,7 +154,7 @@ export default function Chat() {
             aria-label="Send"
             disabled={!threadId || sending || text.trim() === ""}
           >
-            <Send className="size-4" aria-hidden="true" />
+            <SendIcon size={16} aria-hidden="true" />
           </Button>
         </form>
         <p className="mt-2 text-center text-xs text-muted-foreground">
