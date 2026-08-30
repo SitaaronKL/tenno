@@ -55,7 +55,7 @@ export function CycleTiles({ cycles }: { cycles: Cycle[] }) {
   if (rows.length === 0) return null;
 
   return (
-    <ul aria-label="World cycles" className="ml-auto grid shrink-0 grid-cols-[repeat(3,max-content)] gap-1.5">
+    <ul aria-label="World cycles" className="ml-auto grid shrink-0 grid-cols-[repeat(3,max-content)] gap-1.5 lg:mr-24">
       {rows.map((c) => (
         <CycleTile key={c.world} cycle={c} now={now} />
       ))}
