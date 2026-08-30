@@ -35,3 +35,8 @@ tsx through esbuild without it.
 
 **Pre existing build error.** `app/layout.tsx` references the Next generated `LayoutProps` type, so
 `npx tsc --noEmit` only passes after `npm run build` has written `.next/types`. Not a slice 6 file.
+
+**No Convex provider in the tree yet.** `app/ConvexClientProvider.tsx` is slice 1 and `app/(app)/layout.tsx`
+is slice 2, so `next build` prerendered my pages with no client and `useQuery` threw. Assumption: both pages
+render their Convex reading parts inside `components/rules/client-only.tsx`, which mounts children after the
+first client render. It stays correct once the real provider lands.

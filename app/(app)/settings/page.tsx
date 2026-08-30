@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useProfile, useUpdateProfile } from "@/components/rules/api";
+import { ClientOnly } from "@/components/rules/client-only";
 
 const PHOTON_NUMBER = "+1 (415) 603-5536";
 const selectClass =
@@ -17,7 +18,7 @@ function timezones(): string[] {
   return supported.supportedValuesOf?.("timeZone") ?? ["UTC"];
 }
 
-export default function SettingsPage() {
+function SettingsBody() {
   const profile = useProfile();
   const update = useUpdateProfile();
   const [phone, setPhone] = useState("");
@@ -133,5 +134,13 @@ export default function SettingsPage() {
         {saved && <span className="text-sm text-muted-foreground">Saved</span>}
       </div>
     </form>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <ClientOnly fallback={<Skeleton className="m-6 h-64" />}>
+      <SettingsBody />
+    </ClientOnly>
   );
 }
