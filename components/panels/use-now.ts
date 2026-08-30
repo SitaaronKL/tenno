@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 // One interval per component tree keeps every countdown on the same tick.
-let subscribers = new Set<(t: number) => void>();
+const subscribers = new Set<(t: number) => void>();
 let timer: ReturnType<typeof setInterval> | null = null;
 
 function subscribe(fn: (t: number) => void) {

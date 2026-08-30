@@ -36,7 +36,7 @@ export interface Sortie {
   startsAt: number; expiresAt: number;
 }
 
-export interface ArchonHunt extends Sortie {}
+export type ArchonHunt = Sortie;
 
 export interface Baro {
   key: string; location: string; active: boolean;

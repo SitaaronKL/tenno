@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useProfile, useUpdateProfile } from "@/components/rules/api";
+import { useProfile, useUpdateProfile, type Profile } from "@/components/rules/api";
 import { ClientOnly } from "@/components/rules/client-only";
 
 const PHOTON_NUMBER = "+1 (415) 603-5536";
@@ -21,26 +21,38 @@ function timezones(): string[] {
 function SettingsBody() {
   const profile = useProfile();
   const update = useUpdateProfile();
-  const [phone, setPhone] = useState("");
-  const [timezone, setTimezone] = useState("UTC");
-  const [digestHour, setDigestHour] = useState(9);
-  const [saved, setSaved] = useState(false);
-
-  useEffect(() => {
-    if (!profile) return;
-    setPhone(profile.phone ?? "");
-    setTimezone(profile.timezone);
-    setDigestHour(profile.digestHour);
-  }, [profile]);
 
   if (profile === undefined) return <Skeleton className="m-6 h-64" />;
   if (profile === null) return <p className="p-6 text-sm">Sign in to see your settings.</p>;
+
+  // Keyed on the saved values, so a save mid typing cannot clobber the fields.
+  return (
+    <SettingsForm
+      key={`${profile.phone ?? ""}|${profile.timezone}|${profile.digestHour}`}
+      profile={profile}
+      update={update}
+    />
+  );
+}
+
+function SettingsForm({
+  profile,
+  update,
+}: {
+  profile: Profile;
+  update: (args: { phone?: string | null; timezone?: string; digestHour?: number }) => Promise<unknown>;
+}) {
+  const [phone, setPhone] = useState(profile.phone ?? "");
+  const [timezone, setTimezone] = useState(profile.timezone);
+  const [digestHour, setDigestHour] = useState(profile.digestHour);
+  const [saved, setSaved] = useState(false);
 
   const optedIn = Boolean(profile.phone);
   const verified = Boolean(profile.phoneVerified);
 
   async function save() {
-    await update({ phone: phone || undefined, timezone, digestHour });
+    // An empty field means remove the number, undefined would mean leave it alone.
+    await update({ phone: phone.trim() === "" ? null : phone.trim(), timezone, digestHour });
     setSaved(true);
   }
 

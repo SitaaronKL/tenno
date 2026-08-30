@@ -1,7 +1,19 @@
 import { v } from "convex/values";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
+import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+
+// The email templates the notifier can name, mirrors vReact in convex/email.ts.
+type EmailBody =
+  | {
+      template: "RuleMatch";
+      props: { ruleName: string; kind: string; title: string; detail?: string; expiresAt?: string; url: string };
+    }
+  | {
+      template: "Digest";
+      props: { items: { ruleName: string; title: string; detail?: string }[]; url: string };
+    };
 
 type Delivery = {
   notificationId: Id<"notifications">;
@@ -109,11 +121,11 @@ function siteUrl(): string {
 }
 
 async function dispatch(
-  ctx: { runAction: (ref: any, args: any) => Promise<unknown> },
+  ctx: ActionCtx,
   delivery: Delivery,
   subject: string,
   body: string,
-  react: unknown,
+  react: EmailBody,
 ): Promise<void> {
   if (delivery.channel === "email") {
     // A React element cannot cross a Convex function boundary, so the caller names the template.

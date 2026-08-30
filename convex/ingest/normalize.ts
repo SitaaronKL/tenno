@@ -11,8 +11,8 @@ import type {
   WorldState,
 } from "../../lib/contracts/worldstate";
 
-// Raw upstream JSON is loosely typed on purpose, every field here is optional upstream.
-type Raw = Record<string, any>;
+// Raw upstream JSON is unknown shaped, every field is read through the coercers below.
+type Raw = Record<string, unknown>;
 
 const CYCLE_KEYS: { key: string; world: Cycle["world"] }[] = [
   { key: "cetusCycle", world: "cetus" },
@@ -25,38 +25,60 @@ const CYCLE_KEYS: { key: string; world: Cycle["world"] }[] = [
 
 const TIERS: Fissure["tier"][] = ["Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"];
 
-function ms(value: unknown): number {
-  const parsed = Date.parse(String(value ?? ""));
-  return Number.isNaN(parsed) ? 0 : parsed;
+function rec(value: unknown): Raw {
+  return value !== null && typeof value === "object" ? (value as Raw) : {};
 }
 
-function list(value: unknown): Raw[] {
+function arr(value: unknown): unknown[] {
   return Array.isArray(value) ? value : [];
 }
 
+function objects(value: unknown): Raw[] {
+  return arr(value).map(rec);
+}
+
+function str(value: unknown): string {
+  return value === undefined || value === null ? "" : String(value);
+}
+
+function num(value: unknown, fallback = 0): number {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function ms(value: unknown): number {
+  const parsed = Date.parse(str(value));
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
 // Upstream splits a reward into items, countedItems and credits, panels want one flat list.
-function rewards(raw: Raw | undefined | null): Reward[] {
-  if (!raw) return [];
+function rewards(value: unknown): Reward[] {
+  const raw = rec(value);
   const out: Reward[] = [];
-  for (const item of list(raw.items)) out.push({ item: String(item), count: 1, credits: 0 });
-  for (const counted of list(raw.countedItems)) {
-    out.push({ item: String(counted.type ?? ""), count: Number(counted.count ?? 1), credits: 0 });
+  for (const item of arr(raw.items)) out.push({ item: str(item), count: 1, credits: 0 });
+  for (const counted of objects(raw.countedItems)) {
+    out.push({ item: str(counted.type), count: num(counted.count, 1), credits: 0 });
   }
-  if (Number(raw.credits ?? 0) > 0) out.push({ item: "Credits", count: 1, credits: Number(raw.credits) });
+  if (num(raw.credits) > 0) out.push({ item: "Credits", count: 1, credits: num(raw.credits) });
   return out;
 }
 
-function firstReward(raw: Raw | undefined | null): Reward | null {
-  return rewards(raw)[0] ?? null;
+function firstReward(value: unknown): Reward | null {
+  return rewards(value)[0] ?? null;
+}
+
+function tier(f: Raw): Fissure["tier"] {
+  const named = TIERS.find((t) => t === f.tier);
+  return named ?? TIERS[num(f.tierNum, 1) - 1] ?? "Lith";
 }
 
 function fissures(raw: Raw): Fissure[] {
-  return list(raw.fissures).map((f) => ({
-    key: String(f.id ?? ""),
-    node: String(f.node ?? ""),
-    missionType: String(f.missionTypeKey ?? f.missionType ?? ""),
-    enemy: String(f.enemyKey ?? f.enemy ?? ""),
-    tier: TIERS.includes(f.tier) ? f.tier : TIERS[Number(f.tierNum ?? 1) - 1] ?? "Lith",
+  return objects(raw.fissures).map((f) => ({
+    key: str(f.id),
+    node: str(f.node),
+    missionType: str(f.missionTypeKey ?? f.missionType),
+    enemy: str(f.enemyKey ?? f.enemy),
+    tier: tier(f),
     steelPath: Boolean(f.isHard),
     storm: Boolean(f.isStorm),
     startsAt: ms(f.activation),
@@ -65,13 +87,13 @@ function fissures(raw: Raw): Fissure[] {
 }
 
 function alerts(raw: Raw): Alert[] {
-  return list(raw.alerts).map((a) => {
-    const mission: Raw = a.mission ?? {};
+  return objects(raw.alerts).map((a) => {
+    const mission = rec(a.mission);
     return {
-      key: String(a.id ?? ""),
-      node: String(mission.node ?? ""),
-      missionType: String(mission.typeKey ?? mission.type ?? ""),
-      enemy: String(mission.factionKey ?? mission.faction ?? ""),
+      key: str(a.id),
+      node: str(mission.node),
+      missionType: str(mission.typeKey ?? mission.type),
+      enemy: str(mission.factionKey ?? mission.faction),
       rewards: rewards(mission.reward),
       startsAt: ms(a.activation),
       expiresAt: ms(a.expiry),
@@ -80,36 +102,36 @@ function alerts(raw: Raw): Alert[] {
 }
 
 function invasions(raw: Raw): Invasion[] {
-  return list(raw.invasions)
+  return objects(raw.invasions)
     .filter((i) => !i.completed)
     .map((i) => ({
-      key: String(i.id ?? ""),
-      node: String(i.node ?? ""),
-      description: String(i.desc ?? ""),
+      key: str(i.id),
+      node: str(i.node),
+      description: str(i.desc),
       attacker: {
-        faction: String(i.attacker?.factionKey ?? i.attacker?.faction ?? ""),
-        reward: firstReward(i.attacker?.reward),
+        faction: str(rec(i.attacker).factionKey ?? rec(i.attacker).faction),
+        reward: firstReward(rec(i.attacker).reward),
       },
       defender: {
-        faction: String(i.defender?.factionKey ?? i.defender?.faction ?? ""),
-        reward: firstReward(i.defender?.reward),
+        faction: str(rec(i.defender).factionKey ?? rec(i.defender).faction),
+        reward: firstReward(rec(i.defender).reward),
       },
-      completion: Number(i.completion ?? 0),
+      completion: num(i.completion),
       startsAt: ms(i.activation),
     }));
 }
 
 function sortie(raw: Raw): Sortie | null {
-  const s: Raw | undefined = raw.sortie;
-  if (!s?.id) return null;
+  const s = rec(raw.sortie);
+  if (!s.id) return null;
   return {
-    key: String(s.id),
-    boss: String(s.boss ?? ""),
-    faction: String(s.faction ?? ""),
-    missions: list(s.variants).map((v) => ({
-      node: String(v.node ?? ""),
-      missionType: String(v.missionTypeKey ?? v.missionType ?? ""),
-      modifier: String(v.modifier ?? ""),
+    key: str(s.id),
+    boss: str(s.boss),
+    faction: str(s.faction),
+    missions: objects(s.variants).map((v) => ({
+      node: str(v.node),
+      missionType: str(v.missionTypeKey ?? v.missionType),
+      modifier: str(v.modifier),
     })),
     startsAt: ms(s.activation),
     expiresAt: ms(s.expiry),
@@ -118,15 +140,15 @@ function sortie(raw: Raw): Sortie | null {
 
 // Archon hunt uses missions[] with type, sortie uses variants[] with missionType.
 function archonHunt(raw: Raw): ArchonHunt | null {
-  const a: Raw | undefined = raw.archonHunt;
-  if (!a?.id) return null;
+  const a = rec(raw.archonHunt);
+  if (!a.id) return null;
   return {
-    key: String(a.id),
-    boss: String(a.boss ?? ""),
-    faction: String(a.faction ?? ""),
-    missions: list(a.missions).map((m) => ({
-      node: String(m.node ?? ""),
-      missionType: String(m.typeKey ?? m.type ?? ""),
+    key: str(a.id),
+    boss: str(a.boss),
+    faction: str(a.faction),
+    missions: objects(a.missions).map((m) => ({
+      node: str(m.node),
+      missionType: str(m.typeKey ?? m.type),
       modifier: "",
     })),
     startsAt: ms(a.activation),
@@ -134,35 +156,35 @@ function archonHunt(raw: Raw): ArchonHunt | null {
   };
 }
 
-function baro(raw: Raw, fetchedAt: number): Baro | null {
-  const b: Raw | undefined = raw.voidTrader;
-  if (!b?.id) return null;
+function baro(raw: Raw, at: number): Baro | null {
+  const b = rec(raw.voidTrader);
+  if (!b.id) return null;
   const startsAt = ms(b.activation);
   return {
-    key: String(b.id) + ":" + startsAt,
-    location: String(b.location ?? ""),
-    active: startsAt <= fetchedAt && fetchedAt < ms(b.expiry),
+    key: str(b.id) + ":" + startsAt,
+    location: str(b.location),
+    active: startsAt <= at && at < ms(b.expiry),
     startsAt,
     expiresAt: ms(b.expiry),
-    inventory: list(b.inventory).map((i) => ({
-      item: String(i.item ?? ""),
-      ducats: Number(i.ducats ?? 0),
-      credits: Number(i.credits ?? 0),
+    inventory: objects(b.inventory).map((i) => ({
+      item: str(i.item),
+      ducats: num(i.ducats),
+      credits: num(i.credits),
     })),
   };
 }
 
 function nightwave(raw: Raw): Nightwave | null {
-  const n: Raw | undefined = raw.nightwave;
-  if (!n?.id) return null;
+  const n = rec(raw.nightwave);
+  if (!n.id) return null;
   return {
-    season: Number(n.season ?? 0),
+    season: num(n.season),
     expiresAt: ms(n.expiry),
-    acts: list(n.activeChallenges).map((c) => ({
-      key: String(c.id ?? ""),
-      title: String(c.title ?? ""),
-      description: String(c.desc ?? ""),
-      reputation: Number(c.reputation ?? 0),
+    acts: objects(n.activeChallenges).map((c) => ({
+      key: str(c.id),
+      title: str(c.title),
+      description: str(c.desc),
+      reputation: num(c.reputation),
       daily: Boolean(c.isDaily),
       expiresAt: ms(c.expiry),
     })),
@@ -172,9 +194,9 @@ function nightwave(raw: Raw): Nightwave | null {
 function cycles(raw: Raw): Cycle[] {
   const out: Cycle[] = [];
   for (const { key, world } of CYCLE_KEYS) {
-    const c: Raw | undefined = raw[key];
-    if (!c?.state) continue;
-    out.push({ world, state: String(c.state), expiresAt: ms(c.expiry) });
+    const c = rec(raw[key]);
+    if (!c.state) continue;
+    out.push({ world, state: str(c.state), expiresAt: ms(c.expiry) });
   }
   return out;
 }
