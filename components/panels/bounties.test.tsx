@@ -68,3 +68,51 @@ describe("a board that lists the same level range twice", () => {
     expect(screen.getByText("Vault mod")).toBeInTheDocument();
   });
 });
+
+describe("a fixed board", () => {
+  const fixed: Bounty[] = [
+    {
+      syndicate: "The Holdfasts",
+      node: "Chrysalith (Zariman)",
+      expiresAt: now + 3_600_000,
+      static: true,
+      jobs: [
+        {
+          level: "50 - 55",
+          minLevel: 50,
+          maxLevel: 55,
+          standing: 0,
+          rewards: ["Aya", "Voidplume Down"],
+          rewardTable: [
+            { rotation: "A", rewards: [{ item: "Voidplume Down", chance: 13.04 }] },
+            { rotation: "C", rewards: [{ item: "Aya", chance: 8.7 }] },
+          ],
+        },
+      ],
+    },
+  ];
+
+  it("says the board is fixed rather than pretending it rotates", () => {
+    render(<BountiesPanel bounties={fixed} />);
+    expect(screen.getByText("fixed board")).toBeInTheDocument();
+  });
+
+  it("groups the rewards by rotation with their chances", async () => {
+    const user = userEvent.setup();
+    render(<BountiesPanel bounties={fixed} />);
+    await user.click(screen.getByRole("button", { name: /Holdfasts/ }));
+    expect(screen.getByText("Rotation A")).toBeInTheDocument();
+    expect(screen.getByText("Rotation C")).toBeInTheDocument();
+    expect(screen.getByText("Voidplume Down")).toBeInTheDocument();
+    expect(screen.getByText("13.04%")).toBeInTheDocument();
+    expect(screen.getByText("8.7%")).toBeInTheDocument();
+  });
+
+  it("leaves standing out when the board does not print it", async () => {
+    const user = userEvent.setup();
+    render(<BountiesPanel bounties={fixed} />);
+    await user.click(screen.getByRole("button", { name: /Holdfasts/ }));
+    expect(screen.queryByText(/0 standing/)).not.toBeInTheDocument();
+    expect(screen.getByText(/lvl 50 to 55/)).toBeInTheDocument();
+  });
+});

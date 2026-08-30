@@ -58,6 +58,16 @@ export interface BountyJob {
   rewards: string[];
   // Derived from DE's job path, absent when the job carries none, like an Isolation Vault run.
   missionType?: string;
+  // What the board prints above the level, only set when the level alone does not name the job.
+  title?: string;
+  // The drop table behind a fixed board, per rotation. Absent on live boards, upstream sends no odds.
+  rewardTable?: RewardChances[];
+}
+
+// One rotation of a fixed board's reward pool, chance is a percentage.
+export interface RewardChances {
+  rotation: string; // "A" | "B" | "C"
+  rewards: { item: string; chance: number }[];
 }
 
 export interface Bounty {
@@ -65,6 +75,8 @@ export interface Bounty {
   node: string;
   expiresAt: number;
   jobs: BountyJob[];
+  // Filled from the drop tables because upstream lists this board with no jobs. Absent on live boards.
+  static?: boolean;
 }
 
 export interface Cycle {
