@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
@@ -10,7 +10,29 @@ vi.mock("@convex-dev/auth/react", () => ({
 import LoginPage from "@/app/(auth)/login/page";
 
 describe("login page", () => {
-  beforeEach(() => signIn.mockClear());
+  beforeEach(() => {
+    signIn.mockClear();
+    vi.stubEnv("NEXT_PUBLIC_AUTH_DISCORD", "true");
+    vi.stubEnv("NEXT_PUBLIC_AUTH_RESEND", "true");
+  });
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("hides a sign in route the deployment has not configured", () => {
+    vi.stubEnv("NEXT_PUBLIC_AUTH_DISCORD", "");
+    render(<LoginPage />);
+    expect(screen.queryByRole("button", { name: /continue with discord/i })).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+  });
+
+  it("offers the guest way in only where it is switched on", () => {
+    const { unmount } = render(<LoginPage />);
+    expect(screen.queryByRole("button", { name: /continue as guest/i })).not.toBeInTheDocument();
+    unmount();
+
+    vi.stubEnv("NEXT_PUBLIC_ALLOW_GUEST", "true");
+    render(<LoginPage />);
+    expect(screen.getByRole("button", { name: /continue as guest/i })).toBeInTheDocument();
+  });
 
   it("offers Discord sign in and an email form", () => {
     render(<LoginPage />);

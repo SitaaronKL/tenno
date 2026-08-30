@@ -14,8 +14,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+// A sign in route only appears where the deployment has its keys.
+const on = (value: string | undefined) => value === "true";
+
 export default function LoginPage() {
   const { signIn } = useAuthActions();
+  const discord = on(process.env.NEXT_PUBLIC_AUTH_DISCORD);
+  const magicLink = on(process.env.NEXT_PUBLIC_AUTH_RESEND);
+  const guest = on(process.env.NEXT_PUBLIC_ALLOW_GUEST);
   const [email, setEmail] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -30,7 +36,7 @@ export default function LoginPage() {
     }
   }
 
-  // Dev only: drops the Discord and Resend keys out of the loop so the app can be clicked through.
+  // For a deployment without Discord and Resend keys, switched on with NEXT_PUBLIC_ALLOW_GUEST.
   async function onGuest() {
     setBusy(true);
     try {
@@ -79,29 +85,42 @@ export default function LoginPage() {
               <CardDescription>Warframe world state, watched your way.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
-              <Button onClick={onDiscord} disabled={busy}>
-                Continue with Discord
-              </Button>
-              <div className="text-center text-xs text-muted-foreground">or</div>
-              <form onSubmit={onMagicLink} className="flex flex-col gap-3">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  autoComplete="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-                <Button type="submit" variant="outline" disabled={busy}>
-                  Email me a magic link
+              {discord && (
+                <Button onClick={onDiscord} disabled={busy}>
+                  Continue with Discord
                 </Button>
-              </form>
-              <Button onClick={onGuest} variant="ghost" size="sm" disabled={busy}>
-                Continue as guest
-              </Button>
+              )}
+              {discord && magicLink && (
+                <div className="text-center text-xs text-muted-foreground">or</div>
+              )}
+              {magicLink && (
+                <form onSubmit={onMagicLink} className="flex flex-col gap-3">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    autoComplete="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                  <Button type="submit" variant="outline" disabled={busy}>
+                    Email me a magic link
+                  </Button>
+                </form>
+              )}
+              {guest && (
+                <Button onClick={onGuest} variant="ghost" size="sm" disabled={busy}>
+                  Continue as guest
+                </Button>
+              )}
+              {!discord && !magicLink && !guest && (
+                <p className="text-sm text-muted-foreground">
+                  No sign in method is configured for this deployment yet.
+                </p>
+              )}
             </CardContent>
           </>
         )}
