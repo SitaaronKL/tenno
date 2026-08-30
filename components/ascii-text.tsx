@@ -57,7 +57,10 @@ export function AsciiText({
       sctx.translate(cols / 2, rows / 2);
       sctx.scale(Math.max(Math.abs(sx), 0.04) * (sx < 0 ? -1 : 1), 1);
       sctx.fillStyle = "#fff";
-      sctx.font = `bold ${rows * 0.9}px var(--font-instrument-serif), Georgia, serif`;
+      // Canvas fonts cannot read CSS variables, so name the face directly and size it to the width.
+      sctx.font = `bold ${rows}px "Instrument Serif", Georgia, serif`;
+      const fit = (cols * 0.9) / Math.max(1, sctx.measureText(text).width);
+      sctx.font = `bold ${Math.floor(rows * Math.min(fit, 1.15))}px "Instrument Serif", Georgia, serif`;
       sctx.textAlign = "center";
       sctx.textBaseline = "middle";
       sctx.fillText(text, 0, rows * 0.04);
