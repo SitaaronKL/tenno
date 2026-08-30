@@ -87,6 +87,17 @@ export default function LogoPage() {
     <main className="min-h-screen bg-neutral-950 p-10 text-neutral-100" style={{ ["--bg" as string]: "#0a0a0a" }}>
       <h1 className="text-2xl font-semibold">Voidwatch logo candidates</h1>
       <p className="mt-1 text-sm text-neutral-400">Accent is #f5b942 (void gold). Each mark is shown at 96px, 32px and 16px.</p>
+      <h2 className="mt-10 text-lg font-medium">Vortex direction (from your Nano Banana pick)</h2>
+      <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5"><img src="/logo-ideas/vortex.jpg" alt="original" className="w-full rounded" /><p className="mt-2 text-sm text-neutral-400">Original render</p></section>
+        <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5"><img src="/logo-ideas/vortex-traced-transparent.svg" alt="traced" className="w-full rounded" /><p className="mt-2 text-sm text-neutral-400">Auto trace, now the main logo (public/logo.svg)</p></section>
+        <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5"><img src="/logo-rebuilt.svg" alt="rebuilt" className="w-full rounded" /><p className="mt-2 text-sm text-neutral-400">Geometric rebuild, kept as an alternate</p></section>
+        <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5">
+          <div className="flex items-end gap-5"><img src="/logo-mark.svg" alt="" className="h-24 w-24" /><img src="/logo-mark.svg" alt="" className="h-8 w-8" /><img src="/logo-mark.svg" alt="" className="h-4 w-4" /></div>
+          <div className="mt-4 flex items-center gap-3"><img src="/logo-mark.svg" alt="" className="h-7 w-7" /><span className="text-xl font-bold tracking-tight">voidwatch</span></div>
+          <p className="mt-2 text-sm text-neutral-400">Small mark for favicon and nav, public/logo-mark.svg</p>
+        </section>
+      </div>
       <h2 className="mt-10 text-lg font-medium">Names</h2>
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {names.map((n, i) => (
