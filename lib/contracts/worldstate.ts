@@ -49,6 +49,22 @@ export interface Nightwave {
   acts: { key: string; title: string; description: string; reputation: number; daily: boolean; expiresAt: number }[];
 }
 
+// One bounty on a syndicate board. Level is the range the board prints, standing is the whole run.
+export interface BountyJob {
+  level: string; // "5 - 15"
+  minLevel: number;
+  maxLevel: number;
+  standing: number;
+  rewards: string[];
+}
+
+export interface Bounty {
+  syndicate: string;
+  node: string;
+  expiresAt: number;
+  jobs: BountyJob[];
+}
+
 export interface Cycle {
   world: "cetus" | "vallis" | "cambion" | "earth" | "duviri" | "zariman";
   state: string;
@@ -73,4 +89,6 @@ export interface WorldState {
   baro: Baro | null;
   nightwave: Nightwave | null;
   cycles: Cycle[];
+  // Optional so world state rows written before bounties existed still read back.
+  bounties?: Bounty[];
 }

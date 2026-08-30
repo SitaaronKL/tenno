@@ -2,6 +2,7 @@ import type {
   Alert,
   ArchonHunt,
   Baro,
+  Bounty,
   Cycle,
   Fissure,
   Invasion,
@@ -10,6 +11,7 @@ import type {
   Sortie,
   WorldState,
 } from "../../lib/contracts/worldstate";
+import { bountyNode, job } from "./bounties";
 
 // Raw upstream JSON is unknown shaped, every field is read through the coercers below.
 type Raw = Record<string, unknown>;
@@ -194,6 +196,26 @@ function nightwave(raw: Raw): Nightwave | null {
   };
 }
 
+// Upstream already resolved the reward table, but it repeats the pool once per stage.
+function bounties(raw: Raw): Bounty[] {
+  return objects(raw.syndicateMissions)
+    .filter((s) => arr(s.jobs).length > 0)
+    .map((s) => ({
+      syndicate: str(s.syndicate),
+      node: bountyNode(str(s.syndicate)),
+      expiresAt: ms(s.expiry),
+      jobs: objects(s.jobs).map((j) => {
+        const levels = arr(j.enemyLevels).map((l) => num(l));
+        return job(
+          levels[0] ?? 0,
+          levels[1] ?? 0,
+          arr(j.standingStages).map((x) => num(x)),
+          arr(j.rewardPool).map((r) => str(r)),
+        );
+      }),
+    }));
+}
+
 function cycles(raw: Raw): Cycle[] {
   const out: Cycle[] = [];
   for (const { key, world } of CYCLE_KEYS) {
@@ -222,5 +244,6 @@ export function normalize(raw: Raw, fetchedAt: number = Date.now()): WorldState 
     baro: baro(raw, fetchedAt),
     nightwave: nightwave(raw),
     cycles: cycles(raw),
+    bounties: bounties(raw),
   };
 }

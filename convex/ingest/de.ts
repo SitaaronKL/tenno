@@ -2,6 +2,7 @@ import type {
   Alert,
   ArchonHunt,
   Baro,
+  Bounty,
   Cycle,
   Fissure,
   Invasion,
@@ -10,6 +11,7 @@ import type {
   Sortie,
   WorldState,
 } from "../../lib/contracts/worldstate";
+import { bountyNode, job } from "./bounties";
 import { STALE_AFTER_MS } from "./normalize";
 import tables from "./de-names.json";
 
@@ -26,6 +28,8 @@ interface NameTables {
   factions: Record<string, string>;
   sortieBosses: Record<string, { name: string; faction: string }>;
   sortieModifiers: Record<string, string>;
+  syndicates: Record<string, string>;
+  bountyRewards: Record<string, string[]>;
   names: Record<string, string | { value: string; desc?: string }>;
 }
 
@@ -252,6 +256,59 @@ function nightwave(raw: Raw): Nightwave | null {
   };
 }
 
+// The drop table names a board by the level range and rotation the game shows, not by DE's path.
+const BOUNTY_VARIANTS: Record<string, string> = {
+  CetusSyndicate: "Cetus Bounty",
+  SolarisSyndicate: "Orb Vallis Bounty",
+  EntratiSyndicate: "Cambion Drift Bounty",
+  ZarimanSyndicate: "Zariman Bounty",
+  EntratiLabSyndicate: "Entrati Lab Bounty",
+  HexSyndicate: "WF1999 Bounty",
+};
+
+function bountyVariant(tag: string, path: string, isVault: boolean): string {
+  if (isVault) return "Isolation Vault";
+  if (/ghoul/i.test(path)) return "Ghoul Bounty";
+  if (/plaguestar/i.test(path)) return "Plague Star";
+  return BOUNTY_VARIANTS[tag] ?? "";
+}
+
+// The language table names the Cetus and Vallis tables but not Deimos or Narmer, drop data names all
+// of them. A path neither one knows leaves the job with an empty reward list rather than an id.
+function bountyRewards(tag: string, j: Raw): string[] {
+  const path = str(j.rewards);
+  const variant = bountyVariant(tag, path, Boolean(j.isVault));
+  const rotation = (path.match(/Table([ABC])Rewards/i)?.[1] ?? "A").toLowerCase();
+  const key = `level ${num(j.minEnemyLevel)} - ${num(j.maxEnemyLevel)} ${variant}|${rotation}`;
+  const table = T.bountyRewards[key.toLowerCase()];
+  if (table) return table;
+  const listed = T.names[path.toLowerCase()];
+  return typeof listed === "string" ? listed.split(", ") : [];
+}
+
+// Only the open world syndicates hand out bounties, every other entry is a mission offering rotation.
+function bounties(raw: Raw): Bounty[] {
+  return arr(raw.SyndicateMissions)
+    .filter((s) => arr(s.Jobs).length > 0)
+    .map((s) => {
+      const tag = str(s.Tag);
+      const syndicate = T.syndicates[tag] ?? tag;
+      return {
+        syndicate,
+        node: bountyNode(syndicate),
+        expiresAt: ms(s.Expiry),
+        jobs: arr(s.Jobs).map((j) =>
+          job(
+            num(j.minEnemyLevel),
+            num(j.maxEnemyLevel),
+            Array.isArray(j.xpAmounts) ? j.xpAmounts.map((x) => num(x)) : [],
+            bountyRewards(tag, j),
+          ),
+        ),
+      };
+    });
+}
+
 function syndicateExpiry(raw: Raw, tag: string): number {
   const found = arr(raw.SyndicateMissions).find((s) => str(s.Tag) === tag);
   return found ? ms(found.Expiry) : 0;
@@ -342,5 +399,6 @@ export function normalizeDe(raw: Raw, fetchedAt: number = Date.now()): WorldStat
     baro: baro(raw, fetchedAt),
     nightwave: nightwave(raw),
     cycles: cycles(raw, fetchedAt),
+    bounties: bounties(raw),
   };
 }

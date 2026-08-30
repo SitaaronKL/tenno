@@ -82,6 +82,21 @@ const nightwave = v.object({
   ),
 });
 
+const bounty = v.object({
+  syndicate: v.string(),
+  node: v.string(),
+  expiresAt: v.number(),
+  jobs: v.array(
+    v.object({
+      level: v.string(),
+      minLevel: v.number(),
+      maxLevel: v.number(),
+      standing: v.number(),
+      rewards: v.array(v.string()),
+    }),
+  ),
+});
+
 const cycle = v.object({ world: cycleWorld, state: v.string(), expiresAt: v.number() });
 
 export const worldStateValidator = v.object({
@@ -99,6 +114,8 @@ export const worldStateValidator = v.object({
   baro: v.union(baro, v.null()),
   nightwave: v.union(nightwave, v.null()),
   cycles: v.array(cycle),
+  // Optional so world state rows written before bounties existed still validate.
+  bounties: v.optional(v.array(bounty)),
 });
 
 export default defineSchema({
