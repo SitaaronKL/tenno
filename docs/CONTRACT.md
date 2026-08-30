@@ -32,6 +32,12 @@ rules         { userId, name, filter: RuleFilter, mode, channels, enabled, sourc
                 index by_user [userId], by_kind [filter.kind, enabled]
 notifications { userId, ruleId, eventId, channel, status: "pending"|"sent"|"failed"|"skipped", error?, createdAt, sentAt? }
                 index by_rule_event [ruleId, eventId], by_user_status [userId, status], by_status [status]
+items         { uniqueName, name, category, kind: masteryKind, masteryReq, masteryXp, buildable, components }
+                index by_unique_name [uniqueName], by_kind [kind]
+starNodes     { uniqueName, name, planet, masteryReq }              index by_unique_name [uniqueName]
+profileCache  { playerId, fetchedAt, displayName, masteryRank, nodesCompleted, xpByItem }
+                index by_player [playerId]
+              The last three are the mastery tracker, seeded from DE's Public Export, not from world state.
 ```
 
 Components registered in `convex/convex.config.ts`: `resend`, `agent`, `rateLimiter`, `workflow`.
@@ -79,6 +85,12 @@ convex/agent/chat.ts         mutation startThread(), action sendMessage({threadI
 convex/agent/ruleBuilder.ts  action  draft({text}) => RuleInput           structured output, never saves
 convex/wiki.ts               action  searchItems({q})                     MediaWiki api.php, cached in memory for an hour
 
+convex/mastery.ts            query    progress({playerId?})                every mastery item plus the player's xp
+convex/profileSync.ts        action   fetchProfile({playerId})             DE profile, 6 an hour per user, 6 hour cache
+                             internal query cached, internal mutation store
+convex/gamedata/import.ts    internal mutation importGameData()            seeds items and starNodes from the
+                                                                            checked in convex/gamedata/*.json
+
 convex/auth.ts, convex/auth.config.ts, convex/http.ts   Convex Auth: Discord, Resend magic link through convex/email.ts,
 plus the Anonymous provider as a dev only way in until the Discord and Resend keys exist. http.ts mounts the photon webhook.
 ```
@@ -95,16 +107,18 @@ app/(app)/dashboard/page.tsx      world state panels (slice 5)
 app/(app)/rules/page.tsx          rule list + create/edit dialog + AI builder (slice 6)
 app/(app)/chat/page.tsx           agent chat (slice 7)
 app/(app)/settings/page.tsx       email, phone opt in, digest hour, timezone (slice 6)
+app/(app)/mastery/page.tsx        mastery tracker, item table and rank tiles (round 2)
 ```
 
 Providers: `app/ConvexClientProvider.tsx` wraps `ConvexAuthNextjsProvider`, mounted in `app/layout.tsx` together with the
-single `<Toaster />`. `proxy.ts` protects `(app)` routes with `convexAuthNextjsMiddleware`. `app/logo/page.tsx` is a
-temporary logo board and is not part of the product.
+single `<Toaster />`. `proxy.ts` protects `(app)` routes with `convexAuthNextjsMiddleware`. 
 
 ## Env vars
 
 Convex deployment: `AUTH_DISCORD_ID`, `AUTH_DISCORD_SECRET`, `AUTH_RESEND_KEY`, `RESEND_API_KEY`, `OPENAI_API_KEY`, `SPECTRUM_PROJECT_ID` (550d43e3-1cd6-456d-93b8-335451754842), `SPECTRUM_PROJECT_SECRET`, `PHOTON_WEBHOOK_SECRET`, `SITE_URL`.
-Next.js: `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT`. See `.env.example`.
+Next.js: `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT`, plus the login page flags
+`NEXT_PUBLIC_AUTH_PASSWORD`, `NEXT_PUBLIC_AUTH_DISCORD`, `NEXT_PUBLIC_AUTH_RESEND`, `NEXT_PUBLIC_ALLOW_GUEST`
+and `NEXT_PUBLIC_PHOTON_NUMBER`. See `.env.example`.
 
 ## Slices and file ownership
 

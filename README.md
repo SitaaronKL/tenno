@@ -16,16 +16,16 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
                             |
                   cron: ingest every 5 min, digest hourly                 
                             v
-  +----------------------------------------------------------------------------------------+
-  |  Convex  components: resend, agent, rateLimiter, workflow                              |
-  |                                                                                        |
-  |  tables: profiles, photonInbound, worldState, worldEvents, rules, notifications        |
-  |                                                                                        |
-  |  ingest.pull -> normalize -> apply -> worldEvents                                      |
-  |        rules.evaluate (matcher, rate limit) -> notifications                           |
-  |        notify.send / notify.digest                                                     |
-  |  agent (OpenAI): chat tools, rule builder                                              |
-  +----------------------------------------------------------------------------------------+
+  +------------------------------------------------------------------------------------------------------------------------+
+  |  Convex  components: resend, agent, rateLimiter, workflow                                                              |
+  |                                                                                                                        |
+  |  tables: profiles, photonInbound, worldState, worldEvents, rules, notifications, items, starNodes, profileCache        |
+  |                                                                                                                        |
+  |  ingest.pull -> normalize -> apply -> worldEvents                                                                      |
+  |        rules.evaluate (matcher, rate limit) -> notifications                                                           |
+  |        notify.send / notify.digest                                                                                     |
+  |  agent (OpenAI): chat tools, rule builder                                                                              |
+  +------------------------------------------------------------------------------------------------------------------------+
          |                     |                       |
          v                     v                       v
   Next.js pages          Resend email            Photon iMessage / SMS
@@ -33,7 +33,7 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
   /chat
   /dashboard
   /login
-  /logo
+  /mastery
   /rules
   /settings
 ```
@@ -67,10 +67,15 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
      npx convex env set AUTH_DISCORD_SECRET ...
        redirect URL: https://<deployment>.convex.site/api/auth/callback/discord
 
-  4. npm run dev                            second terminal
+  4. node scripts/import-public-export.mjs   refreshes convex/gamedata from DE's Public Export
+     npx convex run gamedata/import:importGameData '{}'
+                                            seeds items and star chart nodes, /mastery is
+                                            empty until this runs once
+
+  5. npm run dev                            second terminal
      open http://localhost:3000
 
-  5. npm test                               vitest, tests sit beside the code they test
+  6. npm test                               vitest, tests sit beside the code they test
      npm run lint
      npm run build
 ```

@@ -52,7 +52,7 @@ References: Supabase project home https://mobbin.com/screens/782baf2b-1d87-4a1c-
 - Top row: six cycle tiles (Cetus, Vallis, Cambion, Earth, Duviri, Zariman). Each tile: small icon, world name, state in text, countdown in mono. Tile border turns accent-soft when under 5 minutes.
 - Stale feed banner above the grid when `stale` is true: warning dot, "Data is N minutes old, upstream is lagging".
 - Grid below: Fissures (2 columns wide), Invasions (2 wide), Sortie, Archon Hunt, Baro, Nightwave, Alerts (1 wide each). Cards have a header row (title, count pill, optional filter), hairline dividers between rows, no inner borders.
-- Fissure row: tier badge (Lith gray, Meso blue tint, Neo purple tint, Axi gold tint, Requiem red tint, Omnia white), node and mission in text, Steel Path and Storm as tiny outlined chips, countdown right aligned in mono, turns warning under 5 minutes.
+- Fissure row: tier badge (one shape, accent soft fill and a hairline ring, the tier named in text, no per tier hue), node and mission in text, Steel Path in words, Storm as a tiny outlined chip, countdown right aligned in mono, turns warning under 5 minutes.
 - Baro card when inactive: big countdown, next relay name. When active: relay, countdown to leave, inventory list with ducats and credits.
 - Empty states: one line of muted text and a small logo mark at 40 percent opacity, never a big illustration.
 
