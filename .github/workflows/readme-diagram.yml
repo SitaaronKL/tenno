@@ -1,0 +1,21 @@
+name: README diagram
+on:
+  push:
+    branches: [main]
+    paths: ["convex/**", "app/**", "scripts/readme-diagram.mjs"]
+permissions:
+  contents: write
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: node scripts/readme-diagram.mjs
+      - name: Commit if changed
+        run: |
+          git config user.name "voidwatch-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add README.md
+          git diff --cached --quiet || (git commit -m "Docs: refresh system diagram" && git push)
