@@ -90,8 +90,8 @@ export default function LogoPage() {
       <h2 className="mt-10 text-lg font-medium">Vortex direction (from your Nano Banana pick)</h2>
       <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5"><img src="/logo-ideas/vortex.jpg" alt="original" className="w-full rounded" /><p className="mt-2 text-sm text-neutral-400">Original render</p></section>
-        <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5"><img src="/logo-ideas/vortex-traced-transparent.svg" alt="traced" className="w-full rounded" /><p className="mt-2 text-sm text-neutral-400">Auto trace (vtracer), lumpy</p></section>
-        <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5"><img src="/logo.svg" alt="rebuilt" className="w-full rounded" /><p className="mt-2 text-sm text-neutral-400">Rebuilt as clean geometry, public/logo.svg</p></section>
+        <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5"><img src="/logo-ideas/vortex-traced-transparent.svg" alt="traced" className="w-full rounded" /><p className="mt-2 text-sm text-neutral-400">Auto trace, now the main logo (public/logo.svg)</p></section>
+        <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5"><img src="/logo-rebuilt.svg" alt="rebuilt" className="w-full rounded" /><p className="mt-2 text-sm text-neutral-400">Geometric rebuild, kept as an alternate</p></section>
         <section className="rounded-xl border border-neutral-800 bg-neutral-900 p-5">
           <div className="flex items-end gap-5"><img src="/logo-mark.svg" alt="" className="h-24 w-24" /><img src="/logo-mark.svg" alt="" className="h-8 w-8" /><img src="/logo-mark.svg" alt="" className="h-4 w-4" /></div>
           <div className="mt-4 flex items-center gap-3"><img src="/logo-mark.svg" alt="" className="h-7 w-7" /><span className="text-xl font-bold tracking-tight">voidwatch</span></div>
