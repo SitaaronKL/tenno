@@ -40,3 +40,7 @@ tsx through esbuild without it.
 is slice 2, so `next build` prerendered my pages with no client and `useQuery` threw. Assumption: both pages
 render their Convex reading parts inside `components/rules/client-only.tsx`, which mounts children after the
 first client render. It stays correct once the real provider lands.
+
+**Slice size.** The slice is about 720 lines of real code, over the 300 line guide. Two pages, a form covering
+all eight rule kinds, a table and the AI draft tab do not compress much further. Assumption: shipping the whole
+surface beats splitting it, flagged here for the seam agent.
