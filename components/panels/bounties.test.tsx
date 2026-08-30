@@ -125,12 +125,16 @@ describe("a fixed board", () => {
       node: "Chrysalith (Zariman)",
       expiresAt: now + 3_600_000,
       static: true,
+      rotation: "C",
       jobs: [
         {
           level: "50 - 55",
           minLevel: 50,
           maxLevel: 55,
           standing: 0,
+          missionType: "Void Flood",
+          node: "Everview Arc (Zariman)",
+          challenge: "Void Flood, complete waves",
           rewards: ["Aya", "Voidplume Down"],
           rewardTable: [
             { rotation: "A", rewards: [{ item: "Voidplume Down", chance: 13.04 }] },
@@ -141,22 +145,37 @@ describe("a fixed board", () => {
     },
   ];
 
-  it("says the board is fixed rather than pretending it rotates", () => {
+  it("reads like every other board, no fixed board label", () => {
     render(<BountiesPanel bounties={fixed} />);
-    expect(screen.getByText("fixed board")).toBeInTheDocument();
+    expect(screen.queryByText("fixed board")).not.toBeInTheDocument();
+    expect(screen.getByText("The Holdfasts")).toBeInTheDocument();
+  });
+
+  it("names the mission the node runs instead of calling it a bounty", () => {
+    render(<BountiesPanel bounties={fixed} />);
+    expect(screen.getByText("Void Flood")).toBeInTheDocument();
+    expect(screen.queryByText("Bounty")).not.toBeInTheDocument();
+    expect(screen.getByText("Everview Arc (Zariman), Void Flood, complete waves")).toBeInTheDocument();
   });
 
   it("groups the rewards by rotation with their chances once the row is open", async () => {
     const user = userEvent.setup();
     render(<BountiesPanel bounties={fixed} />);
     await pickBoard(user, /Zariman/);
-    expect(screen.queryByText("Rotation A")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Rotation A/)).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /Bounty/ }));
-    expect(screen.getByText("Rotation A")).toBeInTheDocument();
-    expect(screen.getByText("Rotation C")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Void Flood/ }));
+    expect(screen.getByText(/Rotation A/)).toBeInTheDocument();
     expect(screen.getByText("13.04%")).toBeInTheDocument();
     expect(screen.getByText("8.7%")).toBeInTheDocument();
+  });
+
+  it("puts the rotation the board is on right now first", async () => {
+    const user = userEvent.setup();
+    render(<BountiesPanel bounties={fixed} />);
+    await user.click(screen.getByRole("button", { name: /Void Flood/ }));
+    const headings = screen.getAllByText(/^Rotation [AC]/).map((el) => el.textContent);
+    expect(headings).toEqual(["Rotation C, now", "Rotation A"]);
   });
 
   it("leaves standing out when the board does not print it", () => {

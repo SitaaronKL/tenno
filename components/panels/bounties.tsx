@@ -33,14 +33,22 @@ export function chance(percent: number): string {
   return `${Number(percent.toFixed(2))}%`;
 }
 
+// The board is on one rotation right now, so that pool is worth reading first.
+export function inRotationOrder(table: RewardChances[], current?: string): RewardChances[] {
+  if (!current) return table;
+  const rank = (r: RewardChances) => (r.rotation === current ? 0 : 1);
+  return [...table].sort((a, b) => rank(a) - rank(b));
+}
+
 // A fixed board knows its odds, so it lists the pool per rotation instead of one flat line.
-function RotationTable({ table }: { table: RewardChances[] }) {
+function RotationTable({ table, current }: { table: RewardChances[]; current?: string }) {
   return (
     <div className="grid gap-3 pb-2 sm:grid-cols-3">
-      {table.map((rotation) => (
+      {inRotationOrder(table, current).map((rotation) => (
         <div key={rotation.rotation}>
           <p className="pb-1 text-xs font-medium tracking-wide text-muted-foreground">
             Rotation {rotation.rotation}
+            {rotation.rotation === current ? ", now" : ""}
           </p>
           <ul className="space-y-0.5">
             {rotation.rewards.map((reward) => (
@@ -82,10 +90,12 @@ function Chevron({ open }: { open: boolean }) {
 
 function Job({
   job,
+  rotation,
   open,
   onOpenChange,
 }: {
   job: BountyJob;
+  rotation?: string;
   open: boolean;
   onOpenChange: (next: boolean) => void;
 }) {
@@ -97,7 +107,11 @@ function Job({
           <span className="w-16 shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
             {levelRange(job)}
           </span>
-          <span className="min-w-0 flex-1 truncate font-medium">{missionOf(job)}</span>
+          <span className="shrink-0 truncate font-medium">{missionOf(job)}</span>
+          {/* The node and the bonus objective come from the browse.wf rotation, so both can be absent. */}
+          <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+            {[job.node, job.challenge].filter(Boolean).join(", ")}
+          </span>
           {job.standing > 0 ? (
             <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
               {job.standing} standing
@@ -107,7 +121,7 @@ function Job({
         </CollapsibleTrigger>
         <CollapsibleContent>
           {job.rewardTable ? (
-            <RotationTable table={job.rewardTable} />
+            <RotationTable table={job.rewardTable} current={rotation} />
           ) : (
             <p className="pb-2 text-xs text-muted-foreground">
               {job.rewards.join(", ") || "No listed reward"}
@@ -172,10 +186,6 @@ export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
           <div className="mb-2 flex items-center gap-2 text-sm">
             <span className="truncate font-medium">{board.syndicate}</span>
             <span className="truncate text-xs text-muted-foreground">{board.node}</span>
-            {/* Upstream sends this board with no jobs, the pool below is the drop table. */}
-            {board.static ? (
-              <span className="shrink-0 text-xs text-muted-foreground">fixed board</span>
-            ) : null}
           </div>
           <ul className="divide-y divide-border">
             {board.jobs.map((job, index) => {
@@ -184,6 +194,7 @@ export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
                 <Job
                   key={key}
                   job={job}
+                  rotation={board.rotation}
                   open={row === key}
                   onOpenChange={(next) => setRow(next ? key : null)}
                 />

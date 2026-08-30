@@ -108,6 +108,9 @@ const bounty = v.object({
       missionType: v.optional(v.string()),
       // Optional, only a fixed board names its jobs beyond the level.
       title: v.optional(v.string()),
+      // Optional, the node and the bonus objective come from the browse.wf rotation.
+      node: v.optional(v.string()),
+      challenge: v.optional(v.string()),
       // Optional, only a fixed board carries drop chances.
       rewardTable: v.optional(
         v.array(
@@ -121,6 +124,19 @@ const bounty = v.object({
   ),
   // Optional so boards stored before fixed boards existed still validate.
   static: v.optional(v.boolean()),
+  // Optional, only a fixed board knows which reward rotation it is on.
+  rotation: v.optional(v.string()),
+});
+
+export const bountyCycleValidator = v.object({
+  expiry: v.number(),
+  rot: v.string(),
+  vaultRot: v.string(),
+  zarimanFaction: v.string(),
+  bounties: v.record(
+    v.string(),
+    v.array(v.object({ node: v.string(), challenge: v.string(), ally: v.optional(v.string()) })),
+  ),
 });
 
 const archimedea = v.object({
@@ -197,6 +213,8 @@ export const worldStateValidator = v.object({
   circuit: v.optional(v.union(circuit, v.null())),
   darvo: v.optional(v.union(darvo, v.null())),
   events: v.optional(v.array(gameEvent)),
+  // Optional so world state rows written before the browse.wf rotation existed still validate.
+  bountyCycle: v.optional(bountyCycleValidator),
 });
 
 export default defineSchema({
