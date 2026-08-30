@@ -33,13 +33,13 @@ function CycleTile({ cycle, now }: { cycle: Cycle; now: number }) {
       onMouseEnter={() => icon.current?.startAnimation()}
       onMouseLeave={() => icon.current?.stopAnimation()}
       className={cn(
-        "flex items-center gap-2 rounded-lg bg-card px-2.5 py-1.5 ring-1 transition-shadow duration-150 ease-out hover:ring-foreground",
+        "flex items-center gap-1.5 rounded-md bg-card px-2 py-1 ring-1 transition-shadow duration-150 ease-out hover:ring-foreground",
         soon ? "ring-foreground/40" : "ring-foreground/10",
       )}
     >
       <Icon ref={icon} size={14} className="shrink-0 text-muted-foreground" />
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm font-medium capitalize">{cycle.state}</span>
+      <span className="text-xs font-medium capitalize">{cycle.state}</span>
       <Countdown target={cycle.expiresAt} now={now} verb="changes" />
     </li>
   );
@@ -55,7 +55,7 @@ export function CycleTiles({ cycles }: { cycles: Cycle[] }) {
   if (rows.length === 0) return null;
 
   return (
-    <ul aria-label="World cycles" className="grid grid-cols-3 gap-2">
+    <ul aria-label="World cycles" className="grid shrink-0 grid-cols-3 gap-1.5">
       {rows.map((c) => (
         <CycleTile key={c.world} cycle={c} now={now} />
       ))}
