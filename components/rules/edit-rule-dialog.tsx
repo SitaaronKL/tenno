@@ -1,27 +1,28 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { RuleForm } from "@/components/rules/rule-form";
 import { useUpdateRule, type Rule } from "@/components/rules/api";
 
-export function EditRuleDialog({ rule }: { rule: Rule }) {
+export function EditRuleDialog({
+  rule,
+  open,
+  onOpenChange,
+}: {
+  rule: Rule;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const update = useUpdateRule();
-  const [open, setOpen] = useState(false);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" aria-label={`Edit ${rule.name}`} />}>
-        Edit
-      </DialogTrigger>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Edit rule</DialogTitle>
         </DialogHeader>
@@ -30,7 +31,7 @@ export function EditRuleDialog({ rule }: { rule: Rule }) {
           submitLabel="Save changes"
           onSubmit={async (input) => {
             await update({ id: rule._id, ...input });
-            setOpen(false);
+            onOpenChange(false);
           }}
         />
       </DialogContent>

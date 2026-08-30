@@ -12,6 +12,11 @@ vi.mock("@/components/rules/api", () => ({
 
 import { CreateRuleDialog } from "@/components/rules/create-rule-dialog";
 
+async function openDialog(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole("button", { name: "New rule" }));
+  return await screen.findByLabelText("Name");
+}
+
 describe("create rule", () => {
   beforeEach(() => create.mockClear());
 
@@ -19,8 +24,7 @@ describe("create rule", () => {
     const user = userEvent.setup();
     render(<CreateRuleDialog />);
 
-    await user.click(screen.getByRole("button", { name: "New rule" }));
-    await user.type(await screen.findByLabelText("Name"), "Any Axi");
+    await user.type(await openDialog(user), "Any Axi");
     await user.click(screen.getByRole("button", { name: "Create rule" }));
 
     expect(create.mock.calls[0][0].filter.steelPath).toBe(null);
@@ -30,9 +34,8 @@ describe("create rule", () => {
     const user = userEvent.setup();
     render(<CreateRuleDialog />);
 
-    await user.click(screen.getByRole("button", { name: "New rule" }));
-    await user.type(await screen.findByLabelText("Name"), "Steel only");
-    await user.selectOptions(await screen.findByLabelText("Steel Path"), "only");
+    await user.type(await openDialog(user), "Steel only");
+    await user.click(screen.getByRole("radio", { name: "Only" }));
     await user.click(screen.getByRole("button", { name: "Create rule" }));
 
     expect(create.mock.calls[0][0].filter.steelPath).toBe(true);
@@ -42,29 +45,42 @@ describe("create rule", () => {
     const user = userEvent.setup();
     render(<CreateRuleDialog />);
 
-    await user.click(screen.getByRole("button", { name: "New rule" }));
-    await user.type(await screen.findByLabelText("Name"), "No steel");
-    await user.selectOptions(await screen.findByLabelText("Steel Path"), "exclude");
+    await user.type(await openDialog(user), "No steel");
+    await user.click(screen.getByRole("radio", { name: "Exclude" }));
     await user.click(screen.getByRole("button", { name: "Create rule" }));
 
     expect(create.mock.calls[0][0].filter.steelPath).toBe(false);
   });
 
+  it("drops the tier picker when the rule is not about fissures", async () => {
+    const user = userEvent.setup();
+    render(<CreateRuleDialog />);
+    await openDialog(user);
+
+    expect(screen.getByRole("button", { name: /Relic tiers/ })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Event kind/ }));
+    await user.click(await screen.findByRole("radio", { name: "Invasion" }));
+
+    expect(screen.queryByRole("button", { name: /Relic tiers/ })).not.toBeInTheDocument();
+  });
+
   it("shows the tier picker for fissures and saves a valid rule", async () => {
     const user = userEvent.setup();
     render(<CreateRuleDialog />);
+    await user.type(await openDialog(user), "Axi survival");
 
-    await user.click(screen.getByRole("button", { name: "New rule" }));
+    await user.click(screen.getByRole("button", { name: /Relic tiers/ }));
+    await user.click(await screen.findByRole("checkbox", { name: "Axi" }));
+    await user.keyboard("{Escape}");
 
-    const kind = await screen.findByLabelText("Event kind");
-    await user.selectOptions(kind, "invasion");
-    expect(screen.queryByRole("checkbox", { name: "Axi" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /Mission types/ }));
+    await user.click(await screen.findByRole("checkbox", { name: "Survival" }));
+    await user.keyboard("{Escape}");
 
-    await user.selectOptions(kind, "fissure");
-    await user.click(screen.getByRole("checkbox", { name: "Axi" }));
-    await user.click(screen.getByRole("checkbox", { name: "Survival" }));
-    await user.type(screen.getByLabelText("Name"), "Axi survival");
-    await user.click(screen.getByRole("radio", { name: "Hourly digest" }));
+    await user.click(screen.getByRole("button", { name: /Delivery/ }));
+    await user.click(await screen.findByRole("radio", { name: "Hourly digest" }));
+    await user.keyboard("{Escape}");
+
     await user.click(screen.getByRole("button", { name: "Create rule" }));
 
     expect(create).toHaveBeenCalledTimes(1);
