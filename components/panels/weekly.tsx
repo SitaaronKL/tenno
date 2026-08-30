@@ -1,12 +1,9 @@
 "use client";
 
-import type { ReactNode } from "react";
-
 import { CheckIcon } from "@/components/icons/check";
 import type { Circuit, DarvoDeal } from "@/lib/contracts/worldstate";
 import { teshinOffering } from "@/lib/teshin";
-import { cn } from "@/lib/utils";
-import { Checkoff, doneRow, remaining, useCheckoffs, weeklyKey } from "./checkoffs";
+import { CheckoffRow, remaining, useCheckoffs, weeklyKey } from "./checkoffs";
 import { Countdown } from "./countdown";
 import { nextWeeklyReset } from "./cycles";
 import { Panel } from "./panel";
@@ -14,34 +11,12 @@ import { useNow } from "./use-now";
 
 const CLASS = "md:col-span-1 lg:col-span-2";
 
-function Row({
-  id,
-  expiresAt,
-  label,
-  value,
-  trailing,
-}: {
-  id?: string;
-  expiresAt: number;
-  label: string;
-  value: string;
-  trailing?: ReactNode;
-}) {
-  const { done } = useCheckoffs();
-  const ticked = id !== undefined && done.has(id);
+function Lines({ label, value }: { label: string; value: string }) {
   return (
-    <li className={cn("flex items-center gap-2 py-2", ticked && doneRow)}>
-      {id === undefined ? (
-        <span aria-hidden="true" className="size-4 shrink-0" />
-      ) : (
-        <Checkoff id={id} expiresAt={expiresAt} label={`${label}, ${value}`} />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-xs text-muted-foreground">{label}</p>
-        <p className="truncate">{value}</p>
-      </div>
-      {trailing}
-    </li>
+    <>
+      <p className="truncate text-xs text-muted-foreground">{label}</p>
+      <p className="truncate">{value}</p>
+    </>
   );
 }
 
@@ -81,15 +56,27 @@ export function WeeklyPanel({
     >
       <ul className="divide-y divide-border">
         {rows.map((row, i) => (
-          <Row key={row.task} id={keys[i]} expiresAt={reset} label={row.label} value={row.value} />
+          <CheckoffRow
+            key={row.task}
+            id={keys[i]}
+            expiresAt={reset}
+            label={`${row.label}, ${row.value}`}
+          >
+            <Lines label={row.label} value={row.value} />
+          </CheckoffRow>
         ))}
+        {/* Darvo's deal is daily and it is a purchase, not a chore, so it carries no box. */}
         {darvo ? (
-          <Row
-            expiresAt={darvo.expiresAt}
-            label="Darvo's deal"
-            value={`${darvo.item}, ${darvo.discount}% off, ${darvo.stock} left`}
-            trailing={<Countdown target={darvo.expiresAt} now={now} />}
-          />
+          <li className="flex items-center gap-2 py-2">
+            <span aria-hidden="true" className="size-4 shrink-0" />
+            <div className="min-w-0 flex-1">
+              <Lines
+                label="Darvo's deal"
+                value={`${darvo.item}, ${darvo.discount}% off, ${darvo.stock} left`}
+              />
+            </div>
+            <Countdown target={darvo.expiresAt} now={now} />
+          </li>
         ) : null}
       </ul>
     </Panel>

@@ -1,8 +1,7 @@
 "use client";
 
 import { GripHorizontalIcon } from "@/components/icons/grip-horizontal";
-import { cn } from "@/lib/utils";
-import { Checkoff, doneRow, incursionKey, remaining, useCheckoffs } from "./checkoffs";
+import { CheckoffRow, incursionKey, remaining, useCheckoffs } from "./checkoffs";
 import { Countdown } from "./countdown";
 import { nextDailyReset } from "./cycles";
 import { Empty, Panel } from "./panel";
@@ -31,18 +30,11 @@ export function IncursionsPanel({ incursions }: { incursions: string[] }) {
         <Empty>The incursion schedule does not reach today.</Empty>
       ) : (
         <ul className="divide-y divide-border">
-          {incursions.map((node, i) => {
-            const id = keys[i];
-            return (
-              <li
-                key={id}
-                className={cn("flex items-center gap-2 py-2", done.has(id) && doneRow)}
-              >
-                <Checkoff id={id} expiresAt={resetsAt} label={node} />
-                <span className="truncate">{node}</span>
-              </li>
-            );
-          })}
+          {incursions.map((node, i) => (
+            <CheckoffRow key={keys[i]} id={keys[i]} expiresAt={resetsAt} label={node}>
+              <p className="truncate">{node}</p>
+            </CheckoffRow>
+          ))}
         </ul>
       )}
     </Panel>
