@@ -1,0 +1,81 @@
+openapi: 3.1.0
+info:
+  title: Tenno HTTP surface
+  version: 0.1.0
+  description: |
+    Everything else is Convex functions (typed end to end). This spec covers only the raw HTTP
+    endpoints served by Convex http actions on https://<deployment>.convex.site.
+servers:
+  - url: https://{deployment}.convex.site
+paths:
+  /photon/webhook:
+    post:
+      summary: Inbound message from Photon Spectrum (iMessage, SMS fallback)
+      description: HMAC signed by Photon. Verified with app.webhook(). Routes text to the agent thread keyed by phone and replies via space.send.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, additionalProperties: true }
+      responses:
+        "200": { description: Accepted }
+        "401": { description: Bad signature }
+  /resend/webhook:
+    post:
+      summary: Resend delivery events, handled by @convex-dev/resend component
+      responses:
+        "200": { description: Accepted }
+  /api/auth/{path}:
+    get:
+      summary: Convex Auth OAuth callbacks and magic link verification
+      parameters:
+        - { name: path, in: path, required: true, schema: { type: string } }
+      responses:
+        "302": { description: Redirect }
+  /api/worldstate:
+    get:
+      summary: Public read of the latest normalized world state (no auth)
+      parameters:
+        - { name: platform, in: query, schema: { type: string, enum: [pc] }, required: false }
+      responses:
+        "200":
+          description: WorldState, see lib/contracts/worldstate.ts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorldState" }
+components:
+  schemas:
+    WorldState:
+      type: object
+      required: [platform, fetchedAt, fissures, alerts, invasions, sortie, archonHunt, baro, nightwave, cycles]
+      properties:
+        platform: { type: string, enum: [pc] }
+        fetchedAt: { type: integer, description: ms epoch }
+        fissures: { type: array, items: { $ref: "#/components/schemas/Fissure" } }
+        alerts: { type: array, items: { type: object } }
+        invasions: { type: array, items: { type: object } }
+        sortie: { type: [object, "null"] }
+        archonHunt: { type: [object, "null"] }
+        baro: { type: [object, "null"] }
+        nightwave: { type: [object, "null"] }
+        cycles: { type: array, items: { $ref: "#/components/schemas/Cycle" } }
+    Fissure:
+      type: object
+      required: [key, node, missionType, enemy, tier, steelPath, storm, startsAt, expiresAt]
+      properties:
+        key: { type: string }
+        node: { type: string }
+        missionType: { type: string }
+        enemy: { type: string }
+        tier: { type: string, enum: [Lith, Meso, Neo, Axi, Requiem, Omnia] }
+        steelPath: { type: boolean }
+        storm: { type: boolean }
+        startsAt: { type: integer }
+        expiresAt: { type: integer }
+    Cycle:
+      type: object
+      required: [world, state, expiresAt]
+      properties:
+        world: { type: string, enum: [cetus, vallis, cambion, earth, duviri, zariman] }
+        state: { type: string }
+        expiresAt: { type: integer }
