@@ -133,7 +133,8 @@ export function DataTable<TData extends RowData>({
     onSortingChange: setSorting,
     onColumnFiltersChange: setOwnFilters,
     state: { sorting, columnFilters: [...columnFilters, ...ownFilters] },
-    ...(pageSize ? { initialState: { pagination: { pageIndex: 0, pageSize } } } : {}),
+    // The pagination feature defaults to ten rows a page, so tables without a pager get every row.
+    initialState: { pagination: { pageIndex: 0, pageSize: pageSize ?? 10_000 } },
   });
 
   // A panel with nothing to show renders its own empty state instead of a header row.
