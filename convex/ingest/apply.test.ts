@@ -43,8 +43,39 @@ describe("apply", () => {
   test("one nightwave notification per weekly rollover, not one per act", async () => {
     const t = convexTest(schema, modules);
     const current = state();
-    expect(current.nightwave!.acts.length).toBeGreaterThan(1);
+    expect(current.nightwave!.acts.filter((a) => !a.daily).length).toBeGreaterThan(1);
     await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: current });
+
+    const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    expect(events.filter((e) => e.kind === "nightwave")).toHaveLength(1);
+  });
+
+  test("next week's acts are a new nightwave notification, same season", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
+
+    // Same season, same season expiry, the weekly acts rolled over.
+    const week = 7 * 24 * 60 * 60_000;
+    const next = state(FETCHED_AT + week);
+    next.nightwave = {
+      ...next.nightwave!,
+      acts: next.nightwave!.acts.map((a) =>
+        a.daily ? a : { ...a, key: `${a.key}-w2`, expiresAt: a.expiresAt + week },
+      ),
+    };
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: next });
+
+    const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    expect(events.filter((e) => e.kind === "nightwave")).toHaveLength(2);
+  });
+
+  test("a second pull inside the same week says nothing new about nightwave", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
+    await t.mutation(internal.ingest.apply.apply, {
+      platform: "pc",
+      state: state(FETCHED_AT + 5 * 60_000),
+    });
 
     const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
     expect(events.filter((e) => e.kind === "nightwave")).toHaveLength(1);

@@ -27,10 +27,13 @@ function eventsOf(state: WorldState): NewEvent[] {
   if (state.baro?.active) {
     push("baro", state.baro.key, state.baro.startsAt, state.baro.expiresAt, state.baro);
   }
-  // One notification per weekly rollover, upstream lists ten acts at once.
+  // One notification per weekly rollover. The season expiry sits months out, the weekly acts
+  // are what actually changes on a Monday, so the soonest weekly expiry is the key.
   if (state.nightwave) {
     const n = state.nightwave;
-    push("nightwave", `season:${n.season}:${n.expiresAt}`, state.fetchedAt, n.expiresAt, n);
+    const weekly = n.acts.filter((a) => !a.daily).map((a) => a.expiresAt);
+    const rollover = weekly.length > 0 ? Math.min(...weekly) : n.expiresAt;
+    push("nightwave", `season:${n.season}:week:${rollover}`, state.fetchedAt, rollover, n);
   }
   // One event per phase. The start is rounded to the minute so every pull inside a phase agrees.
   for (const c of state.cycles) {
