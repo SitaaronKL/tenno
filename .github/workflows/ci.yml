@@ -11,8 +11,6 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
       - run: npm ci
-      - run: npx convex codegen
-        env: { CONVEX_SELF_HOSTED_URL: "http://127.0.0.1:3210", CONVEX_SELF_HOSTED_ADMIN_KEY: "ci" }
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm test
