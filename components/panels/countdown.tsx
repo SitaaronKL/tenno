@@ -20,7 +20,6 @@ export function Countdown({
   const soon = target - now <= SOON_MS;
   return (
     <span
-      title={absolute(target)}
       className={cn(
         "shrink-0 whitespace-nowrap font-mono text-xs tabular-nums",
         soon ? "text-warning" : "text-muted-foreground",
