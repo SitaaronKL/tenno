@@ -11,7 +11,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { cn } from "@/lib/utils";
 import { Chip } from "./tier-badge";
+import { Checkoff, doneRow, nightwaveKey, remaining, useCheckoffs } from "./checkoffs";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
 import { TruncatedCell } from "@/components/ui/data-table";
@@ -27,6 +29,7 @@ type Cadence = (typeof CADENCE)[number]["value"];
 export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
   const now = useNow();
   const [cadence, setCadence] = useState<Cadence>("all");
+  const { done } = useCheckoffs();
   if (!nightwave || nightwave.acts.length === 0) {
     return (
       <Panel title="Nightwave" icon={MoonIcon} className="md:col-span-2 lg:col-span-3">
@@ -37,12 +40,14 @@ export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
   const acts = nightwave.acts.filter((a) =>
     cadence === "all" ? true : cadence === "daily" ? a.daily : !a.daily,
   );
+  const keys = acts.map((a) => nightwaveKey(a.key));
   return (
     <Panel
       // Season is part of the name, so it reads as "Season 18", not "season 18".
       title={`Nightwave, Season ${nightwave.season}`}
       icon={MoonIcon}
-      count={acts.length}
+      // The total is not the point on a long list, only what is still to run is.
+      count={`${remaining(keys, done)} left`}
       action={
         <span className="flex items-center gap-3">
           <Countdown target={nightwave.expiresAt} now={now} />
@@ -52,28 +57,37 @@ export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
       className="md:col-span-2 lg:col-span-3"
     >
       <Accordion multiple className="text-sm">
-        {acts.map((a) => (
-          <AccordionItem key={a.key} value={a.key}>
-            <AccordionTrigger className="gap-2">
-              <span className="flex min-w-0 flex-1 items-center gap-2">
-                <Chip>{a.daily ? "Daily" : "Weekly"}</Chip>
-                <span data-primary className="min-w-0 flex-1">
-                  <TruncatedCell text={a.title} />
-                </span>
-                <span className="ml-auto shrink-0 font-mono text-xs font-normal text-muted-foreground tabular-nums">
-                  {a.reputation} rep
-                </span>
-              </span>
-            </AccordionTrigger>
-            <AccordionContent>
-              {/* The countdown sits under the rep it belongs to, on the right. */}
-              <div className="flex items-start justify-between gap-3">
-                <p className="min-w-0 flex-1 text-muted-foreground">{a.description}</p>
-                <Countdown target={a.expiresAt} now={now} className="shrink-0" />
+        {acts.map((a) => {
+          const id = nightwaveKey(a.key);
+          return (
+            <AccordionItem key={a.key} value={a.key}>
+              {/* The box is a sibling of the trigger, so ticking an act never opens it. */}
+              <div className="flex items-center gap-2">
+                <Checkoff id={id} expiresAt={a.expiresAt} label={a.title} />
+                <div className={cn("min-w-0 flex-1", done.has(id) && doneRow)}>
+                  <AccordionTrigger className="gap-2">
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <Chip>{a.daily ? "Daily" : "Weekly"}</Chip>
+                      <span data-primary className="min-w-0 flex-1">
+                        <TruncatedCell text={a.title} />
+                      </span>
+                      <span className="ml-auto shrink-0 font-mono text-xs font-normal text-muted-foreground tabular-nums">
+                        {a.reputation} rep
+                      </span>
+                    </span>
+                  </AccordionTrigger>
+                </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        ))}
+              <AccordionContent>
+                {/* The countdown sits under the rep it belongs to, on the right. */}
+                <div className="flex items-start justify-between gap-3">
+                  <p className="min-w-0 flex-1 text-muted-foreground">{a.description}</p>
+                  <Countdown target={a.expiresAt} now={now} className="shrink-0" />
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          );
+        })}
       </Accordion>
     </Panel>
   );

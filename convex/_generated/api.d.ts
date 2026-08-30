@@ -14,6 +14,7 @@ import type * as agent_limits from "../agent/limits.js";
 import type * as agent_ruleBuilder from "../agent/ruleBuilder.js";
 import type * as agent_tools from "../agent/tools.js";
 import type * as auth from "../auth.js";
+import type * as completions from "../completions.js";
 import type * as crons from "../crons.js";
 import type * as email from "../email.js";
 import type * as emails_Digest from "../emails/Digest.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   "agent/ruleBuilder": typeof agent_ruleBuilder;
   "agent/tools": typeof agent_tools;
   auth: typeof auth;
+  completions: typeof completions;
   crons: typeof crons;
   email: typeof email;
   "emails/Digest": typeof emails_Digest;

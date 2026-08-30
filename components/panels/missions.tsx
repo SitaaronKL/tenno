@@ -5,7 +5,9 @@ import { useState } from "react";
 import { Segmented } from "@/components/segmented";
 import type { ArchonHunt, Sortie } from "@/lib/contracts/worldstate";
 import { LayoutGridIcon } from "@/components/icons/layout-grid";
+import { cn } from "@/lib/utils";
 import { Chip } from "./tier-badge";
+import { Checkoff, doneRow, remaining, sortieKey, useCheckoffs } from "./checkoffs";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
@@ -28,14 +30,18 @@ export function MissionSetPanel({
 }) {
   const now = useNow();
   const [set, setSet] = useState<Set>("sortie");
+  const { done } = useCheckoffs();
   const data = set === "sortie" ? sortie : archonHunt;
   const toggle = <Segmented label="Mission set" options={SETS} value={set} onChange={setSet} />;
+  const keys = data ? data.missions.map((m) => sortieKey(set, data.key, m.node)) : [];
 
   return (
     <Panel
       title={set === "sortie" ? "Sortie" : "Archon Hunt"}
       icon={LayoutGridIcon}
       className={CLASS}
+      // Three stages is a short list, so the pill says how many of them are left.
+      count={data ? `${remaining(keys, done)} of ${keys.length} left` : undefined}
       action={
         <span className="flex items-center gap-3">
           {data ? <Countdown target={data.expiresAt} now={now} /> : null}
@@ -52,19 +58,30 @@ export function MissionSetPanel({
             <Chip>{data.faction}</Chip>
           </div>
           <ul className="divide-y divide-border">
-            {data.missions.map((m) => (
-              <li key={m.node} className="flex items-center gap-2 py-2">
-                <div className="min-w-0">
-                  <p className="truncate">
-                    <span className="font-medium">{m.missionType}</span>{" "}
-                    <span className="text-muted-foreground">{m.node}</span>
-                  </p>
-                  {m.modifier ? (
-                    <p className="truncate text-xs text-muted-foreground">{m.modifier}</p>
-                  ) : null}
-                </div>
-              </li>
-            ))}
+            {data.missions.map((m) => {
+              const id = sortieKey(set, data.key, m.node);
+              return (
+                <li
+                  key={m.node}
+                  className={cn("flex items-center gap-2 py-2", done.has(id) && doneRow)}
+                >
+                  <Checkoff
+                    id={id}
+                    expiresAt={data.expiresAt}
+                    label={`${m.missionType}, ${m.node}`}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate">
+                      <span className="font-medium">{m.missionType}</span>{" "}
+                      <span className="text-muted-foreground">{m.node}</span>
+                    </p>
+                    {m.modifier ? (
+                      <p className="truncate text-xs text-muted-foreground">{m.modifier}</p>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </>
       )}

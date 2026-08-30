@@ -11,6 +11,7 @@ import { BaroPanel } from "./baro";
 import { NightwavePanel } from "./nightwave";
 import { EventsPanel } from "./events";
 import { BountiesPanel, bountiesOf } from "./bounties";
+import { CheckoffsProvider } from "./checkoffs-store";
 
 // Bento: six columns on desktop, and each card claims the width its content needs.
 // items-start so a short card stays short instead of stretching to its neighbour's height.
@@ -65,7 +66,12 @@ export function DashboardGrid() {
     );
   }
 
-  return <Panels state={state} />;
+  // The provider lives here, so every panel below reads one set of ticks.
+  return (
+    <CheckoffsProvider>
+      <Panels state={state} />
+    </CheckoffsProvider>
+  );
 }
 
 export function Panels({ state }: { state: WorldState }) {
