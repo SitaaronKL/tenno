@@ -44,7 +44,7 @@ export function RuleMatch({
             {expiresAt ? (
               <Text style={{ color: "#a1a1aa" }}>Expires {expiresAt}</Text>
             ) : null}
-            <Link href={url} style={{ color: "#7dd3fc" }}>
+            <Link href={url} style={{ color: "#fafafa", textDecoration: "underline" }}>
               Open Voidwatch
             </Link>
           </Section>

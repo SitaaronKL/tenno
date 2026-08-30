@@ -7,6 +7,7 @@ import { requireUser } from "../lib/auth";
 import { RuleInput, type RuleInput as RuleInputType } from "../../lib/contracts/rule";
 import { vRuleInput } from "../lib/validators";
 import { MODEL } from "./index";
+import { checkLimit } from "./limits";
 
 export const SYSTEM =
   "Turn the user's sentence into one Warframe notification rule. Pick the kind that matches, leave a filter " +
@@ -27,7 +28,13 @@ export const draft = action({
   args: { text: v.string() },
   returns: vRuleInput,
   handler: async (ctx, { text }): Promise<RuleInputType> => {
-    await requireUser(ctx);
+    const { userId } = await requireUser(ctx);
+    await checkLimit(
+      ctx,
+      "ruleDrafts",
+      userId,
+      "That is too many rule drafts this hour. Try again a little later.",
+    );
     const world: unknown = await ctx.runQuery(api.worldstate.get, { platform: "pc" });
     const result = await generateObject({
       model: openai(MODEL),

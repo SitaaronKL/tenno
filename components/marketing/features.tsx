@@ -1,4 +1,4 @@
-import { AsciiLogo } from "./ascii-logo";
+import { AsciiLogo } from "@/components/ascii-logo";
 
 const FEATURES = [
   {

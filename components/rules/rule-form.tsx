@@ -112,13 +112,32 @@ const STEEL_PATH = [
 ] as const;
 type SteelPath = (typeof STEEL_PATH)[number]["value"];
 
+// Void Storm is the Railjack half of a fissure, and it needs the same three states.
+const STORM = [
+  { value: "any", label: "Any" },
+  { value: "only", label: "Only Void Storm" },
+  { value: "exclude", label: "No Void Storm" },
+] as const;
+type Storm = (typeof STORM)[number]["value"];
+
+function tristate(value: boolean | null): "any" | "only" | "exclude" {
+  if (value === null) return "any";
+  return value ? "only" : "exclude";
+}
+
+function fromTristate(value: "any" | "only" | "exclude"): boolean | null {
+  return value === "any" ? null : value === "only";
+}
+
 export function RuleForm({
   initial,
   submitLabel = "Save rule",
+  pending = false,
   onSubmit,
 }: {
   initial?: RuleInput;
   submitLabel?: string;
+  pending?: boolean;
   onSubmit: (input: RuleInput) => void | Promise<void>;
 }) {
   const f = initial?.filter;
@@ -128,10 +147,12 @@ export function RuleForm({
   const [missionTypes, setMissionTypes] = useState<string[]>(
     f && (f.kind === "fissure" || f.kind === "sortie") ? (f.missionTypes ?? []) : [],
   );
-  const [steelPath, setSteelPath] = useState<SteelPath>(() => {
-    if (f?.kind !== "fissure" || f.steelPath === null) return "any";
-    return f.steelPath ? "only" : "exclude";
-  });
+  const [steelPath, setSteelPath] = useState<SteelPath>(() =>
+    f?.kind === "fissure" ? tristate(f.steelPath) : "any",
+  );
+  const [storm, setStorm] = useState<Storm>(() =>
+    f?.kind === "fissure" ? tristate(f.storm) : "any",
+  );
   // rewards, items or bosses, one list because only one is shown per kind
   const [names, setNames] = useState<string[]>(() => {
     if (!f) return [];
@@ -155,8 +176,8 @@ export function RuleForm({
           kind,
           tiers: some(tiers) as Tier[] | null,
           missionTypes: some(missionTypes),
-          steelPath: steelPath === "any" ? null : steelPath === "only",
-          storm: null,
+          steelPath: fromTristate(steelPath),
+          storm: fromTristate(storm),
         };
       case "invasion":
       case "alert":
@@ -221,6 +242,8 @@ export function RuleForm({
             </Chip>
             <span className="text-muted-foreground">with Steel Path</span>
             <Segmented label="Steel Path" options={STEEL_PATH} value={steelPath} onChange={setSteelPath} />
+            <span className="text-muted-foreground">and</span>
+            <Segmented label="Void Storm" options={STORM} value={storm} onChange={setStorm} />
           </>
         )}
 
@@ -293,8 +316,14 @@ export function RuleForm({
         </Chip>
       </div>
 
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <Button type="submit">{submitLabel}</Button>
+      {error && (
+        <p role="alert" className="text-sm text-destructive">
+          {error}
+        </p>
+      )}
+      <Button type="submit" disabled={pending}>
+        {pending ? "Saving" : submitLabel}
+      </Button>
     </form>
   );
 }

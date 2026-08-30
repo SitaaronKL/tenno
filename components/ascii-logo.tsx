@@ -2,12 +2,25 @@
 
 import { useEffect, useRef } from "react";
 
+import { cn } from "@/lib/utils";
+
 // Dark to light. The mark is drawn once, then only the character choice changes per frame.
 const RAMP = " .:-=+*#%@";
-const CELL = 7;
 const CELL_ASPECT = 0.55;
 
-export function AsciiLogo({ size = 320 }: { size?: number }) {
+export function AsciiLogo({
+  size = 320,
+  // A smaller cell keeps the mark legible when it is an avatar rather than a hero.
+  cell = 7,
+  // One canvas per chat message would be one animation loop per message, so avatars sit still.
+  animated = true,
+  className,
+}: {
+  size?: number;
+  cell?: number;
+  animated?: boolean;
+  className?: string;
+}) {
   const ref = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -15,6 +28,7 @@ export function AsciiLogo({ size = 320 }: { size?: number }) {
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
 
+    const CELL = cell;
     const cols = Math.floor(size / (CELL * CELL_ASPECT));
     const rows = Math.floor(size / CELL);
     const dpr = window.devicePixelRatio || 1;
@@ -22,7 +36,7 @@ export function AsciiLogo({ size = 320 }: { size?: number }) {
     canvas.height = size * dpr;
     ctx.scale(dpr, dpr);
 
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = !animated || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let coverage: number[] = [];
     let frame = 0;
     let raf = 0;
@@ -68,14 +82,14 @@ export function AsciiLogo({ size = 320 }: { size?: number }) {
     img.src = "/logo-outline.svg";
 
     return () => window.cancelAnimationFrame(raf);
-  }, [size]);
+  }, [size, cell, animated]);
 
   return (
     <canvas
       ref={ref}
       aria-hidden="true"
       style={{ width: size, height: size }}
-      className="text-foreground"
+      className={cn("text-foreground", className)}
     />
   );
 }

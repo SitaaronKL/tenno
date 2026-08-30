@@ -314,69 +314,92 @@ function syndicateExpiry(raw: Raw, tag: string): number {
   return found ? ms(found.Expiry) : 0;
 }
 
+// A cycle phase. The start is the absolute boundary the phase began on, it is what keys the event.
+type Phase = { state: string; startsAt: number; expiresAt: number };
+
+function phase(state: string, expiresAt: number, durationMs: number): Phase {
+  return { state, startsAt: expiresAt - durationMs, expiresAt };
+}
+
 // Cetus runs 100 minutes of day then 50 of night, and the Ostron bounty rotation ends with night.
-function cetus(bountyEnd: number, at: number): { state: string; expiresAt: number } | null {
+const CETUS_DAY_MS = 6_000_000;
+const CETUS_NIGHT_MS = 3_000_000;
+
+function cetus(bountyEnd: number, at: number): Phase | null {
   if (!bountyEnd) return null;
   const nightEnd = Math.floor(bountyEnd / 60_000) * 60_000;
   const secondsToNightEnd = Math.round((nightEnd - at) / 1000);
   const day = secondsToNightEnd > 3000;
   const left = (day ? secondsToNightEnd - 3000 : secondsToNightEnd) * 1000;
-  return { state: day ? "day" : "night", expiresAt: Math.round((at + left) / 60_000) * 60_000 };
+  const expiresAt = Math.round((at + left) / 60_000) * 60_000;
+  return phase(day ? "day" : "night", expiresAt, day ? CETUS_DAY_MS : CETUS_NIGHT_MS);
 }
 
 // Earth is a plain 8 hour cycle aligned to the unix epoch, 4 hours of day then 4 of night.
-function earth(at: number): { state: string; expiresAt: number } {
+const EARTH_PHASE_MS = 14_400_000;
+
+// The boundary is absolute, so the millisecond the pull happened must not leak into it.
+function earth(at: number): Phase {
   const inCycle = Math.floor(at / 1000) % 28800;
   const day = inCycle < 14400;
-  return { state: day ? "day" : "night", expiresAt: at + (14400 - (inCycle % 14400)) * 1000 };
+  const expiresAt = (Math.floor(at / 1000) + (14400 - (inCycle % 14400))) * 1000;
+  return phase(day ? "day" : "night", expiresAt, EARTH_PHASE_MS);
 }
 
 // Vallis loops every 26m40s, warm for the first 6m40s, from a known warm start.
 const VALLIS_START = Date.parse("2026-02-04T19:46:48Z");
 
-function vallis(at: number): { state: string; expiresAt: number } {
+const VALLIS_WARM_MS = 400_000;
+const VALLIS_COLD_MS = 1_200_000;
+
+function vallis(at: number): Phase {
   const toNextFull = 1_600_000 - ((at - VALLIS_START) % 1_600_000);
   const warm = toNextFull > 1_200_000;
   const left = warm ? toNextFull - 1_200_000 : toNextFull;
-  return { state: warm ? "warm" : "cold", expiresAt: at + left };
+  return phase(warm ? "warm" : "cold", at + left, warm ? VALLIS_WARM_MS : VALLIS_COLD_MS);
 }
 
 // Duviri walks five two hour spirals, the sequence is anchored 52 seconds after the epoch.
 const SPIRALS = ["sorrow", "fear", "joy", "anger", "envy"];
 
-function duviri(at: number): { state: string; expiresAt: number } {
+const DUVIRI_PHASE_MS = 7_200_000;
+
+function duviri(at: number): Phase {
   const inCycle = (Math.floor(at / 1000) - 52) % 36000;
   const left = 7200 - (inCycle % 7200);
   const expiry = new Date(at + left * 1000);
   expiry.setSeconds(0, 0);
-  return { state: SPIRALS[Math.floor(inCycle / 7200)], expiresAt: expiry.getTime() };
+  return phase(SPIRALS[Math.floor(inCycle / 7200)], expiry.getTime(), DUVIRI_PHASE_MS);
 }
 
 // Zariman flips faction every 2.5 hours, on the Holdfasts bounty clock, from a confirmed Corpus start.
 const ZARIMAN_CORPUS_START = 1_655_182_800_000;
 
-function zariman(bountyEnd: number): { state: string; expiresAt: number } | null {
+const ZARIMAN_PHASE_MS = 9_000_000;
+
+function zariman(bountyEnd: number): Phase | null {
   if (!bountyEnd) return null;
   const anchor = bountyEnd - 5000;
   const elapsed = (((anchor - ZARIMAN_CORPUS_START) % 18_000_000) + 18_000_000) % 18_000_000;
   const corpus = 18_000_000 - elapsed > 9_000_000;
-  return {
-    state: corpus ? "corpus" : "grineer",
-    expiresAt: Math.round(anchor / 60_000) * 60_000,
-  };
+  return phase(
+    corpus ? "corpus" : "grineer",
+    Math.round(anchor / 60_000) * 60_000,
+    ZARIMAN_PHASE_MS,
+  );
 }
 
 // DE does not ship the open world cycles, they are computed. A cycle we cannot derive is left out.
 function cycles(raw: Raw, at: number): Cycle[] {
   const cetusCycle = cetus(syndicateExpiry(raw, "CetusSyndicate"), at);
   const out: Cycle[] = [];
-  const push = (world: Cycle["world"], c: { state: string; expiresAt: number } | null) => {
-    if (c) out.push({ world, state: c.state, expiresAt: c.expiresAt });
+  const push = (world: Cycle["world"], c: Phase | null) => {
+    if (c) out.push({ world, state: c.state, startsAt: c.startsAt, expiresAt: c.expiresAt });
   };
   push("cetus", cetusCycle);
   push("vallis", vallis(at));
   // Cambion rides the Cetus clock, fass is day and vome is night.
-  push("cambion", cetusCycle && { state: cetusCycle.state === "day" ? "fass" : "vome", expiresAt: cetusCycle.expiresAt });
+  push("cambion", cetusCycle && { ...cetusCycle, state: cetusCycle.state === "day" ? "fass" : "vome" });
   push("earth", earth(at));
   push("duviri", duviri(at));
   push("zariman", zariman(syndicateExpiry(raw, "ZarimanSyndicate")));

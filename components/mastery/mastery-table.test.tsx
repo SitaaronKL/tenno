@@ -33,4 +33,21 @@ describe("MasteryTable", () => {
     expect(screen.getByText("Braton Prime")).toBeInTheDocument();
     expect(screen.queryByText("Excalibur")).not.toBeInTheDocument();
   });
+
+  it("tells you the game data is missing rather than blaming a filter", () => {
+    render(<MasteryTable rows={[]} hasRoster={false} />);
+
+    expect(
+      screen.getByText("No game data yet. Run the import step in the README to seed the roster."),
+    ).toBeInTheDocument();
+  });
+
+  it("blames the filter when the roster is there but nothing matches", async () => {
+    const user = userEvent.setup();
+    render(<MasteryTable rows={rows} />);
+
+    await user.type(screen.getByPlaceholderText("Search items"), "zzzzz");
+
+    expect(screen.getByText("Nothing matches these filters.")).toBeInTheDocument();
+  });
 });

@@ -10,6 +10,7 @@ const sent = vi.hoisted(() => ({
   emails: [] as { to: string; subject: string; react: { props: Record<string, string> } }[],
   texts: [] as { to: string; text: string }[],
   failuresLeft: 0,
+  notConfigured: false,
 }));
 
 vi.mock("./email", async () => {
@@ -20,6 +21,7 @@ vi.mock("./email", async () => {
       args: { to: v.string(), subject: v.string(), react: v.any() },
       returns: v.string(),
       handler: async (_ctx, { to, subject, react }) => {
+        if (sent.notConfigured) throw new Error("email not configured");
         if (sent.failuresLeft > 0) {
           sent.failuresLeft -= 1;
           throw new Error("provider is having a moment");
@@ -57,6 +59,7 @@ function setup() {
   sent.emails.length = 0;
   sent.texts.length = 0;
   sent.failuresLeft = 0;
+  sent.notConfigured = false;
   const t = convexTest(schema, modules);
   rateLimiter.register(t);
   return t;
@@ -171,7 +174,7 @@ describe("notify.digest", () => {
 
     await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
     rows = await t.run((ctx) => ctx.db.query("notifications").collect());
-    expect(rows[0].status).toBe("sent");
+    expect(rows[0].status).toBe("queued");
     expect(sent.emails).toHaveLength(1);
   });
 
@@ -217,7 +220,7 @@ describe("notify.send", () => {
     vi.useRealTimers();
 
     const rows = await t.run((ctx) => ctx.db.query("notifications").collect());
-    expect(rows[0].status).toBe("sent");
+    expect(rows[0].status).toBe("queued");
     expect(rows[0].attempts).toBe(2);
     expect(sent.emails).toHaveLength(1);
   });
@@ -277,7 +280,7 @@ describe("notify.send", () => {
     await t.finishAllScheduledFunctions(() => {});
 
     const rows = await t.run((ctx) => ctx.db.query("notifications").collect());
-    expect(rows[0].status).toBe("sent");
+    expect(rows[0].status).toBe("queued");
     expect(sent.emails).toHaveLength(1);
     expect(sent.emails[0].to).toBe("tenno@example.com");
   });
@@ -293,5 +296,164 @@ describe("notify.send", () => {
     expect(rows[0].status).toBe("skipped");
     expect(rows[0].error).toBe("no email on file");
     expect(sent.emails).toHaveLength(0);
+  });
+});
+
+describe("the digest under load", () => {
+  test("two crons for the same hour send one digest, not two", async () => {
+    const t = setup();
+    const { userId } = await seedDigest(t, "America/New_York", 9);
+
+    // Both runs read the user as due before either has finished sending.
+    const claimed = await t.mutation(internal.notify.claimDigest, {
+      userId,
+      now: NINE_IN_NEW_YORK,
+    });
+    const second = await t.mutation(internal.notify.claimDigest, {
+      userId,
+      now: NINE_IN_NEW_YORK,
+    });
+
+    expect(claimed).toBe(true);
+    expect(second).toBe(false);
+  });
+
+  test("a second cron in the same hour does not mail the user again", async () => {
+    const t = setup();
+    await seedDigest(t, "America/New_York", 9);
+
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+
+    // The hour was claimed by the first run, the second one leaves it alone.
+    expect(sent.emails).toHaveLength(1);
+  });
+
+  test("a provider blip does not lose a whole digest", async () => {
+    const t = setup();
+    await seedDigest(t, "America/New_York", 9);
+    sent.failuresLeft = 1;
+    vi.useFakeTimers();
+
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    vi.useRealTimers();
+
+    expect(sent.emails).toHaveLength(1);
+    const rows = await t.run(async (ctx) => await ctx.db.query("notifications").collect());
+    expect(rows.map((r) => r.status)).toEqual(["queued"]);
+  });
+
+  test("a provider that stays down leaves the digest failed, not retrying forever", async () => {
+    const t = setup();
+    await seedDigest(t, "America/New_York", 9);
+    sent.failuresLeft = 99;
+    vi.useFakeTimers();
+
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    vi.useRealTimers();
+
+    const rows = await t.run(async (ctx) => await ctx.db.query("notifications").collect());
+    expect(rows.map((r) => r.status)).toEqual(["failed"]);
+    expect(rows[0].attempts).toBe(3);
+  });
+
+  test("digest rows are found without reading the instant queue first", async () => {
+    const t = setup();
+    const { userId } = await seedDigest(t, "America/New_York", 9);
+    // A pile of instant rows ahead of the digest row must not be read to find it.
+    await t.run(async (ctx) => {
+      const rule = (await ctx.db.query("rules").first())!;
+      const event = (await ctx.db.query("worldEvents").first())!;
+      for (let i = 0; i < 300; i++) {
+        await ctx.db.insert("notifications", {
+          userId,
+          ruleId: rule._id,
+          eventId: event._id,
+          channel: "email" as const,
+          mode: "instant" as const,
+          status: "pending" as const,
+          createdAt: Date.now(),
+        });
+      }
+    });
+
+    const pending = await t.query(internal.notify.pendingDigestFor, { userId });
+    expect(pending).toHaveLength(1);
+  });
+});
+
+// The shape Resend posts to the delivery webhook.
+function resendEvent(type: "email.delivered" | "email.bounced") {
+  const at = new Date().toISOString();
+  return {
+    type,
+    created_at: at,
+    data: {
+      created_at: at,
+      email_id: "test-email-id",
+      from: "alerts@voidwatch.app",
+      to: "tenno@example.com",
+      subject: "Voidwatch: Axi survival",
+      ...(type === "email.bounced"
+        ? { bounce: { type: "Permanent", message: "no such address", subType: "General" } }
+        : {}),
+    },
+  } as never;
+}
+
+describe("what an email status means", () => {
+  test("email reads queued until Resend says it landed, then sent", async () => {
+    const t = setup();
+    const { eventId } = await seed(t, { profile: null });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    let rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("queued");
+    expect(rows[0].emailId).toBe("test-email-id");
+
+    await t.mutation(internal.notify.onEmailEvent, {
+      id: "test-email-id" as never,
+      event: resendEvent("email.delivered"),
+    });
+
+    rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("sent");
+    expect(rows[0].sentAt).toBeTypeOf("number");
+  });
+
+  test("a bounce moves the row to failed, not left reading sent", async () => {
+    const t = setup();
+    const { eventId } = await seed(t, { profile: null });
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    await t.mutation(internal.notify.onEmailEvent, {
+      id: "test-email-id" as never,
+      event: resendEvent("email.bounced"),
+    });
+
+    const rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("failed");
+  });
+
+  test("with no Resend key the row is skipped at once, saying why", async () => {
+    const t = setup();
+    sent.notConfigured = true;
+    const { eventId } = await seed(t, { profile: null });
+
+    vi.useFakeTimers();
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    vi.useRealTimers();
+
+    const rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("skipped");
+    expect(rows[0].error).toBe("email not configured");
+    // One try, not three: no key is not a blip.
+    expect(rows[0].attempts).toBe(1);
   });
 });

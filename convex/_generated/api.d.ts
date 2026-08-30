@@ -10,6 +10,7 @@
 
 import type * as agent_chat from "../agent/chat.js";
 import type * as agent_index from "../agent/index.js";
+import type * as agent_limits from "../agent/limits.js";
 import type * as agent_ruleBuilder from "../agent/ruleBuilder.js";
 import type * as agent_tools from "../agent/tools.js";
 import type * as auth from "../auth.js";
@@ -24,6 +25,7 @@ import type * as ingest_apply from "../ingest/apply.js";
 import type * as ingest_bounties from "../ingest/bounties.js";
 import type * as ingest_de from "../ingest/de.js";
 import type * as ingest_normalize from "../ingest/normalize.js";
+import type * as ingest_prune from "../ingest/prune.js";
 import type * as ingest_pull from "../ingest/pull.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_phone from "../lib/phone.js";
@@ -35,6 +37,8 @@ import type * as photon from "../photon.js";
 import type * as photonHttp from "../photonHttp.js";
 import type * as profileSync from "../profileSync.js";
 import type * as profiles from "../profiles.js";
+import type * as resendHttp from "../resendHttp.js";
+import type * as retention from "../retention.js";
 import type * as rules from "../rules.js";
 import type * as wiki from "../wiki.js";
 import type * as worldstate from "../worldstate.js";
@@ -48,6 +52,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "agent/chat": typeof agent_chat;
   "agent/index": typeof agent_index;
+  "agent/limits": typeof agent_limits;
   "agent/ruleBuilder": typeof agent_ruleBuilder;
   "agent/tools": typeof agent_tools;
   auth: typeof auth;
@@ -62,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   "ingest/bounties": typeof ingest_bounties;
   "ingest/de": typeof ingest_de;
   "ingest/normalize": typeof ingest_normalize;
+  "ingest/prune": typeof ingest_prune;
   "ingest/pull": typeof ingest_pull;
   "lib/auth": typeof lib_auth;
   "lib/phone": typeof lib_phone;
@@ -73,6 +79,8 @@ declare const fullApi: ApiFromModules<{
   photonHttp: typeof photonHttp;
   profileSync: typeof profileSync;
   profiles: typeof profiles;
+  resendHttp: typeof resendHttp;
+  retention: typeof retention;
   rules: typeof rules;
   wiki: typeof wiki;
   worldstate: typeof worldstate;

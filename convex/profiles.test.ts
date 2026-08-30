@@ -119,3 +119,85 @@ describe("phone opt in", () => {
     expect((await asUser.query(api.profiles.me, {})).profile.phoneVerified).toBe(false);
   });
 });
+
+describe("one phone, one account", () => {
+  async function twoUsers() {
+    const t = convexTest(schema, modules);
+    const [a, b] = await t.run(async (ctx) => [
+      await ctx.db.insert("users", { email: "a@example.com" }),
+      await ctx.db.insert("users", { email: "b@example.com" }),
+    ]);
+    return {
+      t,
+      alice: t.withIdentity({ subject: `${a}|session` }),
+      bob: t.withIdentity({ subject: `${b}|session` }),
+    };
+  }
+
+  test("a number already claimed by somebody else is refused with a reason", async () => {
+    const { alice, bob } = await twoUsers();
+    await alice.mutation(api.profiles.update, { phone: "+15550001234" });
+
+    await expect(bob.mutation(api.profiles.update, { phone: "+1 (555) 000-1234" })).rejects.toThrow(
+      /already linked to another account/,
+    );
+  });
+
+  test("saving your own number again is fine", async () => {
+    const { alice } = await twoUsers();
+    await alice.mutation(api.profiles.update, { phone: "+15550001234" });
+    const saved = await alice.mutation(api.profiles.update, { phone: "+15550001234" });
+    expect(saved.phone).toBe("+15550001234");
+  });
+
+  test("an inbound text reaches exactly the account that saved the number", async () => {
+    const { t, alice } = await twoUsers();
+    await alice.mutation(api.profiles.update, { phone: "5550001234" });
+    await t.mutation(internal.profiles.linkInbound, {
+      messageId: "m1",
+      phone: "+15550001234",
+      spaceId: "space-1",
+      senderId: "+15550001234",
+    });
+
+    const owner = await t.query(internal.profiles.userForVerifiedPhone, { phone: "+15550001234" });
+    const aliceProfile = await t.run(async (ctx) =>
+      (await ctx.db.query("profiles").collect()).find((p) => p.email === "a@example.com"),
+    );
+    expect(owner).toBe(aliceProfile!.userId);
+  });
+});
+
+describe("settings a client cannot save", () => {
+  async function signedInUser() {
+    const t = convexTest(schema, modules);
+    const userId = await t.run(async (ctx) =>
+      ctx.db.insert("users", { email: "tenno@example.com" }),
+    );
+    return t.withIdentity({ subject: `${userId}|session` });
+  }
+
+  test("a digest hour outside the clock is refused, the digest would never fire", async () => {
+    const t = await signedInUser();
+    await expect(t.mutation(api.profiles.update, { digestHour: 99 })).rejects.toThrow(/0 and 23/);
+    await expect(t.mutation(api.profiles.update, { digestHour: -1 })).rejects.toThrow(/0 and 23/);
+    await expect(t.mutation(api.profiles.update, { digestHour: 9.5 })).rejects.toThrow(/0 and 23/);
+  });
+
+  test("a timezone nobody lives in is refused rather than silently becoming UTC", async () => {
+    const t = await signedInUser();
+    await expect(
+      t.mutation(api.profiles.update, { timezone: "Mars/Olympus" }),
+    ).rejects.toThrow(/timezone/i);
+  });
+
+  test("a real hour and a real timezone save", async () => {
+    const t = await signedInUser();
+    const saved = await t.mutation(api.profiles.update, {
+      digestHour: 0,
+      timezone: "America/New_York",
+    });
+    expect(saved.digestHour).toBe(0);
+    expect(saved.timezone).toBe("America/New_York");
+  });
+});

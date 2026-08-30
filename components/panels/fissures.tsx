@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import type { Fissure } from "@/lib/contracts/worldstate";
 import { AtomIcon } from "@/components/icons/atom";
+import { Segmented } from "@/components/segmented";
 import { Empty, Panel } from "./panel";
 import { TierBadge, tierRank } from "./tier-badge";
 import { Countdown } from "./countdown";
@@ -77,20 +78,41 @@ const columns = helper.columns([
   }),
 ]);
 
+// Node is the only column that needs room, the rest hug their text.
 const WIDTHS = {
-  tier: "w-24",
+  tier: "w-16",
   mission: "w-28",
-  mode: "w-32",
-  expires: "w-24 text-right",
+  mode: "w-24",
+  expires: "w-20 text-right",
 };
+
+// Steel Path is the split people actually filter on, so it is a control, not a search.
+const PATH = [
+  { value: "all", label: "All" },
+  { value: "steel", label: "Steel Path" },
+  { value: "normal", label: "Normal" },
+] as const;
+type Path = (typeof PATH)[number]["value"];
 
 export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
   const now = useNow();
+  const [path, setPath] = useState<Path>("all");
   // The query already drops expired rows, this keeps the list honest between polls.
-  const rows = useMemo(() => sortFissures(fissures.filter((f) => f.expiresAt > now)), [fissures, now]);
+  const rows = useMemo(() => {
+    const open = fissures.filter((f) => f.expiresAt > now);
+    const picked =
+      path === "all" ? open : open.filter((f) => (path === "steel" ? f.steelPath : !f.steelPath));
+    return sortFissures(picked);
+  }, [fissures, now, path]);
 
   return (
-    <Panel title="Fissures" icon={AtomIcon} count={rows.length} className={CLASS}>
+    <Panel
+      title="Fissures"
+      icon={AtomIcon}
+      count={rows.length}
+      action={<Segmented label="Steel Path" options={PATH} value={path} onChange={setPath} />}
+      className={CLASS}
+    >
       <DataTable
         dense
         label="Void fissures"

@@ -8,6 +8,20 @@ import { worldStateValidator } from "../schema";
 
 type NewEvent = Pick<Doc<"worldEvents">, "kind" | "key" | "startsAt" | "expiresAt" | "payload">;
 
+// Relic order, the way the star chart and every fissure tracker lists them.
+const TIER_ORDER = ["Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"];
+
+// Sorted here so worldstate.get can hand the stored snapshot back without touching it.
+function sorted(state: WorldState): WorldState {
+  return {
+    ...state,
+    fissures: [...state.fissures].sort(
+      (a, b) =>
+        TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || a.expiresAt - b.expiresAt,
+    ),
+  };
+}
+
 // One row per upstream entity a rule can match on, kinds match EVENT_KINDS in lib/contracts/rule.ts.
 function eventsOf(state: WorldState): NewEvent[] {
   const out: NewEvent[] = [];
@@ -27,13 +41,18 @@ function eventsOf(state: WorldState): NewEvent[] {
   if (state.baro?.active) {
     push("baro", state.baro.key, state.baro.startsAt, state.baro.expiresAt, state.baro);
   }
-  // One notification per weekly rollover, upstream lists ten acts at once.
+  // One notification per weekly rollover. The season expiry sits months out, the weekly acts
+  // are what actually changes on a Monday, so the soonest weekly expiry is the key.
   if (state.nightwave) {
     const n = state.nightwave;
-    push("nightwave", `season:${n.season}:${n.expiresAt}`, state.fetchedAt, n.expiresAt, n);
+    const weekly = n.acts.filter((a) => !a.daily).map((a) => a.expiresAt);
+    const rollover = weekly.length > 0 ? Math.min(...weekly) : n.expiresAt;
+    push("nightwave", `season:${n.season}:week:${rollover}`, state.fetchedAt, rollover, n);
   }
+  // One event per phase. The start is rounded to the minute so every pull inside a phase agrees.
   for (const c of state.cycles) {
-    push("cycle", `${c.world}:${c.state}:${c.expiresAt}`, state.fetchedAt, c.expiresAt, c);
+    const startsAt = Math.round((c.startsAt ?? c.expiresAt) / 60_000) * 60_000;
+    push("cycle", `${c.world}:${c.state}:${startsAt}`, startsAt, c.expiresAt, c);
   }
   return out;
 }
@@ -42,7 +61,7 @@ export const apply = internalMutation({
   args: { platform: vPlatform, state: worldStateValidator },
   returns: v.number(),
   handler: async (ctx, args) => {
-    const state: WorldState = args.state;
+    const state: WorldState = sorted(args.state);
     const existing = await ctx.db
       .query("worldState")
       .withIndex("by_platform", (q) => q.eq("platform", args.platform))
@@ -60,6 +79,8 @@ export const apply = internalMutation({
     const eventIds: Id<"worldEvents">[] = [];
     for (const event of eventsOf(state)) {
       if (!event.key) continue;
+      // Nobody wants to hear about something that is already over.
+      if (event.expiresAt !== undefined && event.expiresAt <= state.fetchedAt) continue;
       const seen = await ctx.db
         .query("worldEvents")
         .withIndex("by_platform_kind_key", (q) =>
@@ -76,7 +97,10 @@ export const apply = internalMutation({
       );
     }
 
-    if (eventIds.length > 0) await ctx.scheduler.runAfter(0, internal.rules.evaluate, { eventIds });
+    // The first ingest after a deploy is the whole world at once. Record it, do not text about it.
+    if (eventIds.length > 0 && existing) {
+      await ctx.scheduler.runAfter(0, internal.rules.evaluate, { eventIds });
+    }
     return eventIds.length;
   },
 });

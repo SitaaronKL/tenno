@@ -54,7 +54,7 @@ export function AppSidebar() {
               size="lg"
               tooltip="Voidwatch"
               render={<Link href="/dashboard" />}
-              className="[&_svg]:size-6"
+              className="group-data-[collapsible=icon]:justify-center [&_svg]:size-6"
             >
               <Logo size={24} />
               <span className="font-semibold tracking-tight">Voidwatch</span>

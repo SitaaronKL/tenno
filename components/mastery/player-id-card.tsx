@@ -14,13 +14,7 @@ const STEPS = [
   "Copy the 24 character user_id from the text it returns.",
 ];
 
-export function PlayerIdCard({
-  playerId,
-  onSaved,
-}: {
-  playerId: string | null;
-  onSaved: (id: string) => void;
-}) {
+export function PlayerIdCard({ playerId }: { playerId: string | null }) {
   const [value, setValue] = useState(playerId ?? "");
   const [busy, setBusy] = useState(false);
   const fetchProfile = useFetchProfile();
@@ -31,7 +25,6 @@ export function PlayerIdCard({
     setBusy(true);
     try {
       const result = await fetchProfile({ playerId: id });
-      onSaved(id);
       toast.success(
         result.cached ? `Loaded ${result.displayName} from cache` : `Synced ${result.displayName}`,
       );

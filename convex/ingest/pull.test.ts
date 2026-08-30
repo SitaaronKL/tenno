@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import de from "./__fixtures__/de.json";
 import warframestat from "./__fixtures__/pc.json";
 import schema from "../schema";
@@ -32,7 +32,15 @@ async function storedSource(t: ReturnType<typeof convexTest>) {
   return row!.data;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+// The fixtures are a snapshot of 2026-08-30, prune drops them against a real clock.
+const INSIDE_FIXTURE_WINDOW = Date.parse("2026-08-30T01:17:00.000Z");
+
+beforeEach(() => vi.setSystemTime(INSIDE_FIXTURE_WINDOW));
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 describe("pull", () => {
   test("takes the world state straight from DE", async () => {
@@ -72,14 +80,93 @@ describe("pull", () => {
     expect((await storedSource(t)).source).toBe("warframestat");
   });
 
-  test("says so when neither upstream answers", async () => {
+  test("keeps the dashboard it had when neither upstream answers", async () => {
+    routes({
+      de: () => respond(de),
+      warframestat: () => respond(warframestat, "application/json"),
+    });
+    const t = convexTest(schema, modules);
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+    const good = await storedSource(t);
+
     routes({
       de: () => new Response("no", { status: 500 }),
       warframestat: () => new Response("no", { status: 500 }),
     });
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+    expect(logged).toHaveBeenCalledWith(expect.stringContaining("keeping the last snapshot"));
+    logged.mockRestore();
+
+    expect((await storedSource(t)).fissures).toHaveLength(good.fissures.length);
+  });
+});
+
+describe("a 200 that is not world state", () => {
+  test("falls back to warframestat when DE answers 200 with an error envelope", async () => {
+    routes({
+      de: () => respond({ error: "rate limited" }),
+      warframestat: () => respond(warframestat, "application/json"),
+    });
     const t = convexTest(schema, modules);
-    await expect(t.action(internal.ingest.pull.pull, { platform: "pc" })).rejects.toThrow(
-      /world state fetch failed/,
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+
+    const state = await storedSource(t);
+    expect(state.source).toBe("warframestat");
+    expect(state.fissures.length).toBeGreaterThan(0);
+  });
+
+  test("keeps the last good snapshot when both upstreams answer 200 with nothing", async () => {
+    routes({
+      de: () => respond(de),
+      warframestat: () => respond(warframestat, "application/json"),
+    });
+    const t = convexTest(schema, modules);
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+    const good = await storedSource(t);
+    expect(good.fissures.length).toBeGreaterThan(0);
+
+    routes({
+      de: () => respond({ error: "rate limited" }),
+      warframestat: () => respond({ message: "WorldState Not Found" }, "application/json"),
+    });
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+
+    // The dashboard keeps showing what it had rather than going blank.
+    const after = await storedSource(t);
+    expect(after.fissures.map((f: { key: string }) => f.key)).toEqual(
+      good.fissures.map((f: { key: string }) => f.key),
     );
+  });
+
+  test("asks both upstreams as a browser would, they refuse a bare fetch", async () => {
+    const seen: string[] = [];
+    vi.stubGlobal("fetch", (url: string, init?: RequestInit) => {
+      const headers = new Headers(init?.headers);
+      seen.push(headers.get("user-agent") ?? "");
+      return Promise.resolve(
+        String(url).includes("warframe.com")
+          ? respond({ error: "rate limited" })
+          : respond(warframestat, "application/json"),
+      );
+    });
+    const t = convexTest(schema, modules);
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+
+    expect(seen).toHaveLength(2);
+    for (const agent of seen) expect(agent).toMatch(/Mozilla/);
+  });
+
+  test("prefers the upstream that is not hours behind", async () => {
+    // DE answers, but its snapshot is a day old, warframestat is current.
+    const stale = { ...(de as Record<string, unknown>), Time: Math.floor(INSIDE_FIXTURE_WINDOW / 1000) - 86_400 };
+    routes({
+      de: () => respond(stale),
+      warframestat: () => respond(warframestat, "application/json"),
+    });
+    const t = convexTest(schema, modules);
+    await t.action(internal.ingest.pull.pull, { platform: "pc" });
+
+    expect((await storedSource(t)).source).toBe("warframestat");
   });
 });

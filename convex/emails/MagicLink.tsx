@@ -24,7 +24,7 @@ export function MagicLink({ url }: MagicLinkProps) {
           <Text style={{ color: "#a1a1aa" }}>
             This link works once and expires in 15 minutes.
           </Text>
-          <Button href={url} style={{ color: "#0b0b0f", backgroundColor: "#7dd3fc", padding: "10px 16px" }}>
+          <Button href={url} style={{ color: "#0b0b0f", backgroundColor: "#fafafa", padding: "10px 16px" }}>
             Sign in
           </Button>
           <Text style={{ color: "#a1a1aa" }}>

@@ -29,7 +29,7 @@ const MASTERED_OPTIONS = [
   { value: "no" as const, label: "Not yet" },
 ];
 
-export function MasteryTable({ rows }: { rows: MasteryRow[] }) {
+export function MasteryTable({ rows, hasRoster = true }: { rows: MasteryRow[]; hasRoster?: boolean }) {
   const [search, setSearch] = useState("");
   const [kind, setKind] = useState<MasteryKind | "all">("all");
   const [prime, setPrime] = useState<PrimeFilter>("any");
@@ -87,6 +87,11 @@ export function MasteryTable({ rows }: { rows: MasteryRow[] }) {
         pageSize={25}
         bordered
         countLabel="items"
+        emptyFiltered={
+          hasRoster
+            ? "Nothing matches these filters."
+            : "No game data yet. Run the import step in the README to seed the roster."
+        }
       />
     </div>
   );

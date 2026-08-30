@@ -1,3 +1,4 @@
+import { vOnEmailEventArgs } from "@convex-dev/resend";
 import { v } from "convex/values";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import type { ActionCtx } from "./_generated/server";
@@ -14,6 +15,22 @@ type EmailBody =
       template: "Digest";
       props: { items: { ruleName: string; title: string; detail?: string }[]; url: string };
     };
+
+// One shape for a delivery, so a producer that drops a field fails here and not downstream.
+export const vDelivery = v.object({
+  notificationId: v.id("notifications"),
+  userId: v.string(),
+  channel: v.union(v.literal("email"), v.literal("imessage")),
+  ruleName: v.string(),
+  kind: v.string(),
+  line: v.string(),
+  email: v.string(),
+  phone: v.union(v.string(), v.null()),
+  photonUserId: v.union(v.string(), v.null()),
+  phoneVerified: v.boolean(),
+  attempts: v.number(),
+  expiresAtText: v.optional(v.string()),
+});
 
 type Delivery = {
   notificationId: Id<"notifications">;
@@ -84,7 +101,7 @@ function expiryText(event: Doc<"worldEvents"> | null, timezone: string): string 
 
 export const loadDelivery = internalQuery({
   args: { notificationId: v.id("notifications") },
-  returns: v.any(),
+  returns: v.union(vDelivery, v.null()),
   handler: async (ctx, { notificationId }): Promise<Delivery | null> => {
     const notification = await ctx.db.get("notifications", notificationId);
     if (!notification || notification.status !== "pending") return null;
@@ -166,27 +183,28 @@ export const dueUsers = internalQuery({
 // Digest rows for one user, found through by_user_status so a busy neighbour cannot starve them.
 export const pendingDigestFor = internalQuery({
   args: { userId: v.id("users") },
-  returns: v.any(),
+  returns: v.array(vDelivery),
   handler: async (ctx, { userId }): Promise<Delivery[]> => {
     const out: Delivery[] = [];
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    const user = await ctx.db.get(userId);
     let cursor: string | null = null;
     let isDone = false;
     while (!isDone && out.length < 200) {
       const page = await ctx.db
         .query("notifications")
-        .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "pending"))
+        .withIndex("by_user_status_mode", (q) =>
+          q.eq("userId", userId).eq("status", "pending").eq("mode", "digest"),
+        )
         .paginate({ cursor, numItems: 100 });
       cursor = page.continueCursor;
       isDone = page.isDone;
       for (const notification of page.page) {
-        if (notification.mode !== "digest") continue;
         const rule = await ctx.db.get("rules", notification.ruleId);
         const event = await ctx.db.get("worldEvents", notification.eventId);
-        const profile = await ctx.db
-          .query("profiles")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
-          .first();
-        const user = await ctx.db.get(userId);
         out.push({
           notificationId: notification._id,
           userId,
@@ -204,6 +222,27 @@ export const pendingDigestFor = internalQuery({
       }
     }
     return out;
+  },
+});
+
+// Claim then send. Recording the hour after a dispatch lets a second cron run send it again.
+export const claimDigest = internalMutation({
+  args: { userId: v.id("users"), now: v.number() },
+  returns: v.boolean(),
+  handler: async (ctx, { userId, now }) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (!profile) return false;
+    if (
+      profile.lastDigestAt !== undefined &&
+      localHourKey(profile.timezone, profile.lastDigestAt) === localHourKey(profile.timezone, now)
+    ) {
+      return false;
+    }
+    await ctx.db.patch(profile._id, { lastDigestAt: now });
+    return true;
   },
 });
 
@@ -238,22 +277,85 @@ export const retryLater = internalMutation({
   },
 });
 
+// A digest group stays pending and the whole digest is attempted again after a backoff.
+export const retryDigestLater = internalMutation({
+  args: {
+    userId: v.id("users"),
+    ids: v.array(v.id("notifications")),
+    attempts: v.number(),
+    error: v.string(),
+    now: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { userId, ids, attempts, error, now }) => {
+    const delay = 60_000 * 2 ** (attempts - 1);
+    for (const id of ids) {
+      await ctx.db.patch("notifications", id, { attempts, nextAttemptAt: Date.now() + delay, error });
+    }
+    // The claim is released so the retry run can claim the same hour again.
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (profile) await ctx.db.patch(profile._id, { lastDigestAt: undefined });
+    // The same hour, so the retry finds the user due again rather than waiting for tomorrow.
+    await ctx.scheduler.runAfter(delay, internal.notify.digest, { now });
+    return null;
+  },
+});
+
 export const mark = internalMutation({
   args: {
     notificationIds: v.array(v.id("notifications")),
-    status: v.union(v.literal("sent"), v.literal("failed"), v.literal("skipped")),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("sent"),
+      v.literal("failed"),
+      v.literal("skipped"),
+    ),
     error: v.optional(v.string()),
     attempts: v.optional(v.number()),
+    emailId: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, { notificationIds, status, error, attempts }) => {
+  handler: async (ctx, { notificationIds, status, error, attempts, emailId }) => {
     for (const id of notificationIds) {
       await ctx.db.patch("notifications", id, {
         status,
         error,
         attempts,
+        emailId,
         nextAttemptAt: undefined,
         sentAt: status === "sent" ? Date.now() : undefined,
+      });
+    }
+    return null;
+  },
+});
+
+// Resend says what became of the mail. Until it does, the row reads queued, not sent.
+export const onEmailEvent = internalMutation({
+  args: vOnEmailEventArgs,
+  returns: v.null(),
+  handler: async (ctx, { id, event }) => {
+    const type = event.type;
+    const status =
+      type === "email.delivered"
+        ? ("sent" as const)
+        : type === "email.bounced" || type === "email.failed" || type === "email.complained"
+          ? ("failed" as const)
+          : null;
+    if (!status) return null;
+
+    const rows = await ctx.db
+      .query("notifications")
+      .withIndex("by_email", (q) => q.eq("emailId", id as unknown as string))
+      .collect();
+    for (const row of rows) {
+      await ctx.db.patch(row._id, {
+        status,
+        sentAt: status === "sent" ? Date.now() : undefined,
+        error: status === "failed" ? type : undefined,
       });
     }
     return null;
@@ -274,23 +376,31 @@ function undeliverable(delivery: Delivery): string | null {
   return null;
 }
 
+// The email id when the mail went to Resend, null for iMessage which is sent and done.
 async function dispatch(
   ctx: ActionCtx,
   delivery: Delivery,
   subject: string,
   body: string,
   react: EmailBody,
-): Promise<void> {
+): Promise<string | null> {
   if (delivery.channel === "email") {
     // A React element cannot cross a Convex function boundary, so the caller names the template.
-    await ctx.runAction(internal.email.sendEmail, { to: delivery.email, subject, react });
-    return;
+    return await ctx.runAction(internal.email.sendEmail, { to: delivery.email, subject, react });
   }
   await ctx.runAction(internal.photon.sendText, {
     photonUserId: delivery.photonUserId ?? undefined,
     phone: delivery.phone ?? undefined,
     text: body,
   });
+  return null;
+}
+
+// Email is not configured, so the row is settled now rather than retried into a wall.
+const NOT_CONFIGURED = "email not configured";
+
+function notConfigured(e: unknown): boolean {
+  return e instanceof Error && e.message === NOT_CONFIGURED;
 }
 
 export const send = internalAction({
@@ -311,26 +421,36 @@ export const send = internalAction({
     try {
       const ends = delivery.expiresAtText ? `Ends ${delivery.expiresAtText}` : undefined;
       const body = ends ? `${delivery.line}\n${ends}` : delivery.line;
-      await dispatch(ctx, delivery, `Voidwatch: ${delivery.ruleName}`, body, {
+      // The expiry is on its own line already, the template must not print it twice.
+      const emailId = await dispatch(ctx, delivery, `Voidwatch: ${delivery.ruleName}`, body, {
         template: "RuleMatch",
         props: {
           ruleName: delivery.ruleName,
           kind: delivery.kind,
           title: delivery.line,
-          detail: ends,
           expiresAt: delivery.expiresAtText,
           url: siteUrl(),
         },
       });
       await ctx.runMutation(internal.notify.mark, {
         notificationIds: [notificationId],
-        status: "sent",
+        // Email is queued until Resend reports delivery, iMessage is sent the moment it goes.
+        status: emailId ? "queued" : "sent",
         attempts: delivery.attempts + 1,
+        emailId: emailId ?? undefined,
       });
     } catch (e) {
       const attempts = delivery.attempts + 1;
       const error = e instanceof Error ? e.message : String(e);
-      if (attempts < MAX_ATTEMPTS) {
+      if (notConfigured(e)) {
+        // No key, no amount of retrying will help, and the user should see why.
+        await ctx.runMutation(internal.notify.mark, {
+          notificationIds: [notificationId],
+          status: "skipped",
+          error: NOT_CONFIGURED,
+          attempts,
+        });
+      } else if (attempts < MAX_ATTEMPTS) {
         await ctx.runMutation(internal.notify.retryLater, { notificationId, attempts, error });
       } else {
         await ctx.runMutation(internal.notify.mark, {
@@ -365,6 +485,9 @@ export const digest = internalAction({
       for (const userId of page.userIds) {
         const pending = (await ctx.runQuery(internal.notify.pendingDigestFor, { userId })) as Delivery[];
         if (pending.length === 0) continue;
+        // Claim the hour first, so a second run of the cron finds nothing left to send.
+        const claimed: boolean = await ctx.runMutation(internal.notify.claimDigest, { userId, now });
+        if (!claimed) continue;
 
         const groups = new Map<string, Delivery[]>();
         for (const delivery of pending) {
@@ -384,7 +507,7 @@ export const digest = internalAction({
             .map((d) => (d.expiresAtText ? `${d.line} (ends ${d.expiresAtText})` : d.line))
             .join("\n");
           try {
-            await dispatch(ctx, group[0], `Voidwatch digest: ${group.length} matches`, body, {
+            const emailId = await dispatch(ctx, group[0], `Voidwatch digest: ${group.length} matches`, body, {
               template: "Digest",
               props: {
                 items: group.map((d) => ({
@@ -395,16 +518,41 @@ export const digest = internalAction({
                 url: siteUrl(),
               },
             });
-            await ctx.runMutation(internal.notify.mark, { notificationIds: ids, status: "sent" });
-          } catch (e) {
             await ctx.runMutation(internal.notify.mark, {
               notificationIds: ids,
-              status: "failed",
-              error: e instanceof Error ? e.message : String(e),
+              status: emailId ? "queued" : "sent",
+              attempts: (group[0].attempts ?? 0) + 1,
+              emailId: emailId ?? undefined,
             });
+          } catch (e) {
+            // A provider blip must not lose the whole digest, the same three tries as an instant send.
+            const attempts = (group[0].attempts ?? 0) + 1;
+            const error = e instanceof Error ? e.message : String(e);
+            if (notConfigured(e)) {
+              await ctx.runMutation(internal.notify.mark, {
+                notificationIds: ids,
+                status: "skipped",
+                error: NOT_CONFIGURED,
+                attempts,
+              });
+            } else if (attempts < MAX_ATTEMPTS) {
+              await ctx.runMutation(internal.notify.retryDigestLater, {
+                userId,
+                ids,
+                attempts,
+                error,
+                now,
+              });
+            } else {
+              await ctx.runMutation(internal.notify.mark, {
+                notificationIds: ids,
+                status: "failed",
+                error,
+                attempts,
+              });
+            }
           }
         }
-        await ctx.runMutation(internal.notify.recordDigest, { userId, at: now });
       }
     }
     return null;

@@ -28,7 +28,7 @@ function RouteBreadcrumb() {
           <BreadcrumbLink render={<Link href="/dashboard" />}>Voidwatch</BreadcrumbLink>
         </BreadcrumbItem>
         {trail.map((label, i) => (
-          <Fragment key={label}>
+          <Fragment key={`${i}-${label}`}>
             <BreadcrumbSeparator className="hidden sm:block" />
             <BreadcrumbItem>
               {i === trail.length - 1 ? (

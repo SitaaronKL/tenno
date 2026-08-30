@@ -26,9 +26,20 @@ export function TierBadge({ tier }: { tier: string }) {
   );
 }
 
-export function Chip({ children }: { children: React.ReactNode }) {
+export function Chip({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <span className="inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground ring-1 ring-border">
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[0.6875rem] text-muted-foreground ring-1 ring-border",
+        className,
+      )}
+    >
       {children}
     </span>
   );

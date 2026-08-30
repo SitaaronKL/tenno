@@ -17,7 +17,8 @@ import { AlertsPanel } from "./alerts";
 import { BountiesPanel, bountiesOf } from "./bounties";
 
 // Bento: six columns on desktop, and each card claims the width its content needs.
-const GRID = "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6";
+// items-start so a short card stays short instead of stretching to its neighbour's height.
+const GRID = "grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-6";
 
 // Upstream can lag by hours, so a stale feed reads as stale rather than as a quiet game.
 function StaleNotice({ state }: { state: WorldState }) {
@@ -42,9 +43,9 @@ export function DashboardGrid() {
     return (
       <div>
         {/* The skeleton matches the final layout, tiles first, then the bento grid. */}
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="mb-4 flex flex-wrap gap-2">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
+            <Skeleton key={i} className="h-8 w-40 rounded-lg" />
           ))}
         </div>
         <div className={GRID}>

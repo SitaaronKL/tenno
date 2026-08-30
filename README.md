@@ -55,10 +55,9 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
                                             sign in fails without them
      npx convex env set OPENAI_API_KEY sk-...        OpenAI (agent, rule builder)
      npx convex env set AUTH_ALLOW_GUEST true        guest sign in, dev only
-     echo NEXT_PUBLIC_ALLOW_GUEST=true >> .env.local
 
      optional, for alerts:
-     npx convex env set RESEND_API_KEY re_...        Resend (email)
+     npx convex env set RESEND_API_KEY re_...        Resend (email, and the magic link button)
      npx convex env set AUTH_RESEND_KEY re_...       Resend (magic link sign in)
      npx convex env set EMAIL_DOMAIN yourdomain.com  verified sender domain
      npx convex env set SPECTRUM_PROJECT_ID ...      Photon (iMessage)

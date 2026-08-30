@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { ConvexError } from "convex/values";
+
+// The page reads the line at module scope, so it has to be set before the import below.
+vi.hoisted(() => {
+  process.env.NEXT_PUBLIC_PHOTON_NUMBER = "+1 (415) 603-5536";
+});
 
 const update = vi.fn().mockResolvedValue(null);
 // A zone the user has already chosen, so most tests do not trip the first load auto fill.
@@ -104,5 +110,41 @@ describe("settings", () => {
 
     expect(document.documentElement).toHaveClass("dark");
     expect(await screen.findByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
+  });
+});
+
+describe("a save that is refused", () => {
+  it("tells the user why instead of quietly reading Saved", async () => {
+    const user = userEvent.setup();
+    update.mockRejectedValueOnce(new ConvexError("That number is already linked to another account."));
+    renderPage();
+
+    await user.click(await screen.findByRole("button", { name: "Save settings" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        "That number is already linked to another account.",
+      ),
+    );
+    expect(screen.queryByText("Saved")).not.toBeInTheDocument();
+  });
+});
+
+describe("when the deployment has no Photon line", () => {
+  it("does not print an invented number to text", async () => {
+    process.env.NEXT_PUBLIC_PHOTON_NUMBER = "";
+    vi.resetModules();
+    const { default: Page } = await import("@/app/(app)/settings/page");
+
+    render(
+      <ThemeProvider>
+        <Page />
+      </ThemeProvider>,
+    );
+
+    expect(await screen.findByLabelText("Phone")).toBeInTheDocument();
+    expect(screen.queryByText(/Text START to/)).not.toBeInTheDocument();
+    process.env.NEXT_PUBLIC_PHOTON_NUMBER = "+1 (415) 603-5536";
+    vi.resetModules();
   });
 });

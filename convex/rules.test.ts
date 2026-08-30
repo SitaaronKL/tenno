@@ -157,7 +157,7 @@ describe("rules.evaluate", () => {
 
     await t.finishAllScheduledFunctions(() => {});
     const after = await t.run((ctx) => ctx.db.query("notifications").collect());
-    expect(after[0].status).toBe("sent");
+    expect(after[0].status).toBe("queued");
   });
 
   test("evaluating the same event twice does not notify twice", async () => {
@@ -184,7 +184,7 @@ describe("rules.evaluate", () => {
     // The user's digest hour is 09:00 UTC, the cron only sends at their local hour.
     await t.action(internal.notify.digest, { now: Date.parse("2026-08-30T09:30:00.000Z") });
     const after = await t.run((ctx) => ctx.db.query("notifications").collect());
-    expect(after[0].status).toBe("sent");
+    expect(after[0].status).toBe("queued");
   });
 
   test("an event no rule cares about notifies nobody", async () => {

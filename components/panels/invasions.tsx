@@ -12,6 +12,8 @@ export function rewardText(r: Reward | null): string {
   return `${r.credits.toLocaleString()} credits`;
 }
 
+// Upstream counts from minus Goal to plus Goal, so this is the attacking side's share of the
+// fight, not a task that runs to done. Under 50 means the defenders are ahead.
 function Progress({ value }: { value: number }) {
   const pct = Math.min(100, Math.max(0, value));
   return (
@@ -69,7 +71,7 @@ const columns = helper.columns([
   }),
   helper.accessor("completion", {
     id: "completion",
-    header: ({ column }) => <SortableHeader column={column}>Progress</SortableHeader>,
+    header: ({ column }) => <SortableHeader column={column}>Attacker share</SortableHeader>,
     cell: ({ row }) => <Progress value={row.original.completion} />,
   }),
 ]);

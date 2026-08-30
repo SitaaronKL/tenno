@@ -108,7 +108,13 @@ const bounty = v.object({
   ),
 });
 
-const cycle = v.object({ world: cycleWorld, state: v.string(), expiresAt: v.number() });
+const cycle = v.object({
+  world: cycleWorld,
+  state: v.string(),
+  // Optional so cycles stored before the start time existed still validate.
+  startsAt: v.optional(v.number()),
+  expiresAt: v.number(),
+});
 
 export const worldStateValidator = v.object({
   platform,
@@ -139,6 +145,8 @@ export default defineSchema({
     photonUserId: v.optional(v.string()),
     photonSpaceId: v.optional(v.string()),
     phoneVerifiedAt: v.optional(v.number()),
+    // The Warframe account this user synced. Mastery is read through it, never through an argument.
+    masteryPlayerId: v.optional(v.string()),
     lastDigestAt: v.optional(v.number()),
     timezone: v.string(),
     digestHour: v.number(),
@@ -151,7 +159,10 @@ export default defineSchema({
   photonInbound: defineTable({
     messageId: v.string(),
     receivedAt: v.number(),
-  }).index("by_message", ["messageId"]),
+  })
+    .index("by_message", ["messageId"])
+    // A dedupe row is only useful while a redelivery is still possible, retention reads this.
+    .index("by_received", ["receivedAt"]),
 
   worldState: defineTable({
     platform,
@@ -195,16 +206,23 @@ export default defineSchema({
     nextAttemptAt: v.optional(v.number()),
     status: v.union(
       v.literal("pending"),
+      // Resend accepted it, delivery is not confirmed until its webhook says so.
+      v.literal("queued"),
       v.literal("sent"),
       v.literal("failed"),
       v.literal("skipped"),
     ),
     error: v.optional(v.string()),
+    // The Resend component's id for the mail, so its delivery event finds this row.
+    emailId: v.optional(v.string()),
     createdAt: v.number(),
     sentAt: v.optional(v.number()),
   })
     .index("by_rule_event", ["ruleId", "eventId"])
-    .index("by_user_status", ["userId", "status"]),
+    .index("by_user_status", ["userId", "status"])
+    // Digest eligibility is a seek, not a scan past everything queued for instant delivery.
+    .index("by_user_status_mode", ["userId", "status", "mode"])
+    .index("by_email", ["emailId"]),
 
   // round2-mastery block, added by the mastery slice. Keep it last.
   items: defineTable({

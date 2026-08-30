@@ -36,7 +36,7 @@ describe("email templates", () => {
       />,
       { plainText: true },
     );
-    expect(html).toContain("2 alerts matched your rules this hour");
+    expect(html).toContain("2 alerts matched your rules since your last digest");
     expect(html).toContain("Baro arrives");
     expect(html).toContain("Primed Chamber");
     expect(html).toContain("Catalyst invasion");

@@ -56,8 +56,27 @@ describe("Fissures table", () => {
 
   it("says Steel Path in words, not as a chip a reader has to decode", () => {
     render(<FissuresPanel fissures={fixture} />);
-    expect(screen.getByText("Steel Path")).toBeInTheDocument();
-    expect(screen.getAllByText("Normal").length).toBe(4);
+    // The toggle also says Steel Path, so this asks the table, not the whole panel.
+    const cells = screen.getAllByRole("cell").map((c) => c.textContent);
+    expect(cells).toContain("Steel Path");
+    expect(cells.filter((t) => t === "Normal")).toHaveLength(4);
+  });
+
+  it("narrows to Steel Path, and back", async () => {
+    const user = userEvent.setup();
+    render(<FissuresPanel fissures={fixture} />);
+    const all = nodeOrder().length;
+
+    await user.click(screen.getByRole("radio", { name: "Steel Path" }));
+    const steel = nodeOrder().length;
+    expect(steel).toBeGreaterThan(0);
+    expect(steel).toBeLessThan(all);
+
+    await user.click(screen.getByRole("radio", { name: "Normal" }));
+    expect(nodeOrder().length).toBe(all - steel);
+
+    await user.click(screen.getByRole("radio", { name: "All" }));
+    expect(nodeOrder().length).toBe(all);
   });
 
   it("says so when nothing matches", () => {
