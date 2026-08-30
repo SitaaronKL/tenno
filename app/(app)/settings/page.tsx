@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
 import QRCode from "qrcode";
+import { toast } from "sonner";
 import { CheckIcon } from "@/components/icons/check";
 import { CopyIcon } from "@/components/icons/copy";
 import { LogoutIcon } from "@/components/icons/logout";
@@ -24,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shell/page-header";
 import { ThemeCard } from "@/components/shell/theme-card";
 import { useProfile, useUpdateProfile, type Profile } from "@/components/rules/api";
+import { errorMessage } from "@/lib/errors";
 import {
   DEFAULT_DIGEST_HOUR,
   detectTimezone,
@@ -32,8 +34,8 @@ import {
 import { ClientOnly } from "@/components/rules/client-only";
 import { cn } from "@/lib/utils";
 
-// The Photon shared pool assigns the line, so the deployment names it and the page never guesses.
-const PHOTON_NUMBER = process.env.NEXT_PUBLIC_PHOTON_NUMBER || "+1 (415) 603-5536";
+// The Photon shared pool assigns the line. Unset means there is no line, not a number to invent.
+const PHOTON_NUMBER = process.env.NEXT_PUBLIC_PHOTON_NUMBER ?? "";
 const START_TEXT = `Text START to ${PHOTON_NUMBER} from this phone`;
 // RFC 5724 sms link, so scanning the code opens Messages with START already typed.
 const SMS_LINK = `sms:${PHOTON_NUMBER.replace(/[^\d+]/g, "")}?body=START`;
@@ -125,6 +127,8 @@ function SettingsForm({
   const [timezone, setTimezone] = useState(profile.timezone);
   const [digestHour, setDigestHour] = useState(profile.digestHour);
   const [saved, setSaved] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const adopted = useRef(false);
 
   const optedIn = Boolean(profile.phone);
@@ -142,8 +146,20 @@ function SettingsForm({
   async function save(next?: { phone?: string | null }) {
     // An empty field means remove the number, undefined would mean leave it alone.
     const value = next && "phone" in next ? next.phone : phone.trim() === "" ? null : phone.trim();
-    await update({ phone: value ?? null, timezone, digestHour });
-    setSaved(true);
+    setBusy(true);
+    setError(null);
+    try {
+      await update({ phone: value ?? null, timezone, digestHour });
+      setSaved(true);
+    } catch (caught) {
+      // A rejected save must say so, a silent failure looks like it worked.
+      const message = errorMessage(caught, "Could not save your settings, try again.");
+      setError(message);
+      setSaved(false);
+      toast.error(message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -183,7 +199,7 @@ function SettingsForm({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
-            {optedIn && (
+            {optedIn && PHOTON_NUMBER !== "" && (
               <div className="flex items-center gap-3 rounded-lg bg-surface-2 p-3 ring-1 ring-border">
                 <SmsQr />
                 <div className="min-w-0">
@@ -202,7 +218,7 @@ function SettingsForm({
       <Card>
         <CardHeader>
           <CardTitle>Digest</CardTitle>
-          <CardDescription>Hourly digest rules send once a day at this hour.</CardDescription>
+          <CardDescription>Digest rules collect all day and arrive once, at this hour.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="grid gap-2">
@@ -245,8 +261,15 @@ function SettingsForm({
       <ThemeCard />
 
       <div className="flex items-center gap-3">
-        <Button type="submit">Save settings</Button>
-        {saved && <span className="text-sm text-muted-foreground">Saved</span>}
+        <Button type="submit" disabled={busy}>
+          {busy ? "Saving" : "Save settings"}
+        </Button>
+        {saved && !error && <span className="text-sm text-muted-foreground">Saved</span>}
+        {error && (
+          <span role="alert" className="text-sm text-destructive">
+            {error}
+          </span>
+        )}
       </div>
 
       <Card className="ring-destructive/25">
@@ -258,7 +281,7 @@ function SettingsForm({
           <Button
             type="button"
             variant="destructive"
-            disabled={!optedIn}
+            disabled={!optedIn || busy}
             onClick={() => {
               setPhone("");
               void save({ phone: null });

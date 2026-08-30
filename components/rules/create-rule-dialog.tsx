@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { SquarePenIcon } from "@/components/icons/square-pen";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RuleForm } from "@/components/rules/rule-form";
 import { ruleSentence } from "@/components/rules/sentence";
 import { useCreateRule, useDraftRule } from "@/components/rules/api";
+import { errorMessage } from "@/lib/errors";
 import type { RuleInput } from "@/lib/contracts/rule";
 
 export function CreateRuleDialog({
@@ -34,6 +36,7 @@ export function CreateRuleDialog({
   const [drafted, setDrafted] = useState<RuleInput | null>(null);
   const [editing, setEditing] = useState(false);
   const [drafting, setDrafting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const controlled = controlledOpen !== undefined;
@@ -44,11 +47,21 @@ export function CreateRuleDialog({
   };
 
   async function save(input: RuleInput) {
-    await create(input);
-    setOpen(false);
-    setDrafted(null);
-    setEditing(false);
-    setText("");
+    setSaving(true);
+    setError(null);
+    try {
+      await create(input);
+      setOpen(false);
+      setDrafted(null);
+      setEditing(false);
+      setText("");
+    } catch (caught) {
+      const message = errorMessage(caught, "Could not save that rule, try again.");
+      setError(message);
+      toast.error(message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function describe() {
@@ -78,7 +91,7 @@ export function CreateRuleDialog({
             <TabsTrigger value="describe">Describe</TabsTrigger>
           </TabsList>
           <TabsContent value="build" className="max-h-[60vh] min-h-[24rem] overflow-y-auto pt-2">
-            <RuleForm key={preset?.name} initial={preset} onSubmit={save} submitLabel="Create rule" />
+            <RuleForm key={preset?.name} initial={preset} onSubmit={save} submitLabel="Create rule" pending={saving} />
           </TabsContent>
           <TabsContent value="describe" className="grid max-h-[60vh] min-h-[24rem] content-start gap-3 overflow-y-auto pt-2">
             <Textarea
@@ -106,7 +119,7 @@ export function CreateRuleDialog({
               </div>
             )}
             {drafted && editing && (
-              <RuleForm key={drafted.name} initial={drafted} onSubmit={save} submitLabel="Create rule" />
+              <RuleForm key={drafted.name} initial={drafted} onSubmit={save} submitLabel="Create rule" pending={saving} />
             )}
           </TabsContent>
         </Tabs>

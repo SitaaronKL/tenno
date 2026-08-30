@@ -15,6 +15,19 @@ function toE164(raw: string): string {
   return digits.length === 10 ? `+1${digits}` : key;
 }
 
+// A zone the runtime does not know silently becomes UTC, so a typo would move somebody's digest.
+function knownTimezone(zone: string): boolean {
+  const supported = Intl as unknown as { supportedValuesOf?: (key: string) => string[] };
+  const zones = supported.supportedValuesOf?.("timeZone");
+  if (zones) return zones.includes(zone);
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const DEFAULT_TIMEZONE = "UTC";
 const DEFAULT_DIGEST_HOUR = 9;
 
@@ -90,6 +103,15 @@ export const update = mutation({
     const user = await ctx.db.get(userId);
     if (user === null) {
       throw new Error("User row is missing");
+    }
+    if (
+      args.digestHour !== undefined &&
+      (!Number.isInteger(args.digestHour) || args.digestHour < 0 || args.digestHour > 23)
+    ) {
+      throw new ConvexError("Pick a digest hour between 0 and 23.");
+    }
+    if (args.timezone !== undefined && !knownTimezone(args.timezone)) {
+      throw new ConvexError(`${args.timezone} is not a timezone this deployment knows.`);
     }
     const existing = await load(ctx, userId);
     const nextPhone = args.phone === undefined ? undefined : args.phone === null ? null : toE164(args.phone);

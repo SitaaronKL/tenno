@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { AtSignIcon } from "@/components/icons/at-sign";
 import { MessageSquareIcon } from "@/components/icons/message-square";
 import { GripHorizontalIcon } from "@/components/icons/grip-horizontal";
@@ -17,6 +18,7 @@ import {
 import { EditRuleDialog } from "@/components/rules/edit-rule-dialog";
 import { ruleSentence } from "@/components/rules/sentence";
 import { useRemoveRule, useUpdateRule, type Rule } from "@/components/rules/api";
+import { errorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 
 const CHANNEL_ICONS = { email: AtSignIcon, imessage: MessageSquareIcon } as const;
@@ -29,13 +31,29 @@ function RuleRow({ rule }: { rule: Rule }) {
   const update = useUpdateRule();
   const remove = useRemoveRule();
   const [editing, setEditing] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  // A rejected toggle must put the switch back, otherwise the row lies about the rule.
+  async function run(work: () => Promise<unknown>, fallback: string) {
+    setBusy(true);
+    try {
+      await work();
+    } catch (error) {
+      toast.error(errorMessage(error, fallback));
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <li className="flex items-center gap-4 px-4 py-3 transition-colors duration-150 ease-out hover:bg-surface-2">
       <Switch
         aria-label={`Enable ${rule.name}`}
         checked={rule.enabled}
-        onCheckedChange={(checked) => void update({ id: rule._id, enabled: checked })}
+        disabled={busy}
+        onCheckedChange={(checked) =>
+          void run(() => update({ id: rule._id, enabled: checked }), "Could not change that rule.")
+        }
       />
       <div className="min-w-0 flex-1">
         <p className={cn("truncate font-medium", !rule.enabled && "text-muted-foreground")}>{rule.name}</p>
@@ -73,7 +91,8 @@ function RuleRow({ rule }: { rule: Rule }) {
           </DropdownMenuItem>
           <DropdownMenuItem
             variant="destructive"
-            onClick={() => void remove({ id: rule._id })}
+            disabled={busy}
+            onClick={() => void run(() => remove({ id: rule._id }), "Could not delete that rule.")}
           >
             <XIcon size={14} aria-hidden="true" /> Delete
           </DropdownMenuItem>

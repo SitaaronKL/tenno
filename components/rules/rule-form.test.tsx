@@ -11,6 +11,7 @@ vi.mock("@/components/rules/api", () => ({
 }));
 
 import { CreateRuleDialog } from "@/components/rules/create-rule-dialog";
+import { RuleForm } from "@/components/rules/rule-form";
 
 async function openDialog(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "New rule" }));
@@ -91,5 +92,51 @@ describe("create rule", () => {
       channels: ["email"],
       filter: { kind: "fissure", tiers: ["Axi"], missionTypes: ["Survival"] },
     });
+  });
+});
+
+describe("Void Storm, the one filter the form used to drop", () => {
+  beforeEach(() => create.mockClear());
+
+  it("leaves Void Storm unconstrained unless the user picks a side", async () => {
+    const user = userEvent.setup();
+    render(<CreateRuleDialog />);
+
+    await user.type(await openDialog(user), "Any Axi");
+    await user.click(screen.getByRole("button", { name: "Create rule" }));
+
+    expect(create.mock.calls[0][0].filter.storm).toBe(null);
+  });
+
+  it("saves a Void Storm only rule the way the user set it", async () => {
+    const user = userEvent.setup();
+    render(<CreateRuleDialog />);
+
+    await user.type(await openDialog(user), "Storms only");
+    await user.click(screen.getByRole("radio", { name: "Only Void Storm" }));
+    await user.click(screen.getByRole("button", { name: "Create rule" }));
+
+    expect(create.mock.calls[0][0].filter.storm).toBe(true);
+    expect(RuleInput.safeParse(create.mock.calls[0][0]).success).toBe(true);
+  });
+
+  it("keeps a drafted Void Storm rule when it is edited and saved unchanged", async () => {
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+    render(
+      <RuleForm
+        initial={{
+          name: "Storms",
+          filter: { kind: "fissure", tiers: null, missionTypes: null, steelPath: null, storm: true },
+          mode: "instant",
+          channels: ["email"],
+        }}
+        onSubmit={onSubmit}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: "Save rule" }));
+
+    expect(onSubmit.mock.calls[0][0].filter.storm).toBe(true);
   });
 });

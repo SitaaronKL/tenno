@@ -167,3 +167,37 @@ describe("one phone, one account", () => {
     expect(owner).toBe(aliceProfile!.userId);
   });
 });
+
+describe("settings a client cannot save", () => {
+  async function signedInUser() {
+    const t = convexTest(schema, modules);
+    const userId = await t.run(async (ctx) =>
+      ctx.db.insert("users", { email: "tenno@example.com" }),
+    );
+    return t.withIdentity({ subject: `${userId}|session` });
+  }
+
+  test("a digest hour outside the clock is refused, the digest would never fire", async () => {
+    const t = await signedInUser();
+    await expect(t.mutation(api.profiles.update, { digestHour: 99 })).rejects.toThrow(/0 and 23/);
+    await expect(t.mutation(api.profiles.update, { digestHour: -1 })).rejects.toThrow(/0 and 23/);
+    await expect(t.mutation(api.profiles.update, { digestHour: 9.5 })).rejects.toThrow(/0 and 23/);
+  });
+
+  test("a timezone nobody lives in is refused rather than silently becoming UTC", async () => {
+    const t = await signedInUser();
+    await expect(
+      t.mutation(api.profiles.update, { timezone: "Mars/Olympus" }),
+    ).rejects.toThrow(/timezone/i);
+  });
+
+  test("a real hour and a real timezone save", async () => {
+    const t = await signedInUser();
+    const saved = await t.mutation(api.profiles.update, {
+      digestHour: 0,
+      timezone: "America/New_York",
+    });
+    expect(saved.digestHour).toBe(0);
+    expect(saved.timezone).toBe("America/New_York");
+  });
+});
