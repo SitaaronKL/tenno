@@ -42,10 +42,25 @@ export const vRuleFilter = v.union(
     kind: v.literal("sortie"),
     boss: v.union(v.array(v.string()), v.null()),
     missionTypes: v.union(v.array(v.string()), v.null()),
+    // Optional so rules stored before modifiers existed still read back.
+    modifiers: v.optional(v.union(v.array(v.string()), v.null())),
   }),
   v.object({ kind: v.literal("archonHunt"), boss: v.union(v.array(v.string()), v.null()) }),
-  v.object({ kind: v.literal("cycle"), world: vCycleWorld, state: v.string() }),
+  v.object({
+    kind: v.literal("cycle"),
+    world: vCycleWorld,
+    state: v.string(),
+    // Optional so rules stored before lead minutes existed still read back.
+    leadMinutes: v.optional(v.union(v.number(), v.null())),
+  }),
   v.object({ kind: v.literal("nightwave") }),
+  v.object({
+    kind: v.literal("bounty"),
+    syndicates: v.union(v.array(v.string()), v.null()),
+    level: v.union(v.number(), v.null()),
+    missionTypes: v.union(v.array(v.string()), v.null()),
+  }),
+  v.object({ kind: v.literal("reset"), period: v.union(v.literal("daily"), v.literal("weekly")) }),
 );
 
 // What rules.create takes and what the AI rule builder drafts.

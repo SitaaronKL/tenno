@@ -58,9 +58,14 @@ export function matches(filter: RuleFilter, event: MatchEvent): boolean {
     case "archonHunt": {
       if (!oneOf(filter.boss, str(p.boss))) return false;
       if (filter.kind === "archonHunt") return true;
+      const missions = arr(p.missions).map(rec);
+      const modifiers = filter.modifiers ?? null;
+      if (modifiers !== null && modifiers.length > 0) {
+        // The modifier text is a phrase, so a loose contains beats an exact compare.
+        if (!containsAny(modifiers, missions.map((m) => str(m.modifier)))) return false;
+      }
       if (filter.missionTypes === null || filter.missionTypes.length === 0) return true;
-      const missionTypes = arr(p.missions).map((m) => str(rec(m).missionType));
-      return missionTypes.some((mt) => oneOf(filter.missionTypes, mt));
+      return missions.some((m) => oneOf(filter.missionTypes, str(m.missionType)));
     }
     case "cycle": {
       if (str(p.world).toLowerCase() !== filter.world.toLowerCase()) return false;
@@ -68,5 +73,16 @@ export function matches(filter: RuleFilter, event: MatchEvent): boolean {
     }
     case "nightwave":
       return true;
+    case "bounty": {
+      if (!oneOf(filter.syndicates, str(p.syndicate))) return false;
+      const jobs = arr(p.jobs).map(rec);
+      // Level is the job's position on the board, 1 is the row the game lists first.
+      const wanted = filter.level === null ? jobs : jobs.slice(filter.level - 1, filter.level);
+      if (wanted.length === 0) return false;
+      if (filter.missionTypes === null || filter.missionTypes.length === 0) return true;
+      return wanted.some((j) => oneOf(filter.missionTypes, str(j.missionType)));
+    }
+    case "reset":
+      return str(p.period) === filter.period;
   }
 }

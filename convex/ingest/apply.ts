@@ -49,6 +49,10 @@ function eventsOf(state: WorldState): NewEvent[] {
     const rollover = weekly.length > 0 ? Math.min(...weekly) : n.expiresAt;
     push("nightwave", `season:${n.season}:week:${rollover}`, state.fetchedAt, rollover, n);
   }
+  // A board is news once per rotation, so the expiry the whole board shares keys it.
+  for (const b of state.bounties ?? []) {
+    push("bounty", `${b.syndicate}:${b.expiresAt}`, state.fetchedAt, b.expiresAt, b);
+  }
   // One event per phase. The start is rounded to the minute so every pull inside a phase agrees.
   for (const c of state.cycles) {
     const startsAt = Math.round((c.startsAt ?? c.expiresAt) / 60_000) * 60_000;

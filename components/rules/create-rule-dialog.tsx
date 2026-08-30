@@ -91,6 +91,8 @@ export function CreateRuleDialog({
             <TabsTrigger value="describe">Describe</TabsTrigger>
           </TabsList>
           <TabsContent value="build" className="max-h-[60vh] min-h-[24rem] overflow-y-auto pt-2">
+            {/* A prefilled rule reads back as its sentence, so the user sees what they are about to save. */}
+            {preset && <p className="pb-3 text-sm text-muted-foreground">{ruleSentence(preset.filter)}</p>}
             <RuleForm key={preset?.name} initial={preset} onSubmit={save} submitLabel="Create rule" pending={saving} />
           </TabsContent>
           <TabsContent value="describe" className="grid max-h-[60vh] min-h-[24rem] content-start gap-3 overflow-y-auto pt-2">

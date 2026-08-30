@@ -187,6 +187,101 @@ describe("rules.evaluate", () => {
     expect(after[0].status).toBe("queued");
   });
 
+  test("a lead rule is scheduled for the minutes before the phase begins", async () => {
+    const t = setup();
+    const startsAt = Date.now() + 30 * 60_000;
+    const eventId = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+      await ctx.db.insert("rules", {
+        userId,
+        name: "Before Cetus night",
+        filter: { kind: "cycle", world: "cetus", state: "night", leadMinutes: 10 },
+        mode: "instant" as const,
+        channels: ["email" as const],
+        enabled: true,
+        source: "manual" as const,
+        createdAt: Date.now(),
+      });
+      return await ctx.db.insert("worldEvents", {
+        platform: "pc",
+        kind: "cycle",
+        key: `cetus:night:${startsAt}`,
+        startsAt,
+        seenAt: Date.now(),
+        payload: { world: "cetus", state: "night", startsAt },
+      });
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+
+    const scheduled = await t.run((ctx) => ctx.db.system.query("_scheduled_functions").collect());
+    expect(scheduled).toHaveLength(1);
+    expect(scheduled[0].scheduledTime).toBe(startsAt - 10 * 60_000);
+  });
+
+  test("a lead time that has already passed says nothing at all", async () => {
+    const t = setup();
+    const startsAt = Date.now() - 60_000;
+    const eventId = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+      await ctx.db.insert("rules", {
+        userId,
+        name: "Before Cetus night",
+        filter: { kind: "cycle", world: "cetus", state: "night", leadMinutes: 10 },
+        mode: "instant" as const,
+        channels: ["email" as const],
+        enabled: true,
+        source: "manual" as const,
+        createdAt: Date.now(),
+      });
+      return await ctx.db.insert("worldEvents", {
+        platform: "pc",
+        kind: "cycle",
+        key: `cetus:night:${startsAt}`,
+        startsAt,
+        seenAt: Date.now(),
+        payload: { world: "cetus", state: "night", startsAt },
+      });
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+
+    const notifications = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(notifications).toHaveLength(0);
+  });
+
+  test("a cycle rule without a lead still fires the moment the phase lands", async () => {
+    const t = setup();
+    const startsAt = Date.now();
+    const eventId = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+      await ctx.db.insert("rules", {
+        userId,
+        name: "Vallis warm",
+        filter: { kind: "cycle", world: "vallis", state: "warm", leadMinutes: null },
+        mode: "instant" as const,
+        channels: ["email" as const],
+        enabled: true,
+        source: "manual" as const,
+        createdAt: Date.now(),
+      });
+      return await ctx.db.insert("worldEvents", {
+        platform: "pc",
+        kind: "cycle",
+        key: `vallis:warm:${startsAt}`,
+        startsAt,
+        seenAt: Date.now(),
+        payload: { world: "vallis", state: "warm", startsAt },
+      });
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+
+    const scheduled = await t.run((ctx) => ctx.db.system.query("_scheduled_functions").collect());
+    expect(scheduled).toHaveLength(1);
+    expect(scheduled[0].scheduledTime).toBeLessThanOrEqual(Date.now());
+  });
+
   test("an event no rule cares about notifies nobody", async () => {
     const t = setup();
     await seed(t, "instant");

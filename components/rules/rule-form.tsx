@@ -18,7 +18,21 @@ import {
 
 const TIERS = ["Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"] as const;
 type Tier = (typeof TIERS)[number];
-const MISSION_TYPES = ["Survival", "Defense", "Capture", "Exterminate", "Rescue", "Interception"];
+const MISSION_TYPES = [
+  "Survival",
+  "Defense",
+  "Capture",
+  "Exterminate",
+  "Rescue",
+  "Interception",
+  "Spy",
+  "Sabotage",
+  "Excavation",
+  "Assassinate",
+  "Void Cascade",
+];
+// The board prints five rows, tier 1 is the lowest level bounty on it.
+const BOUNTY_LEVELS = ["any", "1", "2", "3", "4", "5"] as const;
 const WORLDS = ["cetus", "vallis", "cambion", "earth", "duviri", "zariman"] as const;
 const CHANNEL_LABELS: Record<string, string> = { email: "Email", imessage: "iMessage" };
 
@@ -145,7 +159,7 @@ export function RuleForm({
   const [kind, setKind] = useState<EventKind>(initial?.filter.kind ?? "fissure");
   const [tiers, setTiers] = useState<string[]>(f && f.kind === "fissure" ? (f.tiers ?? []) : []);
   const [missionTypes, setMissionTypes] = useState<string[]>(
-    f && (f.kind === "fissure" || f.kind === "sortie") ? (f.missionTypes ?? []) : [],
+    f && (f.kind === "fissure" || f.kind === "sortie" || f.kind === "bounty") ? (f.missionTypes ?? []) : [],
   );
   const [steelPath, setSteelPath] = useState<SteelPath>(() =>
     f?.kind === "fissure" ? tristate(f.steelPath) : "any",
@@ -159,10 +173,19 @@ export function RuleForm({
     if (f.kind === "invasion" || f.kind === "alert") return f.rewards ?? [];
     if (f.kind === "baro") return f.items ?? [];
     if (f.kind === "sortie" || f.kind === "archonHunt") return f.boss ?? [];
+    if (f.kind === "bounty") return f.syndicates ?? [];
     return [];
   });
+  const [modifiers, setModifiers] = useState<string[]>(
+    f?.kind === "sortie" ? (f.modifiers ?? []) : [],
+  );
   const [world, setWorld] = useState<(typeof WORLDS)[number]>(f?.kind === "cycle" ? f.world : "cetus");
   const [cycleState, setCycleState] = useState(f?.kind === "cycle" ? f.state : "night");
+  const [lead, setLead] = useState(f?.kind === "cycle" && f.leadMinutes !== null ? String(f.leadMinutes) : "");
+  const [level, setLevel] = useState<(typeof BOUNTY_LEVELS)[number]>(
+    f?.kind === "bounty" && f.level !== null ? (String(f.level) as (typeof BOUNTY_LEVELS)[number]) : "any",
+  );
+  const [period, setPeriod] = useState<"daily" | "weekly">(f?.kind === "reset" ? f.period : "daily");
   const [mode, setMode] = useState<"instant" | "digest">(initial?.mode ?? "instant");
   const [channels, setChannels] = useState<string[]>(initial?.channels ?? ["email"]);
   const [error, setError] = useState<string | null>(null);
@@ -185,13 +208,22 @@ export function RuleForm({
       case "baro":
         return { kind, items: some(names) };
       case "sortie":
-        return { kind, boss: some(names), missionTypes: some(missionTypes) };
+        return { kind, boss: some(names), missionTypes: some(missionTypes), modifiers: some(modifiers) };
       case "archonHunt":
         return { kind, boss: some(names) };
       case "cycle":
-        return { kind, world, state: cycleState };
+        return { kind, world, state: cycleState, leadMinutes: lead === "" ? null : Number(lead) };
       case "nightwave":
         return { kind };
+      case "bounty":
+        return {
+          kind,
+          syndicates: some(names),
+          level: level === "any" ? null : Number(level),
+          missionTypes: some(missionTypes),
+        };
+      case "reset":
+        return { kind, period };
     }
   }
 
@@ -205,7 +237,14 @@ export function RuleForm({
     await onSubmit(parsed.data);
   }
 
-  const nameList = kind === "baro" ? "Items" : kind === "sortie" || kind === "archonHunt" ? "Bosses" : "Rewards";
+  const nameList =
+    kind === "baro"
+      ? "Items"
+      : kind === "sortie" || kind === "archonHunt"
+        ? "Bosses"
+        : kind === "bounty"
+          ? "Syndicates"
+          : "Rewards";
 
   return (
     <form
@@ -263,7 +302,44 @@ export function RuleForm({
             <Chip label="Mission types" value={missionTypes.length ? joinOr(missionTypes) : "any mission"}>
               <CheckboxList options={MISSION_TYPES} values={missionTypes} onChange={setMissionTypes} />
             </Chip>
+            <Chip label="Modifiers" value={modifiers.length ? joinOr(modifiers) : "any modifier"}>
+              <TagInput label="Modifiers" values={modifiers} onChange={setModifiers} />
+            </Chip>
           </>
+        )}
+
+        {kind === "bounty" && (
+          <>
+            <Chip label="Board tier" value={level === "any" ? "any tier" : `tier ${level}`}>
+              <RadioList
+                name="bounty-level"
+                value={level}
+                onChange={setLevel}
+                options={BOUNTY_LEVELS.map((l) => ({ value: l, label: l === "any" ? "Any tier" : `Tier ${l}` }))}
+              />
+            </Chip>
+            <span className="text-muted-foreground">from</span>
+            <Chip label="Syndicates" value={names.length ? joinOr(names) : "any syndicate"}>
+              <TagInput label="Syndicates" values={names} onChange={setNames} />
+            </Chip>
+            <Chip label="Mission types" value={missionTypes.length ? joinOr(missionTypes) : "any mission"}>
+              <CheckboxList options={MISSION_TYPES} values={missionTypes} onChange={setMissionTypes} />
+            </Chip>
+          </>
+        )}
+
+        {kind === "reset" && (
+          <Chip label="Period" value={period === "daily" ? "daily" : "weekly"}>
+            <RadioList
+              name="reset-period"
+              value={period}
+              onChange={setPeriod}
+              options={[
+                { value: "daily" as const, label: "Daily, 00:00 UTC" },
+                { value: "weekly" as const, label: "Weekly, Monday 00:00 UTC" },
+              ]}
+            />
+          </Chip>
         )}
 
         {kind === "cycle" && (
@@ -286,6 +362,20 @@ export function RuleForm({
                   id="cycle-state"
                   value={cycleState}
                   onChange={(e) => setCycleState(e.target.value)}
+                />
+              </div>
+            </Chip>
+            <Chip label="Lead time" value={lead === "" ? "when it begins" : `${lead} minutes early`}>
+              <div className="grid gap-2">
+                <Label htmlFor="cycle-lead" className="sr-only">
+                  Lead minutes
+                </Label>
+                <Input
+                  id="cycle-lead"
+                  inputMode="numeric"
+                  placeholder="Minutes of warning"
+                  value={lead}
+                  onChange={(e) => setLead(e.target.value.replace(/\D/g, ""))}
                 />
               </div>
             </Chip>

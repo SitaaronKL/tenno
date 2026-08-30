@@ -286,6 +286,54 @@ function bountyRewards(tag: string, j: Raw): string[] {
   return typeof listed === "string" ? listed.split(", ") : [];
 }
 
+// DE's short codes for the mission a job runs, appended to the job name after Bounty or Job.
+const JOB_CODES: Record<string, string> = {
+  cap: "Capture",
+  sab: "Sabotage",
+  ext: "Exterminate",
+  resc: "Rescue",
+  ass: "Assassinate",
+  def: "Defense",
+  surv: "Survival",
+  spy: "Spy",
+  exc: "Excavation",
+};
+
+// The words DE spells out in a job name, longest and most specific first.
+const JOB_WORDS: [RegExp, string][] = [
+  [/exterminate/i, "Exterminate"],
+  [/assassinate/i, "Assassinate"],
+  [/excavat/i, "Excavation"],
+  [/surviv/i, "Survival"],
+  [/rescue/i, "Rescue"],
+  [/capture/i, "Capture"],
+  [/sabotage/i, "Sabotage"],
+  [/recovery|reclamation|preservation/i, "Recovery"],
+  [/spy/i, "Spy"],
+  // Purify is the infested hold the ground objective, the board calls it a defense.
+  [/defense|purify/i, "Defense"],
+  [/hijack/i, "Hijack"],
+  [/caches|hoard/i, "Caches"],
+];
+
+function matchWord(text: string): string {
+  return JOB_WORDS.find(([pattern]) => pattern.test(text))?.[1] ?? "";
+}
+
+// A job path is /Lotus/.../Jobs/AttritionBountyExt or /Lotus/.../Jobs/VenusSpyJobSpy.
+export function bountyMissionType(jobType: string): string {
+  const name = jobType.split("/").pop() ?? "";
+  if (name === "") return "";
+  const tail = name.split(/Bounty|Job/).pop() ?? "";
+  if (tail !== "") {
+    const spelled = matchWord(tail);
+    if (spelled) return spelled;
+    const code = JOB_CODES[tail.toLowerCase()];
+    if (code) return code;
+  }
+  return matchWord(name);
+}
+
 // Only the open world syndicates hand out bounties, every other entry is a mission offering rotation.
 function bounties(raw: Raw): Bounty[] {
   return arr(raw.SyndicateMissions)
@@ -303,6 +351,7 @@ function bounties(raw: Raw): Bounty[] {
             num(j.maxEnemyLevel),
             Array.isArray(j.xpAmounts) ? j.xpAmounts.map((x) => num(x)) : [],
             bountyRewards(tag, j),
+            bountyMissionType(str(j.jobType)),
           ),
         ),
       };

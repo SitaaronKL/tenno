@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CreateRuleDialog } from "@/components/rules/create-rule-dialog";
 import { RulesTable } from "@/components/rules/rules-table";
+import { RuleSuggestions } from "@/components/rules/suggestions";
 import { useRules } from "@/components/rules/api";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -68,8 +69,21 @@ function RulesEmpty() {
 function RulesBody() {
   const rules = useRules();
   if (rules === undefined) return <Skeleton className="h-40 w-full rounded-xl" />;
-  if (rules.length === 0) return <RulesEmpty />;
-  return <RulesTable rules={rules} />;
+  // Suggestions sit under the list, and above the empty state where they are the whole offer.
+  if (rules.length === 0) {
+    return (
+      <div className="grid gap-6">
+        <RuleSuggestions />
+        <RulesEmpty />
+      </div>
+    );
+  }
+  return (
+    <div className="grid gap-6">
+      <RulesTable rules={rules} />
+      <RuleSuggestions />
+    </div>
+  );
 }
 
 export default function RulesPage() {

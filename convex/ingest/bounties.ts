@@ -20,6 +20,7 @@ export function job(
   maxLevel: number,
   standingStages: number[],
   rewards: string[],
+  missionType?: string,
 ): BountyJob {
   return {
     level: `${minLevel} - ${maxLevel}`,
@@ -27,5 +28,6 @@ export function job(
     maxLevel,
     standing: standingStages.reduce((total, stage) => total + stage, 0),
     rewards: [...new Set(rewards)].filter((r) => r !== ""),
+    missionType: missionType || undefined,
   };
 }
