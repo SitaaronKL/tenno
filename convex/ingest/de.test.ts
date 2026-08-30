@@ -140,8 +140,10 @@ describe("normalizeDe", () => {
   });
 
   test("lists a bounty board per open world syndicate, in board order", () => {
-    expect(state.bounties!.map((b) => b.syndicate)).toEqual(["Entrati", "Ostrons", "Solaris United"]);
-    for (const bounty of state.bounties!) {
+    // The fixed boards DE sends empty are filled elsewhere, convex/ingest/static-bounties.test.ts.
+    const live = state.bounties!.filter((b) => !b.static);
+    expect(live.map((b) => b.syndicate)).toEqual(["Entrati", "Ostrons", "Solaris United"]);
+    for (const bounty of live) {
       expect(bounty.node).not.toBe("");
       expect(bounty.expiresAt).toBe(Date.parse("2026-08-30T05:52:05.306Z"));
       expect(bounty.jobs.length).toBeGreaterThan(0);
@@ -158,7 +160,7 @@ describe("normalizeDe", () => {
   });
 
   test("names every bounty reward, no /Lotus paths and no table ids", () => {
-    const jobs = state.bounties!.flatMap((b) => b.jobs);
+    const jobs = state.bounties!.filter((b) => !b.static).flatMap((b) => b.jobs);
     expect(jobs).toHaveLength(23);
     for (const job of jobs) {
       expect(job.rewards.length).toBeGreaterThan(0);
