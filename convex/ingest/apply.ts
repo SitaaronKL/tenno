@@ -11,21 +11,26 @@ type NewEvent = Pick<Doc<"worldEvents">, "kind" | "key" | "startsAt" | "expiresA
 // One row per upstream entity a rule can match on, kinds match EVENT_KINDS in lib/contracts/rule.ts.
 function eventsOf(state: WorldState): NewEvent[] {
   const out: NewEvent[] = [];
-  const push = (kind: string, key: string, startsAt: number, expiresAt: number, payload: unknown) =>
+  const push = (kind: string, key: string, startsAt: number, expiresAt: number | undefined, payload: unknown) =>
     out.push({ kind, key, startsAt, expiresAt, payload });
 
   for (const f of state.fissures) push("fissure", f.key, f.startsAt, f.expiresAt, f);
   for (const a of state.alerts) push("alert", a.key, a.startsAt, a.expiresAt, a);
   // Invasions have no upstream expiry, they end when completion hits 100.
-  for (const i of state.invasions) push("invasion", i.key, i.startsAt, 0, i);
+  for (const i of state.invasions) push("invasion", i.key, i.startsAt, undefined, i);
   if (state.sortie) push("sortie", state.sortie.key, state.sortie.startsAt, state.sortie.expiresAt, state.sortie);
   if (state.archonHunt) {
     const a = state.archonHunt;
     push("archonHunt", a.key, a.startsAt, a.expiresAt, a);
   }
-  if (state.baro) push("baro", state.baro.key, state.baro.startsAt, state.baro.expiresAt, state.baro);
-  for (const act of state.nightwave?.acts ?? []) {
-    push("nightwave", act.key, state.fetchedAt, act.expiresAt, act);
+  // Baro is in every response, the arrival is the news, not the next visit on the calendar.
+  if (state.baro?.active) {
+    push("baro", state.baro.key, state.baro.startsAt, state.baro.expiresAt, state.baro);
+  }
+  // One notification per weekly rollover, upstream lists ten acts at once.
+  if (state.nightwave) {
+    const n = state.nightwave;
+    push("nightwave", `season:${n.season}:${n.expiresAt}`, state.fetchedAt, n.expiresAt, n);
   }
   for (const c of state.cycles) {
     push("cycle", `${c.world}:${c.state}:${c.expiresAt}`, state.fetchedAt, c.expiresAt, c);

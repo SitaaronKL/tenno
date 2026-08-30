@@ -19,6 +19,35 @@ function state(fetchedAt = FETCHED_AT) {
 }
 
 describe("apply", () => {
+  test("says nothing about Baro until he arrives", async () => {
+    const t = convexTest(schema, modules);
+    const away = state();
+    expect(away.baro!.active).toBe(false);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: away });
+
+    const quiet = await t.run(async (ctx) =>
+      await ctx.db.query("worldEvents").collect(),
+    );
+    expect(quiet.filter((e) => e.kind === "baro")).toHaveLength(0);
+
+    const arrived = state();
+    arrived.baro = { ...arrived.baro!, active: true, startsAt: FETCHED_AT - 1000 };
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: arrived });
+
+    const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    expect(events.filter((e) => e.kind === "baro")).toHaveLength(1);
+  });
+
+  test("one nightwave notification per weekly rollover, not one per act", async () => {
+    const t = convexTest(schema, modules);
+    const current = state();
+    expect(current.nightwave!.acts.length).toBeGreaterThan(1);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: current });
+
+    const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    expect(events.filter((e) => e.kind === "nightwave")).toHaveLength(1);
+  });
+
   test("stores the world state the dashboard reads", async () => {
     const t = convexTest(schema, modules);
     await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
@@ -65,7 +94,7 @@ describe("apply", () => {
 
     const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
     const kinds = new Set(events.map((e) => e.kind));
-    for (const kind of ["fissure", "alert", "invasion", "sortie", "archonHunt", "baro", "nightwave", "cycle"]) {
+    for (const kind of ["fissure", "alert", "invasion", "sortie", "archonHunt", "nightwave", "cycle"]) {
       expect([...kinds]).toContain(kind);
     }
   });
