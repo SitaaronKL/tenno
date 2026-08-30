@@ -1,6 +1,8 @@
 "use client";
 
 import type { WorldState } from "@/lib/contracts/worldstate";
+import { BoneIcon } from "@/components/icons/bone";
+import { LayoutGridIcon } from "@/components/icons/layout-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorldState } from "./world-state";
 import { useNow } from "./use-now";
@@ -12,8 +14,10 @@ import { NightwavePanel } from "./nightwave";
 import { CycleTiles } from "./cycles";
 import { InvasionsPanel } from "./invasions";
 import { AlertsPanel } from "./alerts";
+import { BountiesPanel, bountiesOf } from "./bounties";
 
-const GRID = "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3";
+// Bento: six columns on desktop, and each card claims the width its content needs.
+const GRID = "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6";
 
 // Upstream can lag by hours, so a stale feed reads as stale rather than as a quiet game.
 function StaleNotice({ state }: { state: WorldState }) {
@@ -37,16 +41,17 @@ export function DashboardGrid() {
   if (state === undefined) {
     return (
       <div>
-        {/* The skeleton matches the final layout, tiles first, then the grid. */}
+        {/* The skeleton matches the final layout, tiles first, then the bento grid. */}
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
         <div className={GRID}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 w-full rounded-xl" />
-          ))}
+          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-4" />
+          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-2" />
+          <Skeleton className="h-56 w-full rounded-xl md:col-span-2 lg:col-span-3" />
+          <Skeleton className="h-56 w-full rounded-xl md:col-span-2 lg:col-span-3" />
         </div>
       </div>
     );
@@ -66,12 +71,13 @@ export function Panels({ state }: { state: WorldState }) {
       {state.stale && <StaleNotice state={state} />}
       <div className={GRID}>
         <FissuresPanel fissures={state.fissures} />
-        <MissionSetPanel title="Sortie" data={state.sortie} />
+        <BountiesPanel bounties={bountiesOf(state)} />
         <InvasionsPanel invasions={state.invasions} />
-        <MissionSetPanel title="Archon Hunt" data={state.archonHunt} />
+        <AlertsPanel alerts={state.alerts} />
+        <MissionSetPanel title="Sortie" icon={LayoutGridIcon} data={state.sortie} />
+        <MissionSetPanel title="Archon Hunt" icon={BoneIcon} data={state.archonHunt} />
         <BaroPanel baro={state.baro} />
         <NightwavePanel nightwave={state.nightwave} />
-        <AlertsPanel alerts={state.alerts} />
       </div>
     </div>
   );

@@ -1,13 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 const update = vi.fn().mockResolvedValue(null);
+// A zone the user has already chosen, so most tests do not trip the first load auto fill.
 const profile = {
   email: "tenno@example.com",
   phone: "+15550001234",
   phoneVerified: false,
-  timezone: "UTC",
+  timezone: "America/Los_Angeles",
   digestHour: 9,
 };
 
@@ -32,6 +33,13 @@ function renderPage() {
 }
 
 describe("settings", () => {
+  beforeEach(() => {
+    profile.timezone = "America/Los_Angeles";
+    profile.phone = "+15550001234";
+    profile.phoneVerified = false;
+    update.mockClear();
+  });
+
   it("clearing the phone removes the saved number", async () => {
     const user = userEvent.setup();
     update.mockClear();
@@ -40,7 +48,7 @@ describe("settings", () => {
     await user.clear(screen.getByLabelText("Phone"));
     await user.click(screen.getByRole("button", { name: "Save settings" }));
 
-    expect(update).toHaveBeenCalledWith({ phone: null, timezone: "UTC", digestHour: 9 });
+    expect(update).toHaveBeenCalledWith({ phone: null, timezone: "America/Los_Angeles", digestHour: 9 });
   });
 
   it("the danger zone removes the number in one click", async () => {
@@ -50,7 +58,7 @@ describe("settings", () => {
 
     await user.click(screen.getByRole("button", { name: /remove phone/i }));
 
-    expect(update).toHaveBeenCalledWith({ phone: null, timezone: "UTC", digestHour: 9 });
+    expect(update).toHaveBeenCalledWith({ phone: null, timezone: "America/Los_Angeles", digestHour: 9 });
   });
 
   it("shows the email, the opt in instructions and the phone state", () => {
@@ -58,6 +66,30 @@ describe("settings", () => {
     expect(screen.getByLabelText("Email")).toHaveValue("tenno@example.com");
     expect(screen.getByText(/Text START to \+1 \(415\) 603-5536 from this phone/)).toBeInTheDocument();
     expect(screen.getByText("Unverified")).toBeInTheDocument();
+  });
+
+  it("fills in the browser timezone and a nine local digest on the first load", async () => {
+    profile.timezone = "UTC";
+    renderPage();
+
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith({ timezone: "America/New_York", digestHour: 9 }),
+    );
+    expect(screen.getByLabelText("Timezone")).toHaveTextContent("America/New_York");
+    expect(screen.getByLabelText("Digest hour")).toHaveTextContent("09:00");
+  });
+
+  it("does not touch a timezone the user already chose", async () => {
+    renderPage();
+    await waitFor(() => expect(screen.getByLabelText("Timezone")).toHaveTextContent("America/Los_Angeles"));
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it("shows the exact number to text once a phone is saved, and the live verified state", () => {
+    profile.phoneVerified = true;
+    renderPage();
+    expect(screen.getByText(/Text START to \+1 \(415\) 603-5536 from this phone/)).toBeInTheDocument();
+    expect(screen.getByText("Verified")).toBeInTheDocument();
   });
 
   it("keeps the dark theme after the page is rebuilt", async () => {

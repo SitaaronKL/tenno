@@ -7,7 +7,7 @@ updated to match, this file is the record of what changed and why.
 
 The product is **Voidwatch**. User visible "Tenno" strings in the landing page, shell, login page, root metadata,
 email templates and the email from address are now "Voidwatch". The repo, the npm package name and the agent's
-internal `name: "tenno"` are unchanged. `app/logo/page.tsx` keeps its own copy, it is a temporary board.
+internal `name: "tenno"` are unchanged.
 
 ## Schema
 
@@ -107,3 +107,39 @@ internal `name: "tenno"` are unchanged. `app/logo/page.tsx` keeps its own copy, 
 - Every suite sits beside the file it tests, there is no `tests/` folder and no `__tests__` folder.
 - `convex/rules.test.ts` mocks `convex/email.ts` with a no op internal action. The suite is about the rules engine,
   and the real `email.ts` needs a Resend key.
+
+## Round 2 seam
+
+- **New tables.** `items`, `starNodes` and `profileCache` back the mastery tracker. They are seeded from DE's
+  Public Export, not from world state, so nothing in the ingest path touches them. `masteryKind` is exported
+  from `convex/schema.ts` next to the other shared validators.
+- **New route.** `/mastery`, `app/(app)/mastery/page.tsx`. It is in `NAV_ITEMS` between Chat and Settings, with
+  the animated atom icon every other nav row uses.
+- **New functions.** `convex/mastery.ts` `progress`, `convex/profileSync.ts` `fetchProfile` plus `cached` and
+  `store`, `convex/gamedata/import.ts` `importGameData`.
+- **World state gained `bounties`.** Optional on the validator and on the `WorldState` type, so rows written
+  before it existed still read back. `worldstate.get` fills it with `[]` and sorts fissures Lith to Omnia, then
+  soonest expiry inside a tier. `components/panels/bounties.tsx` reads the contract's `Bounty` and `BountyJob`
+  types, it no longer declares its own.
+- **One data table.** `components/ui/data-table.tsx` is the only TanStack v9 table. The dashboard panels and the
+  mastery page both use it. `components/panels/data-table.tsx`, `components/mastery/data-table.tsx` and
+  `components/mastery/data-table-features.ts` are gone. One `features` object registers sorting, column
+  filtering and pagination, callers opt into the last two with `columnFilters` and `pageSize`. Visibility and
+  selection stay unregistered, so they tree shake away.
+- **New env flag.** `NEXT_PUBLIC_AUTH_PASSWORD` shows the email and password form on the login page. The
+  `Password` provider itself is registered unconditionally on the server, it needs no keys, so only the browser
+  flag decides what is offered. Guest sign in is untouched. `NEXT_PUBLIC_PHOTON_NUMBER` names the line users
+  text to opt in. Both are in `.env.example`.
+- **New packages.** `@tanstack/react-table` 9 (the one allowed TanStack use, per `docs/nextjs/data-table.md`)
+  and `lzma-purejs` as a devDependency, because DE ships the Public Export LZMA compressed and Node has no
+  decompressor.
+- **The logo is decided.** `app/logo/page.tsx` is deleted. `public/logo-outline.svg` is the mark, inlined as
+  `components/shell/logo.tsx` with `currentColor`, and `components/shell/logo-mark.tsx` is a one line re-export
+  so older imports pick it up. The unused gold `public/logo-mark.svg` and `public/logo-rebuilt.svg` are gone.
+- **No gold anywhere.** Every token in `app/globals.css` is the inverse of the background, charts included.
+  `success`, `warning` and `danger` keep their hues, the brief exempts semantic states. The one remaining
+  colour in the product is the blue in the landing page's iMessage mock, which reads as a screenshot of
+  Messages, not as an accent.
+- **Seeding.** `/mastery` is empty until `node scripts/import-public-export.mjs` and
+  `npx convex run gamedata/import:importGameData '{}'` are run once against the deployment. Both are step 4 of
+  README's Run it yourself. Neither was run against the deployment by this seam.

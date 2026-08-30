@@ -138,4 +138,36 @@ describe("normalizeDe", () => {
       expiresAt: Date.parse("2026-08-30T05:52:00.000Z"),
     });
   });
+
+  test("lists a bounty board per open world syndicate, in board order", () => {
+    expect(state.bounties!.map((b) => b.syndicate)).toEqual(["Entrati", "Ostrons", "Solaris United"]);
+    for (const bounty of state.bounties!) {
+      expect(bounty.node).not.toBe("");
+      expect(bounty.expiresAt).toBe(Date.parse("2026-08-30T05:52:05.306Z"));
+      expect(bounty.jobs.length).toBeGreaterThan(0);
+    }
+    expect(state.bounties!.find((b) => b.syndicate === "Ostrons")!.node).toBe("Cetus (Earth)");
+    expect(state.bounties!.find((b) => b.syndicate === "Entrati")!.node).toBe("Necralisk (Deimos)");
+  });
+
+  test("reads each job's level range and the standing the whole run pays", () => {
+    const ostron = state.bounties!.find((b) => b.syndicate === "Ostrons")!;
+    expect(ostron.jobs).toHaveLength(7);
+    expect(ostron.jobs[0]).toMatchObject({ level: "5 - 15", minLevel: 5, maxLevel: 15, standing: 1020 });
+    expect(ostron.jobs.at(-1)).toMatchObject({ level: "50 - 70", minLevel: 50, maxLevel: 70 });
+  });
+
+  test("names every bounty reward, no /Lotus paths and no table ids", () => {
+    const jobs = state.bounties!.flatMap((b) => b.jobs);
+    expect(jobs).toHaveLength(23);
+    for (const job of jobs) {
+      expect(job.rewards.length).toBeGreaterThan(0);
+      for (const reward of job.rewards) expect(reward).not.toMatch(/Lotus|Rewards$/);
+    }
+    const ostron = state.bounties!.find((b) => b.syndicate === "Ostrons")!;
+    expect(ostron.jobs[0].rewards).toContain("Pressure Point");
+    // Deimos and Narmer tables are absent from the language table, they resolve through drop data.
+    const entrati = state.bounties!.find((b) => b.syndicate === "Entrati")!;
+    expect(entrati.jobs.at(-1)!.rewards).toContain("Sporothrix Blueprint");
+  });
 });

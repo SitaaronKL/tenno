@@ -67,20 +67,20 @@ export function CreateRuleDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {controlled ? null : <DialogTrigger render={<Button />}>New rule</DialogTrigger>}
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="grid-rows-[auto_minmax(0,1fr)] overflow-hidden sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>New rule</DialogTitle>
           <DialogDescription>Tell Voidwatch what to watch for and how to reach you.</DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="build">
+        <Tabs defaultValue="build" className="min-h-0">
           <TabsList>
             <TabsTrigger value="build">Build</TabsTrigger>
             <TabsTrigger value="describe">Describe</TabsTrigger>
           </TabsList>
-          <TabsContent value="build" className="pt-2">
+          <TabsContent value="build" className="max-h-[60vh] min-h-[24rem] overflow-y-auto pt-2">
             <RuleForm key={preset?.name} initial={preset} onSubmit={save} submitLabel="Create rule" />
           </TabsContent>
-          <TabsContent value="describe" className="grid gap-3 pt-2">
+          <TabsContent value="describe" className="grid max-h-[60vh] min-h-[24rem] content-start gap-3 overflow-y-auto pt-2">
             <Textarea
               aria-label="Describe the rule"
               value={text}

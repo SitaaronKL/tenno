@@ -2,27 +2,37 @@
 
 import type { ArchonHunt, Sortie } from "@/lib/contracts/worldstate";
 import { Chip } from "./tier-badge";
+import type { PanelIcon } from "./panel";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
 
+const CLASS = "md:col-span-1 lg:col-span-2";
+
 export function MissionSetPanel({
   title,
+  icon,
   data,
 }: {
   title: string;
+  icon: PanelIcon;
   data: Sortie | ArchonHunt | null;
 }) {
   const now = useNow();
   if (!data) {
     return (
-      <Panel title={title}>
+      <Panel title={title} icon={icon} className={CLASS}>
         <Empty>Nothing active.</Empty>
       </Panel>
     );
   }
   return (
-    <Panel title={title} action={<Countdown target={data.expiresAt} now={now} />}>
+    <Panel
+      title={title}
+      icon={icon}
+      className={CLASS}
+      action={<Countdown target={data.expiresAt} now={now} />}
+    >
       <div className="mb-2 flex items-center gap-2">
         <span className="truncate font-medium">{data.boss}</span>
         <Chip>{data.faction}</Chip>

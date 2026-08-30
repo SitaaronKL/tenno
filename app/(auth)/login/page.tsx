@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { ConvexError } from "convex/values";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,12 +19,26 @@ import { LogoMark } from "@/components/shell/logo-mark";
 // A sign in route only appears where the deployment has its keys.
 const on = (value: string | undefined) => value === "true";
 
+type Flow = "signIn" | "signUp";
+
+// Convex Auth hides the reason for a refused password, so the copy has to cover both halves.
+function messageFor(error: unknown, flow: Flow) {
+  if (error instanceof ConvexError && typeof error.data === "string") return error.data;
+  return flow === "signUp"
+    ? "We could not create that account. That email may already be in use."
+    : "Wrong email or password.";
+}
+
 export default function LoginPage() {
   const { signIn } = useAuthActions();
   const discord = on(process.env.NEXT_PUBLIC_AUTH_DISCORD);
   const magicLink = on(process.env.NEXT_PUBLIC_AUTH_RESEND);
+  const password = on(process.env.NEXT_PUBLIC_AUTH_PASSWORD);
   const guest = on(process.env.NEXT_PUBLIC_ALLOW_GUEST);
   const [email, setEmail] = useState("");
+  const [secret, setSecret] = useState("");
+  const [flow, setFlow] = useState<Flow>("signIn");
+  const [error, setError] = useState<string | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -48,23 +63,41 @@ export default function LoginPage() {
     }
   }
 
-  async function onMagicLink(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function onPassword() {
+    setError(null);
+    setBusy(true);
+    try {
+      await signIn("password", { email, password: secret, flow, redirectTo: "/dashboard" });
+    } catch (caught) {
+      setError(messageFor(caught, flow));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onMagicLink() {
+    if (email.trim() === "") {
+      setError("Enter your email first.");
+      return;
+    }
+    setError(null);
     setBusy(true);
     try {
       await signIn("resend", { email, redirectTo: "/dashboard" });
       setSentTo(email);
       toast.success("Magic link sent.");
     } catch {
-      toast.error("We could not send the link, check the address.");
+      setError("We could not send the link, check the address.");
     } finally {
       setBusy(false);
     }
   }
 
+  const submitLabel = flow === "signUp" ? "Create account" : "Sign in";
+
   return (
-    <div className="relative flex min-h-svh flex-1 items-center justify-center overflow-hidden p-6">
-      {/* Same gold wash as the landing hero, so sign in feels like the same place. */}
+    <div className="relative grid min-h-svh place-items-center overflow-hidden p-6">
+      {/* The wash is the accent at 8 percent, white on dark and black on light, same as the landing hero. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[420px] bg-[radial-gradient(ellipse_at_top,var(--accent-soft),transparent_65%)]"
@@ -89,7 +122,9 @@ export default function LoginPage() {
           <>
             <CardHeader className="justify-items-center text-center">
               <LogoMark size={32} className="mb-2" />
-              <CardTitle>Sign in to Voidwatch</CardTitle>
+              <CardTitle>
+                {password && flow === "signUp" ? "Create your account" : "Sign in to Voidwatch"}
+              </CardTitle>
               <CardDescription>Warframe world state, watched your way.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -98,33 +133,94 @@ export default function LoginPage() {
                   Continue with Discord
                 </Button>
               )}
-              {discord && magicLink && (
+              {discord && (password || magicLink) && (
                 <div className="text-center text-xs text-muted-foreground">or</div>
               )}
-              {magicLink && (
-                <form onSubmit={onMagicLink} className="flex flex-col gap-3">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    required
-                    autoComplete="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <Button type="submit" variant="outline" disabled={busy}>
-                    Email me a magic link
-                  </Button>
+
+              {(password || magicLink) && (
+                <form
+                  className="flex flex-col gap-3"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    void (password ? onPassword() : onMagicLink());
+                  }}
+                >
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+                  {password && (
+                    <div className="grid gap-2">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        name="password"
+                        type="password"
+                        required
+                        minLength={8}
+                        autoComplete={flow === "signUp" ? "new-password" : "current-password"}
+                        placeholder="At least 8 characters"
+                        value={secret}
+                        onChange={(e) => setSecret(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  {error && (
+                    <p role="alert" className="text-sm text-destructive">
+                      {error}
+                    </p>
+                  )}
+                  {password && (
+                    <Button type="submit" disabled={busy}>
+                      {submitLabel}
+                    </Button>
+                  )}
+                  {magicLink && (
+                    <Button
+                      type={password ? "button" : "submit"}
+                      variant="outline"
+                      disabled={busy}
+                      onClick={password ? () => void onMagicLink() : undefined}
+                    >
+                      Email me a magic link
+                    </Button>
+                  )}
                 </form>
               )}
+
+              {password && (
+                <div className="text-center text-sm text-muted-foreground">
+                  {flow === "signIn" ? "New to Voidwatch? " : "Already have an account? "}
+                  <Button
+                    type="button"
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0"
+                    onClick={() => {
+                      setError(null);
+                      setFlow(flow === "signIn" ? "signUp" : "signIn");
+                    }}
+                  >
+                    {flow === "signIn" ? "Create one" : "Sign in instead"}
+                  </Button>
+                </div>
+              )}
+
               {guest && (
                 <Button onClick={onGuest} variant="link" size="sm" disabled={busy}>
                   Continue as guest
                 </Button>
               )}
-              {!discord && !magicLink && !guest && (
+              {!discord && !magicLink && !password && !guest && (
                 <p className="text-sm text-muted-foreground">
                   No sign in method is configured for this deployment yet.
                 </p>

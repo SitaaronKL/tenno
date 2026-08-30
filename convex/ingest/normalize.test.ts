@@ -93,4 +93,15 @@ describe("normalize", () => {
     expect(JSON.stringify(state)).not.toContain("SolNode000");
     expect(Object.keys(state)).not.toContain("arbitration");
   });
+
+  test("builds the same bounty boards the DE reader builds", () => {
+    expect(state.bounties!.map((b) => b.syndicate)).toEqual(["Ostrons", "Entrati", "Solaris United"]);
+    const ostron = state.bounties!.find((b) => b.syndicate === "Ostrons")!;
+    expect(ostron.node).toBe("Cetus (Earth)");
+    expect(ostron.expiresAt).toBe(Date.parse("2026-08-30T03:22:06.431Z"));
+    expect(ostron.jobs[0]).toMatchObject({ level: "5 - 15", minLevel: 5, maxLevel: 15, standing: 1470 });
+    // Upstream repeats the pool once per stage, a reader wants each reward named once.
+    expect(ostron.jobs[0].rewards).toHaveLength(9);
+    expect(ostron.jobs[0].rewards).toContain("Redirection");
+  });
 });

@@ -1,68 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
+import { createColumnHelper } from "@tanstack/react-table";
 import type { Fissure } from "@/lib/contracts/worldstate";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AtomIcon } from "@/components/icons/atom";
 import { Empty, Panel } from "./panel";
-import { Chip, TierBadge, TIERS } from "./tier-badge";
+import { TierBadge, tierRank } from "./tier-badge";
 import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
+import {
+  DataTable,
+  SortableHeader,
+  TruncatedCell,
+
+  type DataTableFeatures,
+} from "@/components/ui/data-table";
+
+// Lith, Meso, Neo, Axi, Requiem, Omnia first, then soonest to expire inside a tier.
+export function sortFissures(fissures: Fissure[]): Fissure[] {
+  return [...fissures].sort(
+    (a, b) => tierRank(a.tier) - tierRank(b.tier) || a.expiresAt - b.expiresAt,
+  );
+}
+
+// "Steel Path" spelled out, because a chip does not say whether it is on or off.
+export function modeText(f: Pick<Fissure, "steelPath" | "storm">): string {
+  const parts: string[] = [];
+  if (f.steelPath) parts.push("Steel Path");
+  if (f.storm) parts.push("Void Storm");
+  return parts.length ? parts.join(", ") : "Normal";
+}
+
+function ExpiryCell({ target }: { target: number }) {
+  const now = useNow();
+  return <Countdown target={target} now={now} className="block text-right" />;
+}
+
+const helper = createColumnHelper<DataTableFeatures, Fissure>();
+
+const columns = helper.columns([
+  helper.accessor((f) => tierRank(f.tier), {
+    id: "tier",
+    header: ({ column }) => <SortableHeader column={column}>Tier</SortableHeader>,
+    cell: ({ row }) => <TierBadge tier={row.original.tier} />,
+  }),
+  helper.accessor("missionType", {
+    id: "mission",
+    header: ({ column }) => <SortableHeader column={column}>Mission</SortableHeader>,
+    cell: ({ row }) => <TruncatedCell text={row.original.missionType} className="font-medium" />,
+  }),
+  helper.accessor("node", {
+    id: "node",
+    header: ({ column }) => <SortableHeader column={column}>Node</SortableHeader>,
+    cell: ({ row }) => (
+      <TruncatedCell
+        text={`${row.original.node} · ${row.original.enemy}`}
+        className="text-muted-foreground"
+      />
+    ),
+  }),
+  helper.accessor((f) => modeText(f), {
+    id: "mode",
+    header: ({ column }) => <SortableHeader column={column}>Mode</SortableHeader>,
+    cell: ({ row }) => (
+      <TruncatedCell text={modeText(row.original)} className="text-muted-foreground" />
+    ),
+  }),
+  helper.accessor("expiresAt", {
+    id: "expires",
+    header: ({ column }) => (
+      <SortableHeader column={column} align="end">
+        Expires
+      </SortableHeader>
+    ),
+    cell: ({ row }) => <ExpiryCell target={row.original.expiresAt} />,
+  }),
+]);
+
+const WIDTHS = {
+  tier: "w-24",
+  mission: "w-28",
+  mode: "w-32",
+  expires: "w-24 text-right",
+};
 
 export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
   const now = useNow();
-  const [tier, setTier] = useState<string>("All");
-  const [steelPath, setSteelPath] = useState(false);
-
   // The query already drops expired rows, this keeps the list honest between polls.
-  const rows = fissures
-    .filter((f) => f.expiresAt > now)
-    .filter((f) => f.steelPath === steelPath)
-    .filter((f) => tier === "All" || f.tier === tier)
-    .sort((a, b) => a.expiresAt - b.expiresAt);
+  const rows = useMemo(() => sortFissures(fissures.filter((f) => f.expiresAt > now)), [fissures, now]);
 
   return (
-    <Panel
-      title="Fissures"
-      count={rows.length}
-      className="lg:col-span-2"
-      action={
-        <div className="flex items-center gap-2">
-          <Label htmlFor="steel-path" className="text-xs font-normal text-muted-foreground">
-            Steel Path
-          </Label>
-          <Switch id="steel-path" size="sm" checked={steelPath} onCheckedChange={setSteelPath} />
-        </div>
-      }
-    >
-      <Tabs value={tier} onValueChange={setTier}>
-        <TabsList variant="line" className="mb-1 h-7">
-          {["All", ...TIERS].map((t) => (
-            <TabsTrigger key={t} value={t} className="px-2 text-xs">
-              {t}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-      {rows.length === 0 ? (
-        <Empty>No fissures open.</Empty>
-      ) : (
-        <ul className="divide-y divide-border">
-          {rows.map((f) => (
-            <li key={f.key} className="flex items-center gap-2 py-2">
-              <TierBadge tier={f.tier} />
-              <span className="shrink-0 font-medium">{f.missionType}</span>
-              <span className="truncate text-muted-foreground">
-                {f.node} · {f.enemy}
-              </span>
-              {f.steelPath ? <Chip>Steel Path</Chip> : null}
-              {f.storm ? <Chip>Void Storm</Chip> : null}
-              <Countdown target={f.expiresAt} now={now} className="ml-auto" />
-            </li>
-          ))}
-        </ul>
-      )}
+    <Panel title="Fissures" icon={AtomIcon} count={rows.length} className={CLASS}>
+      <DataTable
+        dense
+        label="Void fissures"
+        columns={columns}
+        data={rows}
+        widths={WIDTHS}
+        empty={<Empty>No fissures open.</Empty>}
+      />
     </Panel>
   );
 }
+
+const CLASS = "md:col-span-2 lg:col-span-4";
