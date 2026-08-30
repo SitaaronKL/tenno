@@ -24,7 +24,21 @@ radius          12px cards, 8px inputs and chips, 999px pills
 font            Geist Sans (already in the scaffold), Geist Mono for timers and ids
 ```
 
-Light mode is not a v1 goal. Ship dark only, set `color-scheme: dark`.
+Light and dark are both native. Theme is a user setting (System, Light, Dark) stored with `next-themes` and shown in Settings, with a quick toggle in the user menu. Tokens are CSS variables on `:root` (light) and `.dark`, so every component uses tokens and never a raw hex.
+
+```
+                light          dark
+background      #fafafa        #0a0a0a
+surface         #ffffff        #121212
+surface-2       #f4f4f5        #181818
+border          #e4e4e7        #232323
+text            #0a0a0a        #f5f5f5
+text-muted      #6b6b6b        #8a8a8a
+accent          #d99a1e        #f5b942     gold is darker on light so it passes contrast on white
+accent-soft     #d99a1e14      #f5b94214
+```
+
+The logo uses `currentColor` for the white strokes so it flips with the theme, gold stays gold. No flash on load: `next-themes` sets the class before paint, `suppressHydrationWarning` on `<html>`.
 
 ## Layout
 
