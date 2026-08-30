@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+
+import { Segmented } from "@/components/segmented";
 import type { Nightwave } from "@/lib/contracts/worldstate";
 import { MoonIcon } from "@/components/icons/moon";
 import {
@@ -14,8 +17,16 @@ import { Countdown } from "./countdown";
 import { TruncatedCell } from "@/components/ui/data-table";
 import { useNow } from "./use-now";
 
+const CADENCE = [
+  { value: "all", label: "All" },
+  { value: "daily", label: "Daily" },
+  { value: "weekly", label: "Weekly" },
+] as const;
+type Cadence = (typeof CADENCE)[number]["value"];
+
 export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
   const now = useNow();
+  const [cadence, setCadence] = useState<Cadence>("all");
   if (!nightwave || nightwave.acts.length === 0) {
     return (
       <Panel title="Nightwave" icon={MoonIcon} className="md:col-span-2 lg:col-span-3">
@@ -23,17 +34,25 @@ export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
       </Panel>
     );
   }
+  const acts = nightwave.acts.filter((a) =>
+    cadence === "all" ? true : cadence === "daily" ? a.daily : !a.daily,
+  );
   return (
     <Panel
       // Season is part of the name, so it reads as "Season 18", not "season 18".
       title={`Nightwave, Season ${nightwave.season}`}
       icon={MoonIcon}
-      count={nightwave.acts.length}
-      action={<Countdown target={nightwave.expiresAt} now={now} />}
+      count={acts.length}
+      action={
+        <span className="flex items-center gap-3">
+          <Countdown target={nightwave.expiresAt} now={now} />
+          <Segmented label="Act cadence" options={CADENCE} value={cadence} onChange={setCadence} />
+        </span>
+      }
       className="md:col-span-2 lg:col-span-3"
     >
       <Accordion multiple className="text-sm">
-        {nightwave.acts.map((a) => (
+        {acts.map((a) => (
           <AccordionItem key={a.key} value={a.key}>
             <AccordionTrigger className="gap-2">
               <span className="flex min-w-0 flex-1 items-center gap-2">
