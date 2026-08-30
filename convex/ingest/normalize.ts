@@ -12,6 +12,7 @@ import type {
   WorldState,
 } from "../../lib/contracts/worldstate";
 import { bountyNode, job } from "./bounties";
+import { withStaticBounties } from "./static-bounties";
 
 // Raw upstream JSON is unknown shaped, every field is read through the coercers below.
 type Raw = Record<string, unknown>;
@@ -197,8 +198,8 @@ function nightwave(raw: Raw): Nightwave | null {
 }
 
 // Upstream already resolved the reward table, but it repeats the pool once per stage.
-function bounties(raw: Raw): Bounty[] {
-  return objects(raw.syndicateMissions)
+function bounties(raw: Raw, at: number): Bounty[] {
+  const live = objects(raw.syndicateMissions)
     .filter((s) => arr(s.jobs).length > 0)
     .map((s) => ({
       syndicate: str(s.syndicate),
@@ -214,6 +215,9 @@ function bounties(raw: Raw): Bounty[] {
         );
       }),
     }));
+  const expiries: Record<string, number> = {};
+  for (const s of objects(raw.syndicateMissions)) expiries[str(s.syndicate)] = ms(s.expiry);
+  return withStaticBounties(live, expiries, at);
 }
 
 function cycles(raw: Raw): Cycle[] {
@@ -249,6 +253,6 @@ export function normalize(raw: Raw, fetchedAt: number = Date.now()): WorldState 
     baro: baro(raw, fetchedAt),
     nightwave: nightwave(raw),
     cycles: cycles(raw),
-    bounties: bounties(raw),
+    bounties: bounties(raw, fetchedAt),
   };
 }

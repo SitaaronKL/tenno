@@ -13,6 +13,7 @@ import type {
 } from "../../lib/contracts/worldstate";
 import { bountyNode, job } from "./bounties";
 import { STALE_AFTER_MS } from "./normalize";
+import { withStaticBounties } from "./static-bounties";
 import tables from "./de-names.json";
 
 // DE's own world state. Every value in it is an internal id, so this file is mostly translation.
@@ -334,9 +335,19 @@ export function bountyMissionType(jobType: string): string {
   return matchWord(name);
 }
 
+// Every board's expiry, by the name the panels use, so a board with no jobs still knows its clock.
+function boardExpiries(raw: Raw): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const s of arr(raw.SyndicateMissions)) {
+    const tag = str(s.Tag);
+    out[T.syndicates[tag] ?? tag] = ms(s.Expiry);
+  }
+  return out;
+}
+
 // Only the open world syndicates hand out bounties, every other entry is a mission offering rotation.
-function bounties(raw: Raw): Bounty[] {
-  return arr(raw.SyndicateMissions)
+function bounties(raw: Raw, at: number): Bounty[] {
+  const live = arr(raw.SyndicateMissions)
     .filter((s) => arr(s.Jobs).length > 0)
     .map((s) => {
       const tag = str(s.Tag);
@@ -356,6 +367,7 @@ function bounties(raw: Raw): Bounty[] {
         ),
       };
     });
+  return withStaticBounties(live, boardExpiries(raw), at);
 }
 
 function syndicateExpiry(raw: Raw, tag: string): number {
@@ -471,6 +483,6 @@ export function normalizeDe(raw: Raw, fetchedAt: number = Date.now()): WorldStat
     baro: baro(raw, fetchedAt),
     nightwave: nightwave(raw),
     cycles: cycles(raw, fetchedAt),
-    bounties: bounties(raw),
+    bounties: bounties(raw, fetchedAt),
   };
 }

@@ -108,6 +108,12 @@ Sections by `<h3 id>`: missionRewards, relicRewards, keyRewards, transientReward
 
 `WFCD/warframe-drop-data` scrapes this exact URL (one `lib/*.js` per section) and republishes JSON at `https://drops.warframestat.us/data/all.json` (6.6 MB, 200) with `info.json` carrying `hash`, `timestamp`, `modified`. For the resource tracker we can read their JSON and verify `modified` against the DO Spaces Last-Modified, or scrape ourselves with a 300 line cheerio job since the table layout is fixed.
 
+### Fixed bounty boards
+
+DE's world state lists four boards with zero jobs, so nothing downstream can show them: Zariman (The Holdfasts), Entrati Lab (Cavia), Vox Solaris (the Profit Taker phases) and Höllvania (The Hex). Those boards never rotate their level bands or their pools, and the drop tables are the only place the pools are written down. Sections used: `zarimanRewards`, `entratiLabRewards`, `hexRewards` and the `PROFIT-TAKER` rows of `solarisBountyRewards`. Each row is `bountyLevel` ("Level  50 - 55 Zariman Bounty", note the double space) plus `rewards` keyed by rotation `A`, `B`, `C`, each drop carrying `itemName`, `rarity`, `chance` and `stage`. Today all four boards publish rotation C only, one final stage pool per level band.
+
+`scripts/build-static-bounties.mjs` downloads `https://drops.warframestat.us/data/all.json`, trims those rows to syndicate, node, level band and per rotation `[{ item, chance }]`, and writes `convex/ingest/static-bounties.json` (about 10 KB) with the source URL and the `modified` stamp from `info.json` inside it. Current snapshot: `modified` 1782419611000, 2026-06-25T20:33:31Z, hash `a0ece5e9be2e2d55c75040720ef3226a`. `convex/ingest/static-bounties.ts` fills a board from that file when upstream sends it with no jobs, keeping the expiry upstream printed for the board so the rotation still cycles.
+
 ## 6. Player profile
 
 `GET https://api.warframe.com/cdn/getProfileViewingData.php?playerId=<24 hex account id>`. Per platform host as in section 2. Since Update 38.0.8 lookup by name is dead: `?n=Name` returns 200 with an empty body, unknown ids return 409 `Could not find requested account`. `Cache-Control: public, max-age=600`, so the profile refreshes every 10 minutes at most. `content.warframe.com/dynamic/getProfileViewingData.php` (the path most tutorials quote and the one `@wfcd/profile-parser` still names) is 404 now.

@@ -106,8 +106,21 @@ const bounty = v.object({
       rewards: v.array(v.string()),
       // Optional because a job path DE does not name leaves it out.
       missionType: v.optional(v.string()),
+      // Optional, only a fixed board names its jobs beyond the level.
+      title: v.optional(v.string()),
+      // Optional, only a fixed board carries drop chances.
+      rewardTable: v.optional(
+        v.array(
+          v.object({
+            rotation: v.string(),
+            rewards: v.array(v.object({ item: v.string(), chance: v.number() })),
+          }),
+        ),
+      ),
     }),
   ),
+  // Optional so boards stored before fixed boards existed still validate.
+  static: v.optional(v.boolean()),
 });
 
 const cycle = v.object({

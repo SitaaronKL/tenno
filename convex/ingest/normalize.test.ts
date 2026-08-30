@@ -95,7 +95,12 @@ describe("normalize", () => {
   });
 
   test("builds the same bounty boards the DE reader builds", () => {
-    expect(state.bounties!.map((b) => b.syndicate)).toEqual(["Ostrons", "Entrati", "Solaris United"]);
+    // The fixed boards upstream sends empty are filled elsewhere, see static-bounties.test.ts.
+    expect(state.bounties!.filter((b) => !b.static).map((b) => b.syndicate)).toEqual([
+      "Ostrons",
+      "Entrati",
+      "Solaris United",
+    ]);
     const ostron = state.bounties!.find((b) => b.syndicate === "Ostrons")!;
     expect(ostron.node).toBe("Cetus (Earth)");
     expect(ostron.expiresAt).toBe(Date.parse("2026-08-30T03:22:06.431Z"));
