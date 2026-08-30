@@ -6,6 +6,9 @@ export const vPlatform = v.literal("pc");
 export const vChannel = v.union(v.literal("email"), v.literal("imessage"));
 export const vDeliveryMode = v.union(v.literal("instant"), v.literal("digest"));
 
+// Which upstream answered, warframestat or DE's own feed.
+export const vSource = v.union(v.literal("warframestat"), v.literal("de"));
+
 export const vFissureTier = v.union(
   v.literal("Lith"),
   v.literal("Meso"),

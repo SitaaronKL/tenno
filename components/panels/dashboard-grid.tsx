@@ -16,9 +16,9 @@ import { AlertsPanel } from "./alerts";
 const GRID = "grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3";
 
 // Upstream can lag by hours, so a stale feed reads as stale rather than as a quiet game.
-function StaleNotice({ upstreamTimestamp }: { upstreamTimestamp: number }) {
+function StaleNotice({ state }: { state: WorldState }) {
   const now = useNow();
-  const minutes = Math.max(1, Math.round((now - upstreamTimestamp) / 60_000));
+  const minutes = Math.max(1, Math.round((now - state.upstreamTimestamp) / 60_000));
   return (
     <p
       role="status"
@@ -26,6 +26,7 @@ function StaleNotice({ upstreamTimestamp }: { upstreamTimestamp: number }) {
     >
       <span aria-hidden="true" className="size-1.5 rounded-full bg-warning" />
       Data is {minutes} minutes old, upstream is lagging
+      {state.source === "de" && ". Live from Digital Extremes"}
     </p>
   );
 }
@@ -62,7 +63,7 @@ export function Panels({ state }: { state: WorldState }) {
   return (
     <div>
       <CycleTiles cycles={state.cycles} />
-      {state.stale && <StaleNotice upstreamTimestamp={state.upstreamTimestamp} />}
+      {state.stale && <StaleNotice state={state} />}
       <div className={GRID}>
         <FissuresPanel fissures={state.fissures} />
         <MissionSetPanel title="Sortie" data={state.sortie} />
