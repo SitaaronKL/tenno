@@ -15,6 +15,7 @@ export const pull = internalAction({
       throw new Error(`world state fetch failed: ${response.status} ${response.statusText}`);
     }
     const raw = await response.json();
+    // TODO: when state.stale is true, refetch https://api.warframe.com/cdn/worldState.php and normalize that instead.
     const state = normalize(raw, Date.now());
     await ctx.runMutation(internal.ingest.apply.apply, { platform: args.platform, state });
     return null;

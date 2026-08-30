@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { Fissure } from "@/lib/contracts/worldstate";
 import { FissuresPanel } from "./fissures";
 
-const now = 1_700_000_000_000;
+const now = Date.now();
 
 function fissure(over: Partial<Fissure> & { key: string }): Fissure {
   return {

@@ -12,13 +12,23 @@ describe("normalize", () => {
     expect(state.fetchedAt).toBe(FETCHED_AT);
   });
 
-  test("lists only fissures that have not expired", () => {
-    expect(state.fissures.length).toBeGreaterThan(0);
+  test("keeps every fissure upstream sent, expiry is applied when the data is read", () => {
+    expect(state.fissures).toHaveLength((raw as { fissures: unknown[] }).fissures.length);
     for (const fissure of state.fissures) {
-      expect(fissure.expiresAt).toBeGreaterThan(FETCHED_AT);
       expect(fissure.node).not.toBe("");
       expect(["Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"]).toContain(fissure.tier);
     }
+  });
+
+  test("an hour old snapshot still carries its fissures and says it is stale", () => {
+    const late = normalize(raw as Record<string, unknown>, FETCHED_AT + 60 * 60 * 1000);
+    expect(late.fissures.length).toBeGreaterThan(0);
+    expect(late.stale).toBe(true);
+    expect(late.upstreamTimestamp).toBe(Date.parse("2026-08-30T01:28:47.000Z"));
+  });
+
+  test("a fresh snapshot is not stale", () => {
+    expect(state.stale).toBe(false);
   });
 
   test("marks Steel Path and Void Storm fissures", () => {

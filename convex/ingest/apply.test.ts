@@ -25,7 +25,9 @@ describe("apply", () => {
 
     const stored = (await t.query(api.worldstate.get, { platform: "pc" }))!;
     expect(stored.sortie!.boss).toBe("Tyl Regor");
-    expect(stored.fissures.length).toBeGreaterThan(0);
+    // The snapshot keeps every fissure upstream sent, the read hides the expired ones.
+    const row = await t.run(async (ctx) => await ctx.db.query("worldState").unique());
+    expect(row!.data.fissures.length).toBeGreaterThan(0);
   });
 
   test("replaces the stored state on the next pull instead of piling up", async () => {

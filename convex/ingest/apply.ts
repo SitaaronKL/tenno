@@ -4,6 +4,7 @@ import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { WorldState } from "../../lib/contracts/worldstate";
 import { vPlatform } from "../lib/validators";
+import { worldStateValidator } from "../schema";
 
 type NewEvent = Pick<Doc<"worldEvents">, "kind" | "key" | "startsAt" | "expiresAt" | "payload">;
 
@@ -33,10 +34,10 @@ function eventsOf(state: WorldState): NewEvent[] {
 }
 
 export const apply = internalMutation({
-  args: { platform: vPlatform, state: v.any() },
+  args: { platform: vPlatform, state: worldStateValidator },
   returns: v.number(),
   handler: async (ctx, args) => {
-    const state = args.state as WorldState;
+    const state: WorldState = args.state;
     const existing = await ctx.db
       .query("worldState")
       .withIndex("by_platform", (q) => q.eq("platform", args.platform))

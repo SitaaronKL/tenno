@@ -58,6 +58,9 @@ export interface Cycle {
 export interface WorldState {
   platform: Platform;
   fetchedAt: number;
+  upstreamTimestamp: number; // when upstream says the snapshot was built
+  stale: boolean; // upstream is more than ten minutes behind
+
   fissures: Fissure[];
   alerts: Alert[];
   invasions: Invasion[];

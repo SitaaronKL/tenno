@@ -17,7 +17,9 @@ export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
   const [tier, setTier] = useState<string>("All");
   const [steelPath, setSteelPath] = useState(false);
 
+  // The query already drops expired rows, this keeps the list honest between polls.
   const rows = fissures
+    .filter((f) => f.expiresAt > now)
     .filter((f) => f.steelPath === steelPath)
     .filter((f) => tier === "All" || f.tier === tier)
     .sort((a, b) => a.expiresAt - b.expiresAt);

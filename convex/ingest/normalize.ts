@@ -25,6 +25,9 @@ const CYCLE_KEYS: { key: string; world: Cycle["world"] }[] = [
 
 const TIERS: Fissure["tier"][] = ["Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"];
 
+// Upstream lags by hours sometimes, a snapshot older than this is worth telling the user about.
+export const STALE_AFTER_MS = 10 * 60 * 1000;
+
 function rec(value: unknown): Raw {
   return value !== null && typeof value === "object" ? (value as Raw) : {};
 }
@@ -201,13 +204,17 @@ function cycles(raw: Raw): Cycle[] {
   return out;
 }
 
+// Every upstream entity is kept, expiry is applied where the data is read.
 // Arbitration is dropped: upstream derives it and currently serves a broken placeholder.
 export function normalize(raw: Raw, fetchedAt: number = Date.now()): WorldState {
+  const upstreamTimestamp = ms(raw.timestamp) || fetchedAt;
   return {
     platform: "pc",
     fetchedAt,
-    fissures: fissures(raw).filter((f) => f.expiresAt > fetchedAt),
-    alerts: alerts(raw).filter((a) => a.expiresAt > fetchedAt),
+    upstreamTimestamp,
+    stale: fetchedAt - upstreamTimestamp > STALE_AFTER_MS,
+    fissures: fissures(raw),
+    alerts: alerts(raw),
     invasions: invasions(raw),
     sortie: sortie(raw),
     archonHunt: archonHunt(raw),

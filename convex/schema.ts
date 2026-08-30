@@ -86,6 +86,8 @@ const cycle = v.object({ world: cycleWorld, state: v.string(), expiresAt: v.numb
 export const worldStateValidator = v.object({
   platform,
   fetchedAt: v.number(),
+  upstreamTimestamp: v.number(),
+  stale: v.boolean(),
   fissures: v.array(fissure),
   alerts: v.array(alert),
   invasions: v.array(invasion),

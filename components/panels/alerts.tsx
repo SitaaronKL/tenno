@@ -7,13 +7,15 @@ import { useNow } from "./use-now";
 
 export function AlertsPanel({ alerts }: { alerts: Alert[] }) {
   const now = useNow();
+  // The query already drops expired rows, this keeps the list honest between polls.
+  const open = alerts.filter((a) => a.expiresAt > now);
   return (
     <Panel title="Alerts">
-      {alerts.length === 0 ? (
+      {open.length === 0 ? (
         <Empty>No alerts running.</Empty>
       ) : (
         <ul className="space-y-1">
-          {alerts.map((a) => (
+          {open.map((a) => (
             <li key={a.key} className="flex items-center gap-2">
               <span className="font-medium">{a.missionType}</span>
               <span className="text-muted-foreground truncate">
