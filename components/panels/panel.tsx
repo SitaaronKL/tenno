@@ -1,10 +1,9 @@
 "use client";
 
 import {
-  useEffect,
   useId,
   useRef,
-  useState,
+  useSyncExternalStore,
   type ComponentType,
   type ReactNode,
   type RefAttributes,
@@ -27,12 +26,24 @@ export function panelKey(title: string): string {
     .replace(/^-|-$/g, "");
 }
 
-function read(name: string): boolean | null {
+// The saved choices live outside React, so panels read them as an external store.
+const listeners = new Set<() => void>();
+
+function subscribe(fn: () => void) {
+  listeners.add(fn);
+  // A second tab collapsing a panel should collapse it here too.
+  window.addEventListener("storage", fn);
+  return () => {
+    listeners.delete(fn);
+    window.removeEventListener("storage", fn);
+  };
+}
+
+function read(name: string): boolean {
   try {
-    const saved = window.localStorage.getItem(`voidwatch.panels.${name}`);
-    return saved === null ? null : saved === "collapsed";
+    return window.localStorage.getItem(`voidwatch.panels.${name}`) === "collapsed";
   } catch {
-    return null;
+    return false;
   }
 }
 
@@ -42,6 +53,7 @@ function write(name: string, collapsed: boolean) {
   } catch {
     // A blocked store just means the panel forgets, never that it breaks.
   }
+  for (const fn of listeners) fn();
 }
 
 function Chevron({ collapsed }: { collapsed: boolean }) {
@@ -84,19 +96,12 @@ export function Panel({
   const icon = useRef<IconHandle>(null);
   const bodyId = useId();
   const name = panelKey(title);
-  // Server and first paint always render open, the saved choice lands right after mount.
-  const [collapsed, setCollapsed] = useState(false);
-  useEffect(() => {
-    const saved = read(name);
-    if (saved !== null) setCollapsed(saved);
-  }, [name]);
-
-  function toggle() {
-    setCollapsed((was) => {
-      write(name, !was);
-      return !was;
-    });
-  }
+  // The server snapshot is always open, so the markup matches, then the saved choice lands.
+  const collapsed = useSyncExternalStore(
+    subscribe,
+    () => read(name),
+    () => false,
+  );
 
   return (
     <Card
@@ -127,7 +132,7 @@ export function Panel({
           {action}
           <button
             type="button"
-            onClick={toggle}
+            onClick={() => write(name, !collapsed)}
             aria-expanded={!collapsed}
             aria-controls={bodyId}
             aria-label={`${collapsed ? "Expand" : "Collapse"} ${title}`}
