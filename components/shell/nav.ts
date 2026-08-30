@@ -3,6 +3,7 @@ import { LayoutGridIcon } from "@/components/icons/layout-grid";
 import { WorkflowIcon } from "@/components/icons/workflow";
 import { MessageCircleIcon } from "@/components/icons/message-circle";
 import { AtomIcon } from "@/components/icons/atom";
+import { PackageIcon } from "@/components/icons/package";
 
 // Every animated icon exposes the same imperative handle, so the nav item can drive it on its own hover.
 export type AnimatedIconHandle = {
@@ -24,6 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "World state", icon: LayoutGridIcon },
   { href: "/rules", label: "Rules", icon: WorkflowIcon },
   { href: "/chat", label: "Chat", icon: MessageCircleIcon },
+  { href: "/resources", label: "Resources", icon: PackageIcon },
   { href: "/mastery", label: "Mastery", icon: AtomIcon },
 ];
 
