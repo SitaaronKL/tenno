@@ -201,3 +201,33 @@ describe("settings a client cannot save", () => {
     expect(saved.timezone).toBe("America/New_York");
   });
 });
+
+describe("hidden world state pieces", () => {
+  test("a saved choice comes back on the next read", async () => {
+    const asUser = await signedIn();
+    await asUser.mutation(api.profiles.update, { hidden: ["box.nightwave", "board.vox"] });
+    const me = await asUser.query(api.profiles.me, {});
+    expect(me.profile.hidden).toEqual(["box.nightwave", "board.vox"]);
+  });
+
+  test("a new user hides nothing", async () => {
+    const asUser = await signedIn();
+    const me = await asUser.query(api.profiles.me, {});
+    expect(me.profile.hidden).toEqual([]);
+  });
+
+  test("a key neither side knows is refused", async () => {
+    const asUser = await signedIn();
+    await expect(
+      asUser.mutation(api.profiles.update, { hidden: ["box.nightwave", "box.mars"] }),
+    ).rejects.toThrow(/box.mars/);
+  });
+
+  test("saving another setting leaves the choice alone", async () => {
+    const asUser = await signedIn();
+    await asUser.mutation(api.profiles.update, { hidden: ["tile.baro"] });
+    await asUser.mutation(api.profiles.update, { digestHour: 4 });
+    const me = await asUser.query(api.profiles.me, {});
+    expect(me.profile.hidden).toEqual(["tile.baro"]);
+  });
+});

@@ -3,6 +3,7 @@ import { internalAction, internalMutation, internalQuery, mutation, query } from
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { isHiddenKey } from "../lib/contracts/preferences";
 import { requireUser } from "./lib/auth";
 import { normalizePhone } from "./lib/phone";
 
@@ -38,6 +39,7 @@ const profileFields = v.object({
   phoneVerified: v.boolean(),
   timezone: v.string(),
   digestHour: v.number(),
+  hidden: v.array(v.string()),
   platform: v.literal("pc"),
 });
 
@@ -49,6 +51,7 @@ function shape(userId: Id<"users">, email: string, profile: Doc<"profiles"> | nu
     phoneVerified: profile?.phoneVerifiedAt !== undefined,
     timezone: profile?.timezone ?? DEFAULT_TIMEZONE,
     digestHour: profile?.digestHour ?? DEFAULT_DIGEST_HOUR,
+    hidden: profile?.hidden ?? [],
     platform: "pc" as const,
   };
 }
@@ -96,6 +99,7 @@ export const update = mutation({
     timezone: v.optional(v.string()),
     digestHour: v.optional(v.number()),
     phone: v.optional(v.union(v.string(), v.null())),
+    hidden: v.optional(v.array(v.string())),
   },
   returns: profileFields,
   handler: async (ctx, args) => {
@@ -112,6 +116,12 @@ export const update = mutation({
     }
     if (args.timezone !== undefined && !knownTimezone(args.timezone)) {
       throw new ConvexError(`${args.timezone} is not a timezone this deployment knows.`);
+    }
+    // A key the UI does not draw would hide nothing and outlive whoever typed it.
+    for (const key of args.hidden ?? []) {
+      if (!isHiddenKey(key)) {
+        throw new ConvexError(`${key} is not something Voidwatch can hide.`);
+      }
     }
     const existing = await load(ctx, userId);
     const nextPhone = args.phone === undefined ? undefined : args.phone === null ? null : toE164(args.phone);
@@ -142,6 +152,7 @@ export const update = mutation({
       lastDigestAt: existing?.lastDigestAt,
       // A new number has to opt in again, so verification resets.
       phoneVerifiedAt: phoneChanged ? undefined : existing?.phoneVerifiedAt,
+      hidden: args.hidden ?? existing?.hidden,
       timezone: args.timezone ?? existing?.timezone ?? DEFAULT_TIMEZONE,
       digestHour: args.digestHour ?? existing?.digestHour ?? DEFAULT_DIGEST_HOUR,
       platform: "pc" as const,

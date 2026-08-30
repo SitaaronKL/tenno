@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ConvexError } from "convex/values";
 
@@ -16,6 +16,7 @@ const profile = {
   phoneVerified: false,
   timezone: "America/Los_Angeles",
   digestHour: 9,
+  hidden: [] as string[],
 };
 
 vi.mock("@/components/rules/api", () => ({
@@ -43,6 +44,7 @@ describe("settings", () => {
     profile.timezone = "America/Los_Angeles";
     profile.phone = "+15550001234";
     profile.phoneVerified = false;
+    profile.hidden = [];
     update.mockClear();
   });
 
@@ -146,5 +148,55 @@ describe("when the deployment has no Photon line", () => {
     expect(screen.queryByText(/Text START to/)).not.toBeInTheDocument();
     process.env.NEXT_PUBLIC_PHOTON_NUMBER = "+1 (415) 603-5536";
     vi.resetModules();
+  });
+});
+
+describe("the world state card", () => {
+  beforeEach(() => {
+    profile.hidden = [];
+    update.mockClear();
+  });
+
+  it("groups the switches by boxes, boards and tiles", () => {
+    renderPage();
+    expect(screen.getByRole("group", { name: "Boxes" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Bounty boards" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Tiles" })).toBeInTheDocument();
+  });
+
+  it("shows everything until the user says otherwise", () => {
+    renderPage();
+    const boxes = within(screen.getByRole("group", { name: "Boxes" }));
+    expect(boxes.getByRole("switch", { name: "Nightwave" })).toBeChecked();
+  });
+
+  it("saves the key the moment a switch goes off", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const boards = within(screen.getByRole("group", { name: "Bounty boards" }));
+
+    await user.click(boards.getByRole("switch", { name: "Vox" }));
+
+    await waitFor(() => expect(update).toHaveBeenCalledWith({ hidden: ["board.vox"] }));
+  });
+
+  it("reads a saved choice back as an off switch", () => {
+    profile.hidden = ["tile.baro"];
+    renderPage();
+    const tiles = within(screen.getByRole("group", { name: "Tiles" }));
+    expect(tiles.getByRole("switch", { name: "Baro" })).not.toBeChecked();
+    const boxes = within(screen.getByRole("group", { name: "Boxes" }));
+    expect(boxes.getByRole("switch", { name: "Baro" })).toBeChecked();
+  });
+
+  it("puts a key back when the switch goes on again", async () => {
+    const user = userEvent.setup();
+    profile.hidden = ["box.nightwave"];
+    renderPage();
+    const boxes = within(screen.getByRole("group", { name: "Boxes" }));
+
+    await user.click(boxes.getByRole("switch", { name: "Nightwave" }));
+
+    await waitFor(() => expect(update).toHaveBeenCalledWith({ hidden: [] }));
   });
 });
