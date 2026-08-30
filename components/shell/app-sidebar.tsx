@@ -51,12 +51,11 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              size="lg"
               tooltip="Voidwatch"
               render={<Link href="/dashboard" />}
-              className="[&_svg]:size-6 group-data-[collapsible=icon]:[&_svg]:size-4"
+              className="h-12 group-data-[collapsible=icon]:h-8"
             >
-              <Logo size={24} />
+              <Logo className="size-6 group-data-[collapsible=icon]:size-4" />
               <span className="font-semibold tracking-tight">Voidwatch</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
