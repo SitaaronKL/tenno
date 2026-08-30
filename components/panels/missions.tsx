@@ -6,7 +6,6 @@ import { Segmented } from "@/components/segmented";
 import type { ArchonHunt, Sortie } from "@/lib/contracts/worldstate";
 import { LayoutGridIcon } from "@/components/icons/layout-grid";
 import { cn } from "@/lib/utils";
-import { Chip } from "./tier-badge";
 import { Checkoff, doneRow, remaining, sortieKey, useCheckoffs } from "./checkoffs";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
@@ -37,7 +36,7 @@ export function MissionSetPanel({
 
   return (
     <Panel
-      title={set === "sortie" ? "Sortie" : "Archon Hunt"}
+      title={set === "sortie" ? "Sortie" : data?.boss ?? "Archon Hunt"}
       icon={LayoutGridIcon}
       className={CLASS}
       // Three stages is a short list, so the pill says how many of them are left.
@@ -53,10 +52,6 @@ export function MissionSetPanel({
         <Empty>Nothing active.</Empty>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-2">
-            <span className="truncate font-medium">{data.boss}</span>
-            <Chip>{data.faction}</Chip>
-          </div>
           <ul className="divide-y divide-border">
             {data.missions.map((m) => {
               const id = sortieKey(set, data.key, m.node);

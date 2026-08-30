@@ -16,10 +16,10 @@ const archon = {
 describe("mission set panel", () => {
   it("shows the sortie first and switches to the archon hunt from the toggle", async () => {
     render(<MissionSetPanel sortie={sortie} archonHunt={archon} />);
-    expect(screen.getByText("Tyl Regor")).toBeInTheDocument();
-    expect(screen.queryByText("Archon Nira")).not.toBeInTheDocument();
+    expect(screen.getByText("War (Mars)")).toBeInTheDocument();
+    expect(screen.queryByText("Tyl Regor")).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole("radio", { name: "Archon Hunt" }));
     expect(screen.getByText("Archon Nira")).toBeInTheDocument();
-    expect(screen.queryByText("Tyl Regor")).not.toBeInTheDocument();
+    expect(screen.queryByText("War (Mars)")).not.toBeInTheDocument();
   });
 });

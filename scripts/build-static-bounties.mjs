@@ -1,4 +1,4 @@
-// Regenerates convex/ingest/static-bounties.json from the WFCD drop table mirror.
+// Regenerates convex/ingest/staticBounties.json from the WFCD drop table mirror.
 // Run it after a game update: node scripts/build-static-bounties.mjs
 //
 // DE's world state lists the Zariman, Entrati Lab, Vox Solaris and Höllvania boards with zero jobs,
@@ -90,7 +90,7 @@ const out = {
   boards,
 };
 
-const path = "convex/ingest/static-bounties.json";
+const path = "convex/ingest/staticBounties.json";
 writeFileSync(path, JSON.stringify(out));
 console.log(
   path,

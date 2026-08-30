@@ -140,7 +140,7 @@ describe("normalizeDe", () => {
   });
 
   test("lists a bounty board per open world syndicate, in board order", () => {
-    // The fixed boards DE sends empty are filled elsewhere, convex/ingest/static-bounties.test.ts.
+    // The fixed boards DE sends empty are filled elsewhere, convex/ingest/staticBounties.test.ts.
     const live = state.bounties!.filter((b) => !b.static);
     expect(live.map((b) => b.syndicate)).toEqual(["Entrati", "Ostrons", "Solaris United"]);
     for (const bounty of live) {

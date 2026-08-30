@@ -28,6 +28,7 @@ import type * as ingest_de from "../ingest/de.js";
 import type * as ingest_normalize from "../ingest/normalize.js";
 import type * as ingest_prune from "../ingest/prune.js";
 import type * as ingest_pull from "../ingest/pull.js";
+import type * as ingest_staticBounties from "../ingest/staticBounties.js";
 import type * as lib_auth from "../lib/auth.js";
 import type * as lib_phone from "../lib/phone.js";
 import type * as lib_validators from "../lib/validators.js";
@@ -72,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   "ingest/normalize": typeof ingest_normalize;
   "ingest/prune": typeof ingest_prune;
   "ingest/pull": typeof ingest_pull;
+  "ingest/staticBounties": typeof ingest_staticBounties;
   "lib/auth": typeof lib_auth;
   "lib/phone": typeof lib_phone;
   "lib/validators": typeof lib_validators;

@@ -12,7 +12,7 @@ import type {
   WorldState,
 } from "../../lib/contracts/worldstate";
 import { bountyNode, job } from "./bounties";
-import { withStaticBounties } from "./static-bounties";
+import { withStaticBounties } from "./staticBounties";
 
 // Raw upstream JSON is unknown shaped, every field is read through the coercers below.
 type Raw = Record<string, unknown>;

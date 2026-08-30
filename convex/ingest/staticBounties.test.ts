@@ -3,7 +3,7 @@ import raw from "./__fixtures__/de.json";
 import pc from "./__fixtures__/pc.json";
 import { normalizeDe } from "./de";
 import { normalize } from "./normalize";
-import { nextRotation, withStaticBounties } from "./static-bounties";
+import { nextRotation, withStaticBounties } from "./staticBounties";
 
 // Both fixtures list the Zariman, Entrati Lab, Vox Solaris and Höllvania boards with zero jobs.
 const FETCHED_AT = Date.parse("2026-08-30T04:21:00.000Z");
