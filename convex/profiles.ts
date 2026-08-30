@@ -193,6 +193,17 @@ export const storePhotonSpaceId = internalMutation({
   },
 });
 
+// Syncing a Warframe account is what claims it, mastery reads only ever go through this.
+export const storeMasteryPlayerId = internalMutation({
+  args: { userId: v.id("users"), playerId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { userId, playerId }) => {
+    const profile = await load(ctx, userId);
+    if (profile) await ctx.db.patch(profile._id, { masteryPlayerId: playerId });
+    return null;
+  },
+});
+
 export const storePhotonUserId = internalMutation({
   args: { profileId: v.id("profiles"), photonUserId: v.string() },
   returns: v.null(),

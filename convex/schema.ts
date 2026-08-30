@@ -145,6 +145,8 @@ export default defineSchema({
     photonUserId: v.optional(v.string()),
     photonSpaceId: v.optional(v.string()),
     phoneVerifiedAt: v.optional(v.number()),
+    // The Warframe account this user synced. Mastery is read through it, never through an argument.
+    masteryPlayerId: v.optional(v.string()),
     lastDigestAt: v.optional(v.number()),
     timezone: v.string(),
     digestHour: v.number(),

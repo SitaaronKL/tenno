@@ -124,6 +124,8 @@ export const fetchProfile = action({
     if (!/^[0-9a-f]{24}$/.test(id)) {
       throw new Error("A player id is 24 hexadecimal characters");
     }
+    // Asking for a profile is how a user claims it, mastery.progress reads it back from here.
+    await ctx.runMutation(internal.profiles.storeMasteryPlayerId, { userId, playerId: id });
     const hit: CacheRow = await ctx.runQuery(internal.profileSync.cached, { playerId: id });
     if (hit && Date.now() - hit.fetchedAt < CACHE_MS) {
       return { cached: true, masteryRank: hit.masteryRank, displayName: hit.displayName };
