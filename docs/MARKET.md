@@ -20,7 +20,7 @@ Source: r/Warframe reaction to Tenno Tracker (882 upvotes, 97 comments), plus te
 
 ## Technical facts
 
-- Public profile endpoint: `https://content.warframe.com/dynamic/getProfileViewingData.php?playerId=<id>`. No auth, returns mastery and profile data. DE IP bans on abuse, up to 24 hours. Fetch server side only, rate limit per user, cache for hours, never call from the browser.
+- Public profile endpoint: `https://api.warframe.com/cdn/getProfileViewingData.php?playerId=<id>` (the old content.warframe.com/dynamic path is 404, name lookup is dead since 38.0.8). No auth, returns mastery and profile data. DE IP bans on abuse, up to 24 hours. Fetch server side only, rate limit per user, cache for hours, never call from the browser.
 - warframe.market blocks browser requests and allows about 3 requests per second. Prices go through Convex actions with a cache, never from the client.
 - World state freshness: DE feed is live, tenno.tools parses DE itself and stays within 2 minutes, warframestat.us lags for hours. See docs/warframe-api.md.
 - Account ids are hard to find on mobile. Any profile feature needs a clear "find your id" walkthrough.
