@@ -448,4 +448,24 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_public", ["public"]),
   // end builds block
+  // v2-resources block, added by the resource tracker slice. Keep it last.
+  // Where an item drops, from the checked in convex/gamedata/dropSources.json. One row per item.
+  dropSources: defineTable({
+    itemName: v.string(),
+    sources: v.array(
+      v.object({ place: v.string(), rotation: v.string(), chance: v.number() }),
+    ),
+  }).index("by_item_name", ["itemName"]),
+
+  // One row per thing a user is farming. Counts are per user, never shared.
+  goals: defineTable({
+    userId: v.id("users"),
+    itemName: v.string(),
+    wantedCount: v.number(),
+    haveCount: v.number(),
+    // The build this goal came from. A string, not an id: the builds table is another slice's.
+    fromBuildId: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"]),
+  // end v2-resources block
 });

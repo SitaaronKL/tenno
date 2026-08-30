@@ -16,16 +16,16 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
                             |
                   cron: ingest every 5 min, digest hourly, resets hourly, retention weekly
                             v
-  +---------------------------------------------------------------------------------------------------------------------------------------------------+
-  |  Convex  components: resend, agent, rateLimiter, workflow                                                                                         |
-  |                                                                                                                                                   |
-  |  tables: profiles, photonInbound, worldState, worldEvents, rules, notifications, completions, items, starNodes, profileCache, mods, builds        |
-  |                                                                                                                                                   |
-  |  ingest.pull -> normalize -> apply -> worldEvents                                                                                                 |
-  |        rules.evaluate (matcher, rate limit) -> notifications                                                                                      |
-  |        notify.send / notify.digest                                                                                                                |
-  |  agent (OpenAI): chat tools, rule builder                                                                                                         |
-  +---------------------------------------------------------------------------------------------------------------------------------------------------+
+  +-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+  |  Convex  components: resend, agent, rateLimiter, workflow                                                                                                             |
+  |                                                                                                                                                                       |
+  |  tables: profiles, photonInbound, worldState, worldEvents, rules, notifications, completions, items, starNodes, profileCache, mods, builds, dropSources, goals        |
+  |                                                                                                                                                                       |
+  |  ingest.pull -> normalize -> apply -> worldEvents                                                                                                                     |
+  |        rules.evaluate (matcher, rate limit) -> notifications                                                                                                          |
+  |        notify.send / notify.digest                                                                                                                                    |
+  |  agent (OpenAI): chat tools, rule builder                                                                                                                             |
+  +-----------------------------------------------------------------------------------------------------------------------------------------------------------------------+
          |                     |                       |
          v                     v                       v
   Next.js pages          Resend email            Photon iMessage / SMS
@@ -36,6 +36,7 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
   /dashboard
   /login
   /mastery
+  /resources
   /rules
   /settings
 ```
@@ -76,6 +77,14 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
                                             seeds mods and arcanes, 500 a call, repeat with
                                             '{"from":500}' until it answers "next": null,
                                             /builds has an empty mod picker until this runs
+
+     node scripts/build-components.mjs      names every part a recipe asks for, and what that
+                                            part is built from, into convex/gamedata/components.json
+     node scripts/build-drop-sources.mjs    trims the WFCD drop table mirror to the best eight
+                                            places an item drops, convex/gamedata/dropSources.json
+     npx convex run gamedata/dropSources:importDropSources '{}'
+                                            seeds drop sources, /resources shows no farms
+                                            until this runs once
 
   5. npm run dev                            second terminal
      open http://localhost:3000
