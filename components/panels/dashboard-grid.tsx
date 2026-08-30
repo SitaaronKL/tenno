@@ -1,8 +1,6 @@
 "use client";
 
 import type { WorldState } from "@/lib/contracts/worldstate";
-import { BoneIcon } from "@/components/icons/bone";
-import { LayoutGridIcon } from "@/components/icons/layout-grid";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorldState } from "./world-state";
 import { useNow } from "./use-now";
@@ -80,16 +78,7 @@ export function Panels({ state }: { state: WorldState }) {
         <BountiesPanel bounties={bountiesOf(state)} />
         <InvasionsPanel invasions={state.invasions} />
         <AlertsPanel alerts={state.alerts} />
-        <MissionSetPanel
-          title="Sortie"
-          icon={LayoutGridIcon}
-          data={state.sortie}
-        />
-        <MissionSetPanel
-          title="Archon Hunt"
-          icon={BoneIcon}
-          data={state.archonHunt}
-        />
+        <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
         <BaroPanel baro={state.baro} />
         <NightwavePanel nightwave={state.nightwave} />
       </div>
