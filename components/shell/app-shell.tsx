@@ -12,7 +12,12 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "./app-sidebar";
 import { breadcrumbTrail } from "./nav";
 
@@ -25,7 +30,9 @@ function RouteBreadcrumb() {
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem className="hidden sm:block">
-          <BreadcrumbLink render={<Link href="/dashboard" />}>Voidwatch</BreadcrumbLink>
+          <BreadcrumbLink render={<Link href="/dashboard" />}>
+            Voidwatch
+          </BreadcrumbLink>
         </BreadcrumbItem>
         {trail.map((label, i) => (
           <Fragment key={`${i}-${label}`}>
@@ -34,7 +41,11 @@ function RouteBreadcrumb() {
               {i === trail.length - 1 ? (
                 <BreadcrumbPage>{label}</BreadcrumbPage>
               ) : (
-                <BreadcrumbLink render={<Link href={`/${segments.slice(0, i + 1).join("/")}`} />}>
+                <BreadcrumbLink
+                  render={
+                    <Link href={`/${segments.slice(0, i + 1).join("/")}`} />
+                  }
+                >
                   {label}
                 </BreadcrumbLink>
               )}
@@ -48,16 +59,20 @@ function RouteBreadcrumb() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <RouteBreadcrumb />
-        </header>
-        <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-6 md:px-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+    <TooltipProvider delay={0}>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border px-4">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <RouteBreadcrumb />
+          </header>
+          <main className="mx-auto w-full max-w-[1280px] flex-1 px-4 py-6 md:px-6">
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </TooltipProvider>
   );
 }

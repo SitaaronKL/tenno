@@ -41,9 +41,10 @@ export function UserCard() {
             size="lg"
             tooltip="Sign in"
             render={<Link href="/login" />}
+            className="group-data-[collapsible=icon]:p-1!"
           >
-            <Avatar className="size-8 rounded-md">
-              <AvatarFallback className="rounded-md">
+            <Avatar className="size-8 rounded-full group-data-[collapsible=icon]:size-6">
+              <AvatarFallback className="rounded-full">
                 <LogInIcon size={16} />
               </AvatarFallback>
             </Avatar>
@@ -63,12 +64,12 @@ export function UserCard() {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <SidebarMenuButton size="lg" aria-label="Account menu" tooltip={name} />
+              <SidebarMenuButton size="lg" aria-label="Account menu" tooltip={name} className="group-data-[collapsible=icon]:p-1!" />
             }
           >
-            <Avatar className="size-8 rounded-md">
+            <Avatar className="size-8 rounded-full group-data-[collapsible=icon]:size-6">
               {me?.image ? <AvatarImage src={me.image} alt="" /> : null}
-              <AvatarFallback className="rounded-md">{name.slice(0, 1).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="rounded-full">{name.slice(0, 1).toUpperCase()}</AvatarFallback>
             </Avatar>
             <span className="grid flex-1 text-left leading-tight">
               <span className="truncate font-medium">{name}</span>
