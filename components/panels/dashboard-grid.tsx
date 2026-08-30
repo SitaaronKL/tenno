@@ -77,7 +77,7 @@ export function Panels({ state }: { state: WorldState }) {
         <BountiesPanel bounties={bountiesOf(state)} />
         <EventsPanel invasions={state.invasions} alerts={state.alerts} />
         <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
-        <BaroPanel baro={state.baro} />
+        {state.baro?.active ? <BaroPanel baro={state.baro} /> : null}
         <NightwavePanel nightwave={state.nightwave} />
       </div>
     </div>
