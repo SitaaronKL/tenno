@@ -1,6 +1,6 @@
 import { LogInIcon } from "@/components/icons/login";
 import { SendIcon } from "@/components/icons/send";
-import { LogoMark } from "@/components/shell/logo-mark";
+import { Logo } from "@/components/shell/logo";
 
 // The mark stands in for the agent, no sparkle icons anywhere.
 const STEPS = [
@@ -11,16 +11,16 @@ const STEPS = [
 
 export function HowItWorks() {
   return (
-    <section className="border-y border-border bg-surface px-6 py-16">
-      <div className="mx-auto max-w-5xl">
-        <h2 className="text-center text-2xl font-semibold tracking-tight">How it works</h2>
+    <section id="how" className="scroll-mt-24 border-t border-border bg-surface px-6 py-24">
+      <div className="mx-auto max-w-6xl">
+        <h2 className="font-display text-4xl leading-tight sm:text-5xl">How it works</h2>
         <ol className="mt-10 grid gap-8 sm:grid-cols-3">
           {STEPS.map((s, i) => {
             const Icon = s.icon;
             return (
               <li key={s.title} className="flex gap-4">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-strong ring-1 ring-primary/25">
-                  {Icon ? <Icon size={16} aria-hidden="true" /> : <LogoMark size={16} />}
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-surface-2">
+                  {Icon ? <Icon size={16} aria-hidden="true" /> : <Logo size={16} />}
                 </span>
                 <div>
                   <p className="font-medium">
