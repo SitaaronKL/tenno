@@ -35,6 +35,7 @@ export function MissionSetPanel({
 
   return (
     <Panel
+      id="mission-set"
       title={set === "sortie" ? "Sortie" : data?.boss ?? "Archon Hunt"}
       icon={LayoutGridIcon}
       className={CLASS}
