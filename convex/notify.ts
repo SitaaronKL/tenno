@@ -128,6 +128,8 @@ function siteUrl(): string {
 function undeliverable(delivery: Delivery): string | null {
   if (delivery.channel === "email") return delivery.email ? null : "no email on file";
   if (!delivery.phone && !delivery.photonUserId) return "no phone on file";
+  // Photon shares a line, an unverified number has never texted us and cannot be cold messaged.
+  if (!delivery.phoneVerified) return "phone not verified";
   return null;
 }
 

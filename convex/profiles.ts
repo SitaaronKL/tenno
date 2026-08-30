@@ -4,6 +4,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireUser } from "./lib/auth";
+import { normalizePhone } from "./lib/phone";
 
 const DEFAULT_TIMEZONE = "UTC";
 const DEFAULT_DIGEST_HOUR = 9;
@@ -82,13 +83,21 @@ export const update = mutation({
       throw new Error("User row is missing");
     }
     const existing = await load(ctx, userId);
-    const phoneChanged = args.phone !== undefined && args.phone !== (existing?.phone ?? null);
+    const nextPhone = args.phone === undefined ? undefined : args.phone === null ? null : normalizePhone(args.phone);
+    const phoneChanged = nextPhone !== undefined && nextPhone !== (existing?.phone ?? null);
 
     const next = {
       userId,
       email: existing?.email ?? user.email ?? "",
-      phone: args.phone === undefined ? existing?.phone : (args.phone ?? undefined),
+      phone:
+        args.phone === undefined
+          ? existing?.phone
+          : args.phone === null
+            ? undefined
+            : normalizePhone(args.phone) || undefined,
       photonUserId: phoneChanged ? undefined : existing?.photonUserId,
+      photonSpaceId: phoneChanged ? undefined : existing?.photonSpaceId,
+      lastDigestAt: existing?.lastDigestAt,
       // A new number has to opt in again, so verification resets.
       phoneVerifiedAt: phoneChanged ? undefined : existing?.phoneVerifiedAt,
       timezone: args.timezone ?? existing?.timezone ?? DEFAULT_TIMEZONE,
@@ -142,6 +151,44 @@ export const storePhotonUserId = internalMutation({
   handler: async (ctx, { profileId, photonUserId }) => {
     await ctx.db.patch(profileId, { photonUserId });
     return null;
+  },
+});
+
+// The inbound text is the opt in: it links the sender to a profile and verifies the phone.
+export const linkInbound = internalMutation({
+  args: {
+    messageId: v.string(),
+    phone: v.string(),
+    spaceId: v.string(),
+    senderId: v.string(),
+  },
+  returns: v.object({ duplicate: v.boolean(), firstContact: v.boolean() }),
+  handler: async (ctx, { messageId, phone, spaceId, senderId }) => {
+    const seen = await ctx.db
+      .query("photonInbound")
+      .withIndex("by_message", (q) => q.eq("messageId", messageId))
+      .first();
+    // Photon delivers at least once, so the same message id is answered once.
+    if (seen) return { duplicate: true, firstContact: false };
+    await ctx.db.insert("photonInbound", { messageId, receivedAt: Date.now() });
+
+    const key = normalizePhone(phone);
+    const profile = key
+      ? await ctx.db
+          .query("profiles")
+          .withIndex("by_phone", (q) => q.eq("phone", key))
+          .first()
+      : null;
+    if (!profile) return { duplicate: false, firstContact: false };
+
+    const firstContact = profile.phoneVerifiedAt === undefined;
+    await ctx.db.patch(profile._id, {
+      photonSpaceId: spaceId,
+      // A sender id that is not a phone number is the Photon user id for this line.
+      photonUserId: normalizePhone(senderId) === key ? profile.photonUserId : senderId,
+      phoneVerifiedAt: profile.phoneVerifiedAt ?? Date.now(),
+    });
+    return { duplicate: false, firstContact };
   },
 });
 

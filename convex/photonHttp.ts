@@ -5,6 +5,8 @@ import {
 import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 
+const LINKED = "Voidwatch linked. You will get alerts here.";
+
 // The portable verify entry runs in the Convex isolate, app.webhook needs Node.
 export const photonWebhook = httpAction(async (ctx, request) => {
   const secret = process.env.PHOTON_WEBHOOK_SECRET;
@@ -29,13 +31,28 @@ export const photonWebhook = httpAction(async (ctx, request) => {
 
   const message = parsed.data.message;
   const content = message.content as { type: string; text?: string };
-  const phone = message.sender?.id ?? message.space.id;
-  if (content.type === "text" && content.text && phone) {
-    // Reply after the 200 so Photon never waits on the agent.
-    await ctx.scheduler.runAfter(0, internal.photon.reply, {
-      phone,
-      text: content.text,
+  const senderId = message.sender?.id ?? message.space.id;
+  if (content.type === "text" && content.text && senderId) {
+    const { duplicate, firstContact } = await ctx.runMutation(internal.profiles.linkInbound, {
+      messageId: message.id,
+      phone: senderId,
+      spaceId: message.space.id,
+      senderId,
     });
+    // A redelivery is already answered, saying so again would text the user twice.
+    if (duplicate) return new Response(null, { status: 200 });
+    if (firstContact) {
+      await ctx.scheduler.runAfter(0, internal.photon.sendText, {
+        phone: senderId,
+        text: LINKED,
+      });
+    } else {
+      // Reply after the 200 so Photon never waits on the agent.
+      await ctx.scheduler.runAfter(0, internal.photon.reply, {
+        phone: senderId,
+        text: content.text,
+      });
+    }
   }
   return new Response(null, { status: 200 });
 });

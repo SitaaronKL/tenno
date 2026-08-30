@@ -106,11 +106,21 @@ export default defineSchema({
     email: v.string(),
     phone: v.optional(v.string()),
     photonUserId: v.optional(v.string()),
+    photonSpaceId: v.optional(v.string()),
     phoneVerifiedAt: v.optional(v.number()),
+    lastDigestAt: v.optional(v.number()),
     timezone: v.string(),
     digestHour: v.number(),
     platform,
-  }).index("by_user", ["userId"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_phone", ["phone"]),
+
+  // One row per inbound Photon message, so a redelivery is answered once.
+  photonInbound: defineTable({
+    messageId: v.string(),
+    receivedAt: v.number(),
+  }).index("by_message", ["messageId"]),
 
   worldState: defineTable({
     platform,

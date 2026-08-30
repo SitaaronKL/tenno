@@ -104,6 +104,37 @@ async function seed(t: ReturnType<typeof setup>, options: SeedOptions = {}) {
 }
 
 describe("notify.send", () => {
+  test("an unverified phone is never texted, the user sees why", async () => {
+    const t = setup();
+    const { eventId } = await seed(t, {
+      channels: ["imessage"],
+      profile: { phone: "+15550001234" },
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    const rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("skipped");
+    expect(rows[0].error).toBe("phone not verified");
+    expect(sent.texts).toHaveLength(0);
+  });
+
+  test("a verified phone gets the text", async () => {
+    const t = setup();
+    const { eventId } = await seed(t, {
+      channels: ["imessage"],
+      profile: { phone: "+15550001234", phoneVerifiedAt: Date.now() },
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    const rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("sent");
+    expect(sent.texts).toHaveLength(1);
+  });
+
   test("a brand new user is emailed at the address they signed in with", async () => {
     const t = setup();
     // No profile row yet, the user has never opened settings.
