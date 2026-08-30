@@ -162,3 +162,55 @@
     @apply outline-2 outline-offset-2 outline-ring;
   }
 }
+
+/* Omnia takes every relic, so its pill takes every hue: one gradient, clipped to the text and to the ring. */
+.tier-omnia {
+  --tier-omnia-gradient: linear-gradient(
+    90deg,
+    #c03a3a,
+    #d4a017,
+    #4ade80,
+    #3a9fc0,
+    #a03ac0,
+    #c03a3a
+  );
+  background-image: var(--tier-omnia-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: tier-omnia-cycle 4s linear infinite;
+}
+
+.tier-omnia::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--tier-omnia-gradient);
+  /* Paint the border box, then cut the content box back out, so the ring follows the pill radius. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes tier-omnia-cycle {
+  from {
+    filter: hue-rotate(0deg);
+  }
+  to {
+    filter: hue-rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tier-omnia {
+    animation: none;
+  }
+}
