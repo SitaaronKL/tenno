@@ -12,7 +12,7 @@ export default function DashboardPage() {
     <>
       <PageHeader
         title="World state"
-        helper="Live from the PC world state, refreshed every five minutes."
+        helper={"Live from the PC world state,\nrefreshed every five minutes."}
         action={<CycleTilesLive />}
       />
       <DashboardGrid />
