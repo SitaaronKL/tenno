@@ -33,7 +33,8 @@ function Harness() {
   );
 }
 
-const TOTAL = 3 + PALLADINO_WARES.length;
+// Teshin, two Circuit pools, four single weekly missions, five Netracells and her wares.
+const TOTAL = 3 + 4 + 5 + PALLADINO_WARES.length;
 
 describe("weekly box", () => {
   it("names Teshin's offering, both Circuit rows and the Iron Wake trade", () => {
@@ -53,6 +54,46 @@ describe("weekly box", () => {
       screen.getByRole("checkbox", { name: /Teshin's Steel Path Honors/ }),
     );
     expect(screen.getByText(`1 / ${TOTAL}`)).toBeInTheDocument();
+  });
+});
+
+describe("the weekly missions", () => {
+  it("lists each one by the name the game uses", () => {
+    render(<Harness />);
+    for (const label of ["Descendia", "Netracells", "Kahl's Garrison", "Maroo's Ayatan hunt", "Clem's mission"]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
+  });
+
+  it("ticks one off into the pill", async () => {
+    render(<Harness />);
+    await userEvent.click(screen.getByRole("checkbox", { name: /Kahl's Garrison/ }));
+
+    expect(screen.getByText(`1 / ${TOTAL}`)).toBeInTheDocument();
+    expect(screen.getByText("Kahl's Garrison").closest("li")).toHaveClass("line-through");
+  });
+});
+
+describe("the Netracells row", () => {
+  it("counts the five runs rather than asking for one tick", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    expect(screen.getByText("0 of 5 done")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("checkbox", { name: "Netracells, run 1 of 5" }));
+    await user.click(screen.getByRole("checkbox", { name: "Netracells, run 3 of 5" }));
+
+    expect(screen.getByText("2 of 5 done")).toBeInTheDocument();
+    expect(screen.getByText(`2 / ${TOTAL}`)).toBeInTheDocument();
+  });
+
+  it("keeps each run on its own key, so a tick is not shared", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(screen.getByRole("checkbox", { name: "Netracells, run 1 of 5" }));
+
+    expect(screen.getByRole("checkbox", { name: "Netracells, run 1 of 5" })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: "Netracells, run 2 of 5" })).not.toBeChecked();
   });
 });
 

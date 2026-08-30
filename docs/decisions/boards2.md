@@ -33,3 +33,14 @@ Assumptions and calls made in this slice. Notes live here, not at the repo root.
 - Each ware is its own check off on the weekly key, `weekly:ironwake:<ware>:<reset>`, so the two Riven Mods
   tick separately. The Weekly box count now covers all fourteen weekly things, not four.
 - The row label stays "Palladino's Iron Wake" and the row itself is now the expander, not a check off.
+
+## Weekly missions, added to the same slice
+
+- Descendia, Kahl's Garrison, Maroo's Ayatan hunt and Clem's mission are a tick each on the weekly key,
+  labelled exactly as asked. Nothing upstream tracks them, so the second line just says where to go.
+- Netracells is five runs a week, not one chore. `CheckoffRow` carries a single tick and it is a shared
+  file another slice owns, so the row is laid out in `weekly.tsx` from the exported `Checkoff` primitive:
+  five boxes on the right, a "2 of 5 done" line on the left, one key per run. Partial progress survives,
+  which one tick would have thrown away.
+- The Weekly pill now counts twenty three things: three offerings, four missions, five Netracells and
+  eleven wares.
