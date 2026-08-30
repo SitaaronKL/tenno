@@ -86,20 +86,25 @@ export function Panels({ state }: { state: WorldState }) {
   return (
     <div>
       {state.stale && <StaleNotice state={state} />}
-      <div className={GRID}>
-        {shown("box.fissures") ? <FissuresPanel fissures={state.fissures} /> : null}
-        {shown("box.bounties") ? <BountiesPanel bounties={bountiesOf(state)} /> : null}
-        {shown("box.events") ? (
-          <EventsPanel invasions={state.invasions} alerts={state.alerts} />
-        ) : null}
-        {shown("box.missions") ? (
-          <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
-        ) : null}
-        {shown("box.archimedea") ? <ArchimedeaPanel archimedea={state.archimedea ?? []} /> : null}
-        {shown("box.weekly") ? <WeeklyPanel circuit={state.circuit} /> : null}
-        {shown("box.incursions") ? <IncursionsPanel incursions={state.incursions ?? []} /> : null}
-        {state.baro?.active && shown("box.baro") ? <BaroPanel baro={state.baro} /> : null}
-        {shown("box.nightwave") ? <NightwavePanel nightwave={state.nightwave} /> : null}
+      {shown("box.fissures") ? <FissuresPanel fissures={state.fissures} /> : null}
+      {/* Two independent stacks, so an open box only pushes its own column down. */}
+      <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
+        <div className="flex flex-col gap-4">
+          {shown("box.bounties") ? <BountiesPanel bounties={bountiesOf(state)} /> : null}
+          {shown("box.missions") ? (
+            <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
+          ) : null}
+          {shown("box.weekly") ? <WeeklyPanel circuit={state.circuit} /> : null}
+          {shown("box.nightwave") ? <NightwavePanel nightwave={state.nightwave} /> : null}
+        </div>
+        <div className="flex flex-col gap-4">
+          {shown("box.events") ? (
+            <EventsPanel invasions={state.invasions} alerts={state.alerts} />
+          ) : null}
+          {shown("box.archimedea") ? <ArchimedeaPanel archimedea={state.archimedea ?? []} /> : null}
+          {shown("box.incursions") ? <IncursionsPanel incursions={state.incursions ?? []} /> : null}
+          {state.baro?.active && shown("box.baro") ? <BaroPanel baro={state.baro} /> : null}
+        </div>
       </div>
     </div>
   );
