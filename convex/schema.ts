@@ -26,6 +26,58 @@ export const masteryKind = v.union(
   v.literal("other"),
 );
 
+// builds: DE's polarity ids, named the way the game names them.
+export const polarity = v.union(
+  v.literal("madurai"),
+  v.literal("vazarin"),
+  v.literal("naramon"),
+  v.literal("zenurik"),
+  v.literal("unairu"),
+  v.literal("penjaga"),
+  v.literal("umbra"),
+  v.literal("universal"),
+  v.literal("any"),
+);
+
+// builds: which grid a mod belongs in. Auras and exilus mods only fit their own slot.
+export const modSlot = v.union(
+  v.literal("mod"),
+  v.literal("exilus"),
+  v.literal("aura"),
+  v.literal("arcane"),
+);
+
+// builds: what a stat effect moves, the nine numbers the frame preview shows.
+export const statKey = v.union(
+  v.literal("health"),
+  v.literal("shield"),
+  v.literal("armor"),
+  v.literal("energy"),
+  v.literal("sprint"),
+  v.literal("duration"),
+  v.literal("efficiency"),
+  v.literal("range"),
+  v.literal("strength"),
+);
+
+export const modRef = v.object({ uniqueName: v.string(), rank: v.number() });
+
+// builds: one frame or weapon's loadout. Eight mod slots plus aura, exilus, arcanes and shards.
+export const buildSlots = v.object({
+  aura: v.union(modRef, v.null()),
+  exilus: v.union(modRef, v.null()),
+  // Always eight entries, a null is an empty slot, so a slot keeps its index.
+  mods: v.array(v.union(modRef, v.null())),
+  arcanes: v.array(modRef),
+  shards: v.array(v.object({ color: v.string(), count: v.number() })),
+  // Forma is what puts a polarity on a slot, so the editor stores where it went.
+  polarities: v.object({
+    aura: v.union(polarity, v.null()),
+    exilus: v.union(polarity, v.null()),
+    mods: v.array(v.union(polarity, v.null())),
+  }),
+});
+
 const reward = v.object({ item: v.string(), count: v.number(), credits: v.number() });
 
 const fissure = v.object({
@@ -329,6 +381,16 @@ export default defineSchema({
     masteryXp: v.number(),
     buildable: v.boolean(),
     components: v.array(v.object({ itemType: v.string(), count: v.number() })),
+    // builds: base stats, frames only, weapons carry no comparable set.
+    stats: v.optional(
+      v.object({
+        health: v.number(),
+        shield: v.number(),
+        armor: v.number(),
+        energy: v.number(),
+        sprint: v.number(),
+      }),
+    ),
   })
     .index("by_unique_name", ["uniqueName"])
     .index("by_kind", ["kind"]),
@@ -351,6 +413,41 @@ export default defineSchema({
   }).index("by_player", ["playerId"]),
   // end round2-mastery block
 
+  // builds block. Mods and arcanes share a table, kind tells them apart.
+  mods: defineTable({
+    uniqueName: v.string(),
+    name: v.string(),
+    kind: v.union(v.literal("mod"), v.literal("arcane")),
+    polarity,
+    rarity: v.string(),
+    // compatName where DE gives one, so "Whips" beats "MELEE" in the picker.
+    type: v.string(),
+    slot: modSlot,
+    baseDrain: v.number(),
+    fusionLimit: v.number(),
+    description: v.string(),
+    effects: v.array(v.object({ stat: statKey, percent: v.number() })),
+  })
+    .index("by_unique_name", ["uniqueName"])
+    .index("by_slot", ["slot"]),
+
+  builds: defineTable({
+    userId: v.id("users"),
+    // uniqueName of a warframe or a weapon, the same key the items table uses.
+    itemId: v.string(),
+    name: v.string(),
+    slots: buildSlots,
+    forma: v.number(),
+    orokinReactor: v.boolean(),
+    notes: v.string(),
+    public: v.boolean(),
+    source: v.literal("manual"),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_public", ["public"]),
+  // end builds block
   // v2-resources block, added by the resource tracker slice. Keep it last.
   // Where an item drops, from the checked in convex/gamedata/dropSources.json. One row per item.
   dropSources: defineTable({

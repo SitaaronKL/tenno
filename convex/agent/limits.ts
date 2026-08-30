@@ -11,13 +11,14 @@ const rateLimiterComponent = components.rateLimiter as unknown as ConstructorPar
 export const agentLimiter = new RateLimiter(rateLimiterComponent, {
   chatMessages: { kind: "fixed window", rate: 20, period: HOUR },
   ruleDrafts: { kind: "fixed window", rate: 10, period: HOUR },
+  buildDrafts: { kind: "fixed window", rate: 10, period: HOUR },
 });
 
 type Ctx = Parameters<typeof agentLimiter.limit>[0];
 
 export async function checkLimit(
   ctx: Ctx,
-  name: "chatMessages" | "ruleDrafts",
+  name: "chatMessages" | "ruleDrafts" | "buildDrafts",
   userId: string,
   friendly: string,
 ) {

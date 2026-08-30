@@ -5,6 +5,7 @@ import type { Doc, Id } from "../_generated/dataModel";
 import { RuleInput } from "../../lib/contracts/rule";
 import type { WorldState } from "../../lib/contracts/worldstate";
 import type { SearchResult } from "../wiki";
+import type { BuildDraftResult } from "./buildDrafter";
 
 // Every execute is annotated, otherwise the tools and the generated api infer through each other.
 
@@ -40,6 +41,23 @@ export const createRule = createTool({
       input,
     });
     return { id, name: input.name };
+  },
+});
+
+export const draftBuild = createTool({
+  description:
+    "Propose a mod loadout for a warframe or weapon that serves a goal in plain English. Returns a build " +
+    "the user can open in the editor, nothing is saved.",
+  inputSchema: z.object({
+    item: z.string().describe("the warframe or weapon, for example Rhino"),
+    goal: z.string().describe("what the build is for, for example survive Steel Path"),
+  }),
+  execute: async (ctx, { item, goal }): Promise<BuildDraftResult> => {
+    return await ctx.runAction(internal.agent.buildDrafter.draftForUser, {
+      userId: owner(ctx),
+      item,
+      goal,
+    });
   },
 });
 
