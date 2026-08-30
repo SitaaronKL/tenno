@@ -4,7 +4,7 @@ References pulled from Mobbin on 2026-08-30. Links open the screen on Mobbin.
 
 ## Feel
 
-Watchful, calm, precise, a little cosmic. Linear, Vercel, Raycast, in the Warframe universe. Dense but airy. One accent color, used sparingly, so gold means "look here".
+Watchful, calm, precise, a little cosmic. Linear, Vercel, Raycast, in the Warframe universe. Dense but airy. Black and white only: the accent is the inverse of the background (white on dark, black on light). No gold, no yellow, no colored badges except the semantic success, warning and danger states. Emphasis comes from weight, size, contrast and motion, not hue.
 
 ## Tokens (Tailwind v4, set in app/globals.css)
 
@@ -15,8 +15,8 @@ surface-2       #181818          hover, nested panels
 border          #232323          hairline, 1px, never heavier
 text            #f5f5f5
 text-muted      #8a8a8a
-accent          #f5b942          void gold, buttons, active states, the logo core
-accent-soft     #f5b94214        8 percent gold, tinted backgrounds and rings
+accent          #ffffff          inverse of background, buttons, active states
+accent-soft     #ffffff14        8 percent, tinted backgrounds and rings
 success         #4ade80          verified, active, sent
 warning         #fb923c          expiring soon, stale feed
 danger          #f87171          failed, expired
@@ -34,11 +34,11 @@ surface-2       #f4f4f5        #181818
 border          #e4e4e7        #232323
 text            #0a0a0a        #f5f5f5
 text-muted      #6b6b6b        #8a8a8a
-accent          #d99a1e        #f5b942     gold is darker on light so it passes contrast on white
-accent-soft     #d99a1e14      #f5b94214
+accent          #0a0a0a        #ffffff     inverse of the background
+accent-soft     #0a0a0a14      #ffffff14
 ```
 
-The logo uses `currentColor` for the white strokes so it flips with the theme, gold stays gold. No flash on load: `next-themes` sets the class before paint, `suppressHydrationWarning` on `<html>`.
+The logo is `public/logo-outline.svg` (Dhruv's own trace) rendered with `currentColor`, so it flips with the theme. No flash on load: `next-themes` sets the class before paint, `suppressHydrationWarning` on `<html>`.
 
 ## Layout
 
@@ -83,7 +83,7 @@ References: Instacart notification settings https://mobbin.com/screens/56a8bbd6-
 ### Landing
 References: ToDesktop https://mobbin.com/sites/sections/03ac58c4-657f-4005-a4c7-2486d0641a5d, Customer.io https://mobbin.com/sites/sections/cbac56f2-5cdf-45a1-814d-83c855d8f552.
 
-- Hero: pill label "Warframe companion", headline "Never miss a fissure again", sub line, two buttons (Get started gold, See the dashboard outlined), the logo as a faint 900px radial behind the headline with a gold glow.
+- Hero: no pill label. Headline left aligned, very large (clamp 3.5rem to 7rem), tight leading, a display face with character (try Instrument Serif or Geist for the headline, Geist for body). Sub line one sentence. Two buttons, primary is white on black, secondary outlined, both square cornered. The outline logo as a faint large mark on the right.
 - Product shot: a real screenshot of the dashboard in a browser frame with the top edge cut by the fold, like ToDesktop.
 - Three feature columns with icon, title, two lines. Then an iMessage mock conversation in a phone frame. Then "How it works" three steps. Footer with GitHub and the fan project note.
 
