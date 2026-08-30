@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 import { internalAction } from "./_generated/server";
+import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 
 const API = "https://spectrum.photon.codes";
@@ -63,6 +64,22 @@ export const registerUser = internalAction({
   },
 });
 
+// The user opted in through a conversation, keep writing into it instead of opening a new one.
+async function spaceFor(ctx: ActionCtx, handle: string) {
+  const im = imessage(await client());
+  const known = await ctx.runQuery(internal.profiles.photonSpace, { phone: handle });
+  if (known?.spaceId) return await im.space.get(known.spaceId);
+
+  const space = await im.space.create(handle);
+  if (known) {
+    await ctx.runMutation(internal.profiles.storePhotonSpaceId, {
+      profileId: known.profileId,
+      spaceId: space.id,
+    });
+  }
+  return space;
+}
+
 export const sendText = internalAction({
   args: {
     photonUserId: v.optional(v.string()),
@@ -70,15 +87,13 @@ export const sendText = internalAction({
     text: v.string(),
   },
   returns: v.null(),
-  handler: async (_ctx, { photonUserId, phone, text }) => {
+  handler: async (ctx, { photonUserId, phone, text }) => {
     let handle = phone;
     if (!handle && photonUserId) {
       handle = (await photonFetch(`/users/${photonUserId}/`)).phoneNumber;
     }
     if (!handle) throw new Error("sendText needs a phone or a photonUserId");
-    const app = await client();
-    const im = imessage(app);
-    const space = await im.space.create(handle);
+    const space = await spaceFor(ctx, handle);
     await space.send(text);
     return null;
   },
@@ -89,9 +104,7 @@ export const reply = internalAction({
   returns: v.null(),
   handler: async (ctx, { phone, text }) => {
     const answer = await ctx.runAction(internal.agent.chat.replyToInbound, { phone, text });
-    const app = await client();
-    const im = imessage(app);
-    const space = await im.space.create(phone);
+    const space = await spaceFor(ctx, phone);
     await space.send(answer);
     return null;
   },

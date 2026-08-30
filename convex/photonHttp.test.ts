@@ -35,13 +35,22 @@ vi.mock("./photon", async () => {
 const modules = import.meta.glob("./**/*.ts");
 const SECRET = "webhook-secret";
 
-function envelope(messageId: string, phone: string, text: string) {
+function envelope(
+  messageId: string,
+  phone: string,
+  text: string,
+  over: { event?: string; direction?: string; sender?: { id: string } | null } = {},
+) {
   return JSON.stringify({
-    event: "message.received",
+    event: over.event ?? "message.received",
     message: {
       id: messageId,
+      direction: over.direction ?? "inbound",
       space: { id: "space-1", platform: "imessage" },
-      sender: { id: phone, platform: "imessage" },
+      sender:
+        over.sender === null
+          ? undefined
+          : (over.sender ?? { id: phone, platform: "imessage" }),
       content: { type: "text", text },
     },
   });
@@ -112,7 +121,7 @@ describe("photon webhook", () => {
     const t = setup();
     const userId = await seedProfile(t, "+15550001234");
 
-    const response = await post(t, envelope("m1", "+1 (555) 000-1234", "START"));
+    const response = await post(t, envelope("m1", "+15550001234", "START"));
     expect(response.status).toBe(200);
     await t.finishAllScheduledFunctions(() => {});
 
@@ -141,6 +150,71 @@ describe("photon webhook", () => {
     expect(second.status).toBe(200);
     expect(sent.texts).toHaveLength(1);
     expect(sent.replies).toHaveLength(0);
+  });
+
+  test("our own outbound message does not answer itself", async () => {
+    const t = setup();
+    await seedProfile(t, "+15550001234");
+
+    const response = await post(
+      t,
+      envelope("m1", "+15550001234", "Voidwatch linked.", { direction: "outbound" }),
+    );
+    await t.finishAllScheduledFunctions(() => {});
+
+    expect(response.status).toBe(200);
+    expect(sent.texts).toHaveLength(0);
+    expect(sent.replies).toHaveLength(0);
+  });
+
+  test("an event that is not an inbound message is ignored", async () => {
+    const t = setup();
+    await seedProfile(t, "+15550001234");
+
+    const response = await post(
+      t,
+      envelope("m1", "+15550001234", "hi", { event: "message.delivered" }),
+    );
+    await t.finishAllScheduledFunctions(() => {});
+
+    expect(response.status).toBe(200);
+    expect(sent.texts).toHaveLength(0);
+    expect(sent.replies).toHaveLength(0);
+  });
+
+  test("a sender that is not a phone number is told how to link", async () => {
+    const t = setup();
+    await seedProfile(t, "+15550001234");
+
+    const response = await post(
+      t,
+      envelope("m1", "+15550001234", "hello", { sender: { id: "usr_9f3a2b" } }),
+    );
+    await t.finishAllScheduledFunctions(() => {});
+
+    expect(response.status).toBe(200);
+    // The profile stays unverified, nothing was claimed on its behalf.
+    const profile = await t.run(async (ctx) => await ctx.db.query("profiles").unique());
+    expect(profile!.phoneVerifiedAt).toBeUndefined();
+    expect(sent.texts.map((m) => m.text)).toEqual([
+      "I do not know this number yet. Add it under Settings in Voidwatch, then text me again.",
+    ]);
+  });
+
+  test("a signed but malformed body is a client error, not a crash", async () => {
+    const t = setup();
+    const response = await post(t, "{");
+    expect(response.status).toBe(400);
+  });
+
+  test("a wrong signature is refused", async () => {
+    const t = setup();
+    const good = await signed(envelope("m1", "+15550001234", "START"));
+    const response = await t.fetch("/photon/webhook", {
+      ...good,
+      headers: { ...good.headers, "x-spectrum-signature": "v0=" + "0".repeat(64) },
+    });
+    expect(response.status).toBe(401);
   });
 
   test("a later text from a verified phone goes to the agent", async () => {

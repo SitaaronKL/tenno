@@ -119,3 +119,51 @@ describe("phone opt in", () => {
     expect((await asUser.query(api.profiles.me, {})).profile.phoneVerified).toBe(false);
   });
 });
+
+describe("one phone, one account", () => {
+  async function twoUsers() {
+    const t = convexTest(schema, modules);
+    const [a, b] = await t.run(async (ctx) => [
+      await ctx.db.insert("users", { email: "a@example.com" }),
+      await ctx.db.insert("users", { email: "b@example.com" }),
+    ]);
+    return {
+      t,
+      alice: t.withIdentity({ subject: `${a}|session` }),
+      bob: t.withIdentity({ subject: `${b}|session` }),
+    };
+  }
+
+  test("a number already claimed by somebody else is refused with a reason", async () => {
+    const { alice, bob } = await twoUsers();
+    await alice.mutation(api.profiles.update, { phone: "+15550001234" });
+
+    await expect(bob.mutation(api.profiles.update, { phone: "+1 (555) 000-1234" })).rejects.toThrow(
+      /already linked to another account/,
+    );
+  });
+
+  test("saving your own number again is fine", async () => {
+    const { alice } = await twoUsers();
+    await alice.mutation(api.profiles.update, { phone: "+15550001234" });
+    const saved = await alice.mutation(api.profiles.update, { phone: "+15550001234" });
+    expect(saved.phone).toBe("+15550001234");
+  });
+
+  test("an inbound text reaches exactly the account that saved the number", async () => {
+    const { t, alice } = await twoUsers();
+    await alice.mutation(api.profiles.update, { phone: "5550001234" });
+    await t.mutation(internal.profiles.linkInbound, {
+      messageId: "m1",
+      phone: "+15550001234",
+      spaceId: "space-1",
+      senderId: "+15550001234",
+    });
+
+    const owner = await t.query(internal.profiles.userForVerifiedPhone, { phone: "+15550001234" });
+    const aliceProfile = await t.run(async (ctx) =>
+      (await ctx.db.query("profiles").collect()).find((p) => p.email === "a@example.com"),
+    );
+    expect(owner).toBe(aliceProfile!.userId);
+  });
+});

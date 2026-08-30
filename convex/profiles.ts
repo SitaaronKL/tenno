@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -95,6 +95,17 @@ export const update = mutation({
     const nextPhone = args.phone === undefined ? undefined : args.phone === null ? null : toE164(args.phone);
     const phoneChanged = nextPhone !== undefined && nextPhone !== (existing?.phone ?? null);
 
+    // A number is one person's identity over iMessage, two profiles on it would race for inbound texts.
+    if (phoneChanged && nextPhone) {
+      const claimed = await ctx.db
+        .query("profiles")
+        .withIndex("by_phone", (q) => q.eq("phone", nextPhone))
+        .first();
+      if (claimed && claimed.userId !== userId) {
+        throw new ConvexError("That number is already linked to another account.");
+      }
+    }
+
     const next = {
       userId,
       email: existing?.email ?? user.email ?? "",
@@ -150,6 +161,34 @@ export const ensure = internalMutation({
       digestHour: DEFAULT_DIGEST_HOUR,
       platform: "pc" as const,
     });
+    return null;
+  },
+});
+
+// The inbound conversation, so an outbound alert lands in the thread the user opted in through.
+export const photonSpace = internalQuery({
+  args: { phone: v.string() },
+  returns: v.union(
+    v.object({ profileId: v.id("profiles"), spaceId: v.union(v.string(), v.null()) }),
+    v.null(),
+  ),
+  handler: async (ctx, { phone }) => {
+    const key = toE164(phone);
+    if (!key) return null;
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_phone", (q) => q.eq("phone", key))
+      .first();
+    if (!profile) return null;
+    return { profileId: profile._id, spaceId: profile.photonSpaceId ?? null };
+  },
+});
+
+export const storePhotonSpaceId = internalMutation({
+  args: { profileId: v.id("profiles"), spaceId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { profileId, spaceId }) => {
+    await ctx.db.patch(profileId, { photonSpaceId: spaceId });
     return null;
   },
 });
