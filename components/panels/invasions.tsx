@@ -11,21 +11,19 @@ function rewardText(r: Reward | null): string {
 
 export function InvasionsPanel({ invasions }: { invasions: Invasion[] }) {
   return (
-    <Panel title="Invasions" className="lg:col-span-2">
+    <Panel title="Invasions" count={invasions.length} className="lg:col-span-2">
       {invasions.length === 0 ? (
         <Empty>No invasions running.</Empty>
       ) : (
-        <ul className="space-y-2">
+        <ul className="divide-y divide-border">
           {invasions.map((i) => {
             const attacker = Math.min(100, Math.max(0, i.completion));
             return (
-              <li key={i.key} className="space-y-1">
+              <li key={i.key} className="space-y-1.5 py-2.5">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{i.node}</span>
-                  <span className="text-muted-foreground truncate text-xs">
-                    {i.description}
-                  </span>
-                  <span className="text-muted-foreground ml-auto tabular-nums">
+                  <span className="shrink-0 font-medium">{i.node}</span>
+                  <span className="truncate text-xs text-muted-foreground">{i.description}</span>
+                  <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">
                     {attacker.toFixed(0)}%
                   </span>
                 </div>
@@ -35,15 +33,15 @@ export function InvasionsPanel({ invasions }: { invasions: Invasion[] }) {
                   aria-valuenow={Math.round(attacker)}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  className="bg-muted h-1.5 w-full overflow-hidden rounded-full"
+                  className="h-1 w-full overflow-hidden rounded-full bg-surface-2"
                 >
-                  <div className="bg-primary h-full" style={{ width: `${attacker}%` }} />
+                  <div className="h-full bg-primary" style={{ width: `${attacker}%` }} />
                 </div>
-                <div className="text-muted-foreground flex items-center justify-between text-xs">
-                  <span>
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span className="truncate">
                     {i.attacker.faction}: {rewardText(i.attacker.reward)}
                   </span>
-                  <span>
+                  <span className="truncate">
                     {i.defender.faction}: {rewardText(i.defender.reward)}
                   </span>
                 </div>

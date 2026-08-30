@@ -1,9 +1,9 @@
 "use client";
 
 import type { Nightwave } from "@/lib/contracts/worldstate";
-import { Badge } from "@/components/ui/badge";
+import { Chip } from "./tier-badge";
 import { Empty, Panel } from "./panel";
-import { countdown } from "./format";
+import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
 
 export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
@@ -18,22 +18,18 @@ export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
   return (
     <Panel
       title={`Nightwave season ${nightwave.season}`}
-      action={
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {countdown(nightwave.expiresAt, now)}
-        </span>
-      }
+      count={nightwave.acts.length}
+      action={<Countdown target={nightwave.expiresAt} now={now} />}
     >
-      <ul className="max-h-56 space-y-1 overflow-y-auto">
+      <ul className="max-h-56 divide-y divide-border overflow-y-auto">
         {nightwave.acts.map((a) => (
-          <li key={a.key} className="flex items-center gap-2 py-0.5">
-            <Badge variant={a.daily ? "outline" : "secondary"}>
-              {a.daily ? "Daily" : "Weekly"}
-            </Badge>
+          <li key={a.key} className="flex items-center gap-2 py-2">
+            <Chip>{a.daily ? "Daily" : "Weekly"}</Chip>
             <span className="truncate font-medium">{a.title}</span>
-            <span className="text-muted-foreground ml-auto tabular-nums">
-              {a.reputation} rep · {countdown(a.expiresAt, now)}
+            <span className="ml-auto shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
+              {a.reputation} rep
             </span>
+            <Countdown target={a.expiresAt} now={now} />
           </li>
         ))}
       </ul>

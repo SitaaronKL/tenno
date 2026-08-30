@@ -2,15 +2,13 @@
 
 import { useState } from "react";
 import type { Fissure } from "@/lib/contracts/worldstate";
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Empty, Panel } from "./panel";
-import { countdown } from "./format";
+import { Chip, TierBadge, TIERS } from "./tier-badge";
+import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
-
-const TIERS = ["Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"] as const;
 
 export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
   const now = useNow();
@@ -27,18 +25,19 @@ export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
   return (
     <Panel
       title="Fissures"
+      count={rows.length}
       className="lg:col-span-2"
       action={
         <div className="flex items-center gap-2">
-          <Label htmlFor="steel-path" className="text-xs font-normal">
+          <Label htmlFor="steel-path" className="text-xs font-normal text-muted-foreground">
             Steel Path
           </Label>
-          <Switch id="steel-path" checked={steelPath} onCheckedChange={setSteelPath} />
+          <Switch id="steel-path" size="sm" checked={steelPath} onCheckedChange={setSteelPath} />
         </div>
       }
     >
       <Tabs value={tier} onValueChange={setTier}>
-        <TabsList className="mb-3 h-7">
+        <TabsList variant="line" className="mb-1 h-7">
           {["All", ...TIERS].map((t) => (
             <TabsTrigger key={t} value={t} className="px-2 text-xs">
               {t}
@@ -49,20 +48,17 @@ export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
       {rows.length === 0 ? (
         <Empty>No fissures open.</Empty>
       ) : (
-        <ul className="divide-border divide-y">
+        <ul className="divide-y divide-border">
           {rows.map((f) => (
-            <li key={f.key} className="flex items-center gap-2 py-1.5">
-              <Badge variant="secondary" className="w-16 justify-center">
-                {f.tier}
-              </Badge>
-              <span className="font-medium">{f.missionType}</span>
-              <span className="text-muted-foreground truncate">
+            <li key={f.key} className="flex items-center gap-2 py-2">
+              <TierBadge tier={f.tier} />
+              <span className="shrink-0 font-medium">{f.missionType}</span>
+              <span className="truncate text-muted-foreground">
                 {f.node} · {f.enemy}
               </span>
-              {f.storm ? <Badge variant="outline">Void Storm</Badge> : null}
-              <span className="text-muted-foreground ml-auto tabular-nums">
-                {countdown(f.expiresAt, now)}
-              </span>
+              {f.steelPath ? <Chip>Steel Path</Chip> : null}
+              {f.storm ? <Chip>Void Storm</Chip> : null}
+              <Countdown target={f.expiresAt} now={now} className="ml-auto" />
             </li>
           ))}
         </ul>

@@ -31,6 +31,8 @@ describe("dashboard", () => {
 
   it("tells the user how old the data is when upstream lags", () => {
     render(<Panels state={state({ stale: true, upstreamTimestamp: now - 25 * 60_000 })} />);
-    expect(screen.getByText("Data is 25 minutes old")).toBeInTheDocument();
+    expect(
+      screen.getByText("Data is 25 minutes old, upstream is lagging"),
+    ).toBeInTheDocument();
   });
 });

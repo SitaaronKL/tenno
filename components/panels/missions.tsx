@@ -1,9 +1,9 @@
 "use client";
 
 import type { ArchonHunt, Sortie } from "@/lib/contracts/worldstate";
-import { Badge } from "@/components/ui/badge";
+import { Chip } from "./tier-badge";
 import { Empty, Panel } from "./panel";
-import { countdown } from "./format";
+import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
 
 export function MissionSetPanel({
@@ -22,26 +22,21 @@ export function MissionSetPanel({
     );
   }
   return (
-    <Panel
-      title={title}
-      action={
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {countdown(data.expiresAt, now)}
-        </span>
-      }
-    >
+    <Panel title={title} action={<Countdown target={data.expiresAt} now={now} />}>
       <div className="mb-2 flex items-center gap-2">
-        <span className="font-medium">{data.boss}</span>
-        <Badge variant="secondary">{data.faction}</Badge>
+        <span className="truncate font-medium">{data.boss}</span>
+        <Chip>{data.faction}</Chip>
       </div>
-      <ul className="space-y-1">
+      <ul className="divide-y divide-border">
         {data.missions.map((m) => (
-          <li key={m.node} className="flex items-center gap-2">
-            <span className="font-medium">{m.missionType}</span>
-            <span className="text-muted-foreground truncate">{m.node}</span>
-            <span className="text-muted-foreground ml-auto truncate text-xs">
-              {m.modifier}
-            </span>
+          <li key={m.node} className="flex items-center gap-2 py-2">
+            <div className="min-w-0">
+              <p className="truncate">
+                <span className="font-medium">{m.missionType}</span>{" "}
+                <span className="text-muted-foreground">{m.node}</span>
+              </p>
+              <p className="truncate text-xs text-muted-foreground">{m.modifier}</p>
+            </div>
           </li>
         ))}
       </ul>
