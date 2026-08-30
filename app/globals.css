@@ -214,3 +214,11 @@
     animation: none;
   }
 }
+
+/* Scrolls without a visible bar, the list edge is the only hint. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

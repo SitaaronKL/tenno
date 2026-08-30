@@ -91,6 +91,7 @@ const WIDTHS = {
 const PATH = [
   { value: "all", label: "All" },
   { value: "steel", label: "Steel Path" },
+  { value: "storm", label: "Void Storm" },
   { value: "normal", label: "Normal" },
 ] as const;
 type Path = (typeof PATH)[number]["value"];
@@ -101,8 +102,12 @@ export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
   // The query already drops expired rows, this keeps the list honest between polls.
   const rows = useMemo(() => {
     const open = fissures.filter((f) => f.expiresAt > now);
-    const picked =
-      path === "all" ? open : open.filter((f) => (path === "steel" ? f.steelPath : !f.steelPath));
+    const picked = open.filter((f) => {
+      if (path === "steel") return f.steelPath;
+      if (path === "storm") return f.storm;
+      if (path === "normal") return !f.steelPath && !f.storm;
+      return true;
+    });
     return sortFissures(picked);
   }, [fissures, now, path]);
 
@@ -114,14 +119,16 @@ export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
       action={<Segmented label="Steel Path" options={PATH} value={path} onChange={setPath} />}
       className={CLASS}
     >
-      <DataTable
-        dense
-        label="Void fissures"
-        columns={columns}
-        data={rows}
-        widths={WIDTHS}
-        empty={<Empty>No fissures open.</Empty>}
-      />
+      <div className="scrollbar-none max-h-[34rem] overflow-y-auto">
+        <DataTable
+          dense
+          label="Void fissures"
+          columns={columns}
+          data={rows}
+          widths={WIDTHS}
+          empty={<Empty>No fissures open.</Empty>}
+        />
+      </div>
     </Panel>
   );
 }
