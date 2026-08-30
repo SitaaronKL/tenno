@@ -8,12 +8,14 @@
  * @module
  */
 
+import type * as agent_buildDrafter from "../agent/buildDrafter.js";
 import type * as agent_chat from "../agent/chat.js";
 import type * as agent_index from "../agent/index.js";
 import type * as agent_limits from "../agent/limits.js";
 import type * as agent_ruleBuilder from "../agent/ruleBuilder.js";
 import type * as agent_tools from "../agent/tools.js";
 import type * as auth from "../auth.js";
+import type * as builds from "../builds.js";
 import type * as completions from "../completions.js";
 import type * as crons from "../crons.js";
 import type * as email from "../email.js";
@@ -21,6 +23,7 @@ import type * as emails_Digest from "../emails/Digest.js";
 import type * as emails_MagicLink from "../emails/MagicLink.js";
 import type * as emails_RuleMatch from "../emails/RuleMatch.js";
 import type * as gamedata_import from "../gamedata/import.js";
+import type * as gamedata_importMods from "../gamedata/importMods.js";
 import type * as http from "../http.js";
 import type * as ingest_apply from "../ingest/apply.js";
 import type * as ingest_bounties from "../ingest/bounties.js";
@@ -36,6 +39,7 @@ import type * as lib_phone from "../lib/phone.js";
 import type * as lib_validators from "../lib/validators.js";
 import type * as mastery from "../mastery.js";
 import type * as matcher from "../matcher.js";
+import type * as mods from "../mods.js";
 import type * as notify from "../notify.js";
 import type * as photon from "../photon.js";
 import type * as photonHttp from "../photonHttp.js";
@@ -55,12 +59,14 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "agent/buildDrafter": typeof agent_buildDrafter;
   "agent/chat": typeof agent_chat;
   "agent/index": typeof agent_index;
   "agent/limits": typeof agent_limits;
   "agent/ruleBuilder": typeof agent_ruleBuilder;
   "agent/tools": typeof agent_tools;
   auth: typeof auth;
+  builds: typeof builds;
   completions: typeof completions;
   crons: typeof crons;
   email: typeof email;
@@ -68,6 +74,7 @@ declare const fullApi: ApiFromModules<{
   "emails/MagicLink": typeof emails_MagicLink;
   "emails/RuleMatch": typeof emails_RuleMatch;
   "gamedata/import": typeof gamedata_import;
+  "gamedata/importMods": typeof gamedata_importMods;
   http: typeof http;
   "ingest/apply": typeof ingest_apply;
   "ingest/bounties": typeof ingest_bounties;
@@ -83,6 +90,7 @@ declare const fullApi: ApiFromModules<{
   "lib/validators": typeof lib_validators;
   mastery: typeof mastery;
   matcher: typeof matcher;
+  mods: typeof mods;
   notify: typeof notify;
   photon: typeof photon;
   photonHttp: typeof photonHttp;

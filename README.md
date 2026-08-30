@@ -16,20 +16,22 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
                             |
                   cron: ingest every 5 min, digest hourly, resets hourly, retention weekly
                             v
-  +-------------------------------------------------------------------------------------------------------------------------------------+
-  |  Convex  components: resend, agent, rateLimiter, workflow                                                                           |
-  |                                                                                                                                     |
-  |  tables: profiles, photonInbound, worldState, worldEvents, rules, notifications, completions, items, starNodes, profileCache        |
-  |                                                                                                                                     |
-  |  ingest.pull -> normalize -> apply -> worldEvents                                                                                   |
-  |        rules.evaluate (matcher, rate limit) -> notifications                                                                        |
-  |        notify.send / notify.digest                                                                                                  |
-  |  agent (OpenAI): chat tools, rule builder                                                                                           |
-  +-------------------------------------------------------------------------------------------------------------------------------------+
+  +---------------------------------------------------------------------------------------------------------------------------------------------------+
+  |  Convex  components: resend, agent, rateLimiter, workflow                                                                                         |
+  |                                                                                                                                                   |
+  |  tables: profiles, photonInbound, worldState, worldEvents, rules, notifications, completions, items, starNodes, profileCache, mods, builds        |
+  |                                                                                                                                                   |
+  |  ingest.pull -> normalize -> apply -> worldEvents                                                                                                 |
+  |        rules.evaluate (matcher, rate limit) -> notifications                                                                                      |
+  |        notify.send / notify.digest                                                                                                                |
+  |  agent (OpenAI): chat tools, rule builder                                                                                                         |
+  +---------------------------------------------------------------------------------------------------------------------------------------------------+
          |                     |                       |
          v                     v                       v
   Next.js pages          Resend email            Photon iMessage / SMS
   /  (landing)
+  /builds
+  /builds/[id]
   /chat
   /dashboard
   /login
@@ -70,6 +72,10 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
      npx convex run gamedata/import:importGameData '{}'
                                             seeds items and star chart nodes, /mastery is
                                             empty until this runs once
+     npx convex run gamedata/importMods:importMods '{}'
+                                            seeds mods and arcanes, 500 a call, repeat with
+                                            '{"from":500}' until it answers "next": null,
+                                            /builds has an empty mod picker until this runs
 
   5. npm run dev                            second terminal
      open http://localhost:3000
