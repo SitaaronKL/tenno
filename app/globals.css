@@ -54,12 +54,54 @@
   --color-danger: var(--danger);
 }
 
-/* Voidwatch is dark only, see docs/DESIGN.md. Both selectors carry the same values so the
-   shadcn dark: variant works while :root alone is already correct. */
-:root,
+/* One token set, light on :root and dark on .dark, see docs/DESIGN.md. Components never use a raw hex. */
+:root {
+  color-scheme: light;
+  --font-sans: var(--font-geist-sans);
+
+  --background: #fafafa;
+  --foreground: #0a0a0a;
+  --surface: #ffffff;
+  --surface-2: #f4f4f5;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  /* Void gold is the one accent, so shadcn primary is gold and every hover surface stays neutral. */
+  --primary: #d99a1e;
+  --primary-foreground: #0a0a0a;
+  --accent-soft: rgb(217 154 30 / 0.08);
+  --secondary: #f4f4f5;
+  --secondary-foreground: #0a0a0a;
+  --muted: #f4f4f5;
+  --muted-foreground: #6b6b6b;
+  --accent: #f4f4f5;
+  --accent-foreground: #0a0a0a;
+  --success: #15803d;
+  --warning: #c2410c;
+  --danger: #dc2626;
+  --destructive: #dc2626;
+  --border: #e4e4e7;
+  --input: #e4e4e7;
+  --ring: #d99a1e;
+  --chart-1: #d99a1e;
+  --chart-2: #2563eb;
+  --chart-3: #7c3aed;
+  --chart-4: #15803d;
+  --chart-5: #6b6b6b;
+  --radius: 0.5rem;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #d99a1e;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #f4f4f5;
+  --sidebar-accent-foreground: #0a0a0a;
+  --sidebar-border: #e4e4e7;
+  --sidebar-ring: #d99a1e;
+}
+
 .dark {
   color-scheme: dark;
-  --font-sans: var(--font-geist-sans);
 
   --background: #0a0a0a;
   --foreground: #f5f5f5;
@@ -69,7 +111,6 @@
   --card-foreground: #f5f5f5;
   --popover: #121212;
   --popover-foreground: #f5f5f5;
-  /* Void gold is the one accent, so shadcn primary is gold and every hover surface stays neutral. */
   --primary: #f5b942;
   --primary-foreground: #0a0a0a;
   --accent-soft: rgb(245 185 66 / 0.08);
@@ -91,7 +132,6 @@
   --chart-3: #a78bfa;
   --chart-4: #4ade80;
   --chart-5: #8a8a8a;
-  --radius: 0.5rem;
   --sidebar: #0a0a0a;
   --sidebar-foreground: #f5f5f5;
   --sidebar-primary: #f5b942;

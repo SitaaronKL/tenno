@@ -20,13 +20,22 @@ vi.mock("@convex-dev/auth/react", () => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
+import { ThemeProvider } from "@/components/shell/theme-provider";
 import SettingsPage from "@/app/(app)/settings/page";
+
+function renderPage() {
+  return render(
+    <ThemeProvider>
+      <SettingsPage />
+    </ThemeProvider>,
+  );
+}
 
 describe("settings", () => {
   it("clearing the phone removes the saved number", async () => {
     const user = userEvent.setup();
     update.mockClear();
-    render(<SettingsPage />);
+    renderPage();
 
     await user.clear(screen.getByLabelText("Phone"));
     await user.click(screen.getByRole("button", { name: "Save settings" }));
@@ -37,7 +46,7 @@ describe("settings", () => {
   it("the danger zone removes the number in one click", async () => {
     const user = userEvent.setup();
     update.mockClear();
-    render(<SettingsPage />);
+    renderPage();
 
     await user.click(screen.getByRole("button", { name: /remove phone/i }));
 
@@ -45,9 +54,23 @@ describe("settings", () => {
   });
 
   it("shows the email, the opt in instructions and the phone state", () => {
-    render(<SettingsPage />);
+    renderPage();
     expect(screen.getByLabelText("Email")).toHaveValue("tenno@example.com");
     expect(screen.getByText(/Text START to \+1 \(415\) 603-5536 from this phone/)).toBeInTheDocument();
     expect(screen.getByText("Unverified")).toBeInTheDocument();
+  });
+
+  it("keeps the dark theme after the page is rebuilt", async () => {
+    const user = userEvent.setup();
+    const { unmount } = renderPage();
+
+    await user.click(screen.getByRole("radio", { name: "Dark" }));
+    expect(document.documentElement).toHaveClass("dark");
+
+    unmount();
+    renderPage();
+
+    expect(document.documentElement).toHaveClass("dark");
+    expect(await screen.findByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
   });
 });

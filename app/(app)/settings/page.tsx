@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shell/page-header";
+import { ThemeCard } from "@/components/shell/theme-card";
 import { useProfile, useUpdateProfile, type Profile } from "@/components/rules/api";
 import { ClientOnly } from "@/components/rules/client-only";
 import { cn } from "@/lib/utils";
@@ -219,6 +220,8 @@ function SettingsForm({
           </div>
         </CardContent>
       </Card>
+
+      <ThemeCard />
 
       <div className="flex items-center gap-3">
         <Button type="submit">Save settings</Button>

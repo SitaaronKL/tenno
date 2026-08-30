@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { TagInput } from "@/components/rules/tag-input";
 import { KIND_LABELS, joinOr } from "@/components/rules/sentence";
-import { cn } from "@/lib/utils";
+import { Segmented } from "@/components/segmented";
 import {
   EVENT_KINDS,
   RuleInput,
@@ -111,38 +111,6 @@ const STEEL_PATH = [
   { value: "exclude", label: "Exclude" },
 ] as const;
 type SteelPath = (typeof STEEL_PATH)[number]["value"];
-
-function SteelPathControl({
-  value,
-  onChange,
-}: {
-  value: SteelPath;
-  onChange: (next: SteelPath) => void;
-}) {
-  return (
-    <span
-      role="radiogroup"
-      aria-label="Steel Path"
-      className="inline-flex rounded-full bg-surface-2 p-0.5 align-middle ring-1 ring-border"
-    >
-      {STEEL_PATH.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          role="radio"
-          aria-checked={value === o.value}
-          onClick={() => onChange(o.value)}
-          className={cn(
-            "rounded-full px-2.5 py-0.5 text-sm transition-colors duration-150 ease-out",
-            value === o.value ? "bg-accent-soft text-primary" : "text-muted-foreground hover:text-foreground",
-          )}
-        >
-          {o.label}
-        </button>
-      ))}
-    </span>
-  );
-}
 
 export function RuleForm({
   initial,
@@ -253,7 +221,7 @@ export function RuleForm({
               <CheckboxList options={MISSION_TYPES} values={missionTypes} onChange={setMissionTypes} />
             </Chip>{" "}
             <span className="text-muted-foreground">with Steel Path </span>
-            <SteelPathControl value={steelPath} onChange={setSteelPath} />
+            <Segmented label="Steel Path" options={STEEL_PATH} value={steelPath} onChange={setSteelPath} />
           </>
         )}
 

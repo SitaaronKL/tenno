@@ -3,7 +3,8 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LogOut } from "lucide-react";
+import { LogOut, Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -18,6 +19,7 @@ import { useMe } from "./useMe";
 
 export function UserMenu() {
   const { signOut } = useAuthActions();
+  const { resolvedTheme, setTheme } = useTheme();
   const router = useRouter();
   const me = useMe();
   const label = me?.name ?? me?.email ?? "Voidwatch";
@@ -36,6 +38,16 @@ export function UserMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="truncate">{label}</DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+        >
+          {resolvedTheme === "dark" ? (
+            <Sun className="size-4" aria-hidden="true" />
+          ) : (
+            <Moon className="size-4" aria-hidden="true" />
+          )}
+          {resolvedTheme === "dark" ? "Light theme" : "Dark theme"}
+        </DropdownMenuItem>
         <DropdownMenuItem
           onClick={async () => {
             await signOut();
