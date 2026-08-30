@@ -32,8 +32,10 @@ function eventsOf(state: WorldState): NewEvent[] {
     const n = state.nightwave;
     push("nightwave", `season:${n.season}:${n.expiresAt}`, state.fetchedAt, n.expiresAt, n);
   }
+  // One event per phase. The start is rounded to the minute so every pull inside a phase agrees.
   for (const c of state.cycles) {
-    push("cycle", `${c.world}:${c.state}:${c.expiresAt}`, state.fetchedAt, c.expiresAt, c);
+    const startsAt = Math.round((c.startsAt ?? c.expiresAt) / 60_000) * 60_000;
+    push("cycle", `${c.world}:${c.state}:${startsAt}`, startsAt, c.expiresAt, c);
   }
   return out;
 }

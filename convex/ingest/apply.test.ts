@@ -4,6 +4,8 @@ import raw from "./__fixtures__/pc.json";
 import schema from "../schema";
 import { api, internal } from "../_generated/api";
 import { normalize } from "./normalize";
+import { normalizeDe } from "./de";
+import de from "./__fixtures__/de.json";
 
 // convex-test wants paths relative to the convex root, this test sits one directory down.
 const modules = Object.fromEntries(
@@ -117,5 +119,27 @@ describe("apply", () => {
         .unique(),
     );
     expect(event!.payload.node).toBe("Ceres (Ceres)");
+  });
+});
+
+describe("cycle events", () => {
+  test("two pulls five minutes apart leave one event per world, so a cycle rule fires once", async () => {
+    const t = convexTest(schema, modules);
+    // Millisecond remainders differ between cron runs, the key must not.
+    await t.mutation(internal.ingest.apply.apply, {
+      platform: "pc",
+      state: normalizeDe(de as Record<string, unknown>, FETCHED_AT + 84),
+    });
+    await t.mutation(internal.ingest.apply.apply, {
+      platform: "pc",
+      state: normalizeDe(de as Record<string, unknown>, FETCHED_AT + 5 * 60_000 + 133),
+    });
+
+    const cycles = await t.run(async (ctx) =>
+      (await ctx.db.query("worldEvents").collect()).filter((e) => e.kind === "cycle"),
+    );
+    const worlds = cycles.map((e) => e.key.split(":")[0]);
+    expect(new Set(worlds).size).toBe(worlds.length);
+    expect(worlds).toContain("earth");
   });
 });

@@ -68,6 +68,8 @@ export interface Bounty {
 export interface Cycle {
   world: "cetus" | "vallis" | "cambion" | "earth" | "duviri" | "zariman";
   state: string;
+  // The absolute boundary this phase began on. Optional so cycles stored before it existed read back.
+  startsAt?: number;
   expiresAt: number;
 }
 

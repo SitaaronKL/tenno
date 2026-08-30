@@ -108,7 +108,13 @@ const bounty = v.object({
   ),
 });
 
-const cycle = v.object({ world: cycleWorld, state: v.string(), expiresAt: v.number() });
+const cycle = v.object({
+  world: cycleWorld,
+  state: v.string(),
+  // Optional so cycles stored before the start time existed still validate.
+  startsAt: v.optional(v.number()),
+  expiresAt: v.number(),
+});
 
 export const worldStateValidator = v.object({
   platform,

@@ -221,7 +221,12 @@ function cycles(raw: Raw): Cycle[] {
   for (const { key, world } of CYCLE_KEYS) {
     const c = rec(raw[key]);
     if (!c.state) continue;
-    out.push({ world, state: str(c.state), expiresAt: ms(c.expiry) });
+    out.push({
+      world,
+      state: str(c.state),
+      startsAt: ms(c.activation),
+      expiresAt: ms(c.expiry),
+    });
   }
   return out;
 }
