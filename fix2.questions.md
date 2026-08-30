@@ -93,6 +93,16 @@ Every assumption I continued with, in the order I hit it.
 - **`v.any()` returns.** Replaced with `vRuleDoc` in `convex/rules.ts` and `vDelivery` in
   `convex/notify.ts`. `worldEvents.payload` stays `v.any()`, the errata already explains why.
 
+## The ASCII mark as the agent's face
+
+- **Where the component lives.** `components/marketing/ascii-logo.tsx` moved to
+  `components/ascii-logo.tsx`, next to `components/segmented.tsx`, because the chat page is not
+  marketing. The landing page import changed with it, nothing else did.
+- **It needed two new props.** At `size={20}` the original 7px cell samples the mark into five
+  columns, which is unreadable, so `cell` is now a prop. And a canvas per assistant message would
+  be one `requestAnimationFrame` loop per message, so `animated` is a prop too: the avatar paints
+  once, the chat empty state still waves. Both reuse the existing reduced motion path.
+
 ## Not done, and why
 
 - **Chunking the cold start burst** (claude finding 11's second half). Skipping expired events and

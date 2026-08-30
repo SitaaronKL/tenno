@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckIcon } from "@/components/icons/check";
-import { LogoMark } from "@/components/shell/logo-mark";
+import { AsciiLogo } from "@/components/ascii-logo";
 
 export type ChatMessage = { key: string; role: string; text: string; status: string };
 
@@ -27,8 +27,8 @@ export function Message({ message }: { message: ChatMessage }) {
   }
   return (
     <article className="flex gap-3">
-      {/* The outline mark is the agent's face, no avatar image and no initials. */}
-      <LogoMark size={20} className="mt-0.5" />
+      {/* The ASCII mark from the landing page is the agent's face, no avatar image and no initials. */}
+      <AsciiLogo size={24} cell={3} animated={false} className="mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1 text-sm leading-6 whitespace-pre-wrap">
         {message.text.trim() === "" ? <ToolRow /> : message.text}
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { LogoMark } from "@/components/shell/logo-mark";
+import { AsciiLogo } from "@/components/ascii-logo";
 
 // Three, so the eye takes them in at once instead of reading a menu.
 export const SUGGESTIONS = [
@@ -19,7 +19,7 @@ export function ChatEmptyState({
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5 text-center">
-      <LogoMark size={40} />
+      <AsciiLogo size={72} cell={4} />
       <p className="text-lg font-medium">What do you want to know, Tenno?</p>
       <div className="flex flex-wrap justify-center gap-2">
         {SUGGESTIONS.map((s) => (
