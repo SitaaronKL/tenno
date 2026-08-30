@@ -1,55 +1,96 @@
 "use client";
 
+import { createColumnHelper } from "@tanstack/react-table";
 import type { Invasion, Reward } from "@/lib/contracts/worldstate";
+import { TornadoIcon } from "@/components/icons/tornado";
 import { Empty, Panel } from "./panel";
+import { DataTable, SortableHeader, TruncatedCell, type DataTableFeatures } from "./data-table";
 
-function rewardText(r: Reward | null): string {
+export function rewardText(r: Reward | null): string {
   if (!r) return "No reward";
   if (r.item) return r.count > 1 ? `${r.item} x${r.count}` : r.item;
   return `${r.credits.toLocaleString()} credits`;
 }
 
+function Progress({ value }: { value: number }) {
+  const pct = Math.min(100, Math.max(0, value));
+  return (
+    <div className="flex items-center gap-2">
+      <div
+        role="progressbar"
+        aria-valuenow={Math.round(pct)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        className="h-1 w-full overflow-hidden rounded-full bg-surface-2"
+      >
+        <div className="h-full bg-foreground" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
+        {pct.toFixed(0)}%
+      </span>
+    </div>
+  );
+}
+
+const helper = createColumnHelper<DataTableFeatures, Invasion>();
+
+const columns = helper.columns([
+  helper.accessor("node", {
+    id: "node",
+    header: ({ column }) => <SortableHeader column={column}>Node</SortableHeader>,
+    cell: ({ row }) => <TruncatedCell text={row.original.node} className="font-medium" />,
+  }),
+  helper.accessor("description", {
+    id: "description",
+    header: ({ column }) => <SortableHeader column={column}>Fight</SortableHeader>,
+    cell: ({ row }) => (
+      <TruncatedCell text={row.original.description} className="text-muted-foreground" />
+    ),
+  }),
+  helper.accessor((i) => rewardText(i.attacker.reward), {
+    id: "attacker",
+    header: ({ column }) => <SortableHeader column={column}>Attacker</SortableHeader>,
+    cell: ({ row }) => (
+      <TruncatedCell
+        text={`${row.original.attacker.faction}: ${rewardText(row.original.attacker.reward)}`}
+        className="text-muted-foreground"
+      />
+    ),
+  }),
+  helper.accessor((i) => rewardText(i.defender.reward), {
+    id: "defender",
+    header: ({ column }) => <SortableHeader column={column}>Defender</SortableHeader>,
+    cell: ({ row }) => (
+      <TruncatedCell
+        text={`${row.original.defender.faction}: ${rewardText(row.original.defender.reward)}`}
+        className="text-muted-foreground"
+      />
+    ),
+  }),
+  helper.accessor("completion", {
+    id: "completion",
+    header: ({ column }) => <SortableHeader column={column}>Progress</SortableHeader>,
+    cell: ({ row }) => <Progress value={row.original.completion} />,
+  }),
+]);
+
+const WIDTHS = { node: "w-32", completion: "w-32" };
+
 export function InvasionsPanel({ invasions }: { invasions: Invasion[] }) {
   return (
-    <Panel title="Invasions" count={invasions.length} className="lg:col-span-2">
-      {invasions.length === 0 ? (
-        <Empty>No invasions running.</Empty>
-      ) : (
-        <ul className="divide-y divide-border">
-          {invasions.map((i) => {
-            const attacker = Math.min(100, Math.max(0, i.completion));
-            return (
-              <li key={i.key} className="space-y-1.5 py-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="shrink-0 font-medium">{i.node}</span>
-                  <span className="truncate text-xs text-muted-foreground">{i.description}</span>
-                  <span className="ml-auto font-mono text-xs text-muted-foreground tabular-nums">
-                    {attacker.toFixed(0)}%
-                  </span>
-                </div>
-                <div
-                  role="progressbar"
-                  aria-label={`${i.node} attacker progress`}
-                  aria-valuenow={Math.round(attacker)}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  className="h-1 w-full overflow-hidden rounded-full bg-surface-2"
-                >
-                  <div className="h-full bg-primary" style={{ width: `${attacker}%` }} />
-                </div>
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span className="truncate">
-                    {i.attacker.faction}: {rewardText(i.attacker.reward)}
-                  </span>
-                  <span className="truncate">
-                    {i.defender.faction}: {rewardText(i.defender.reward)}
-                  </span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+    <Panel
+      title="Invasions"
+      icon={TornadoIcon}
+      count={invasions.length}
+      className="md:col-span-2 lg:col-span-3"
+    >
+      <DataTable
+        label="Invasions"
+        columns={columns}
+        data={invasions}
+        widths={WIDTHS}
+        empty={<Empty>No invasions running.</Empty>}
+      />
     </Panel>
   );
 }

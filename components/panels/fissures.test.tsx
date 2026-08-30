@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { Fissure } from "@/lib/contracts/worldstate";
@@ -20,38 +20,44 @@ function fissure(over: Partial<Fissure> & { key: string }): Fissure {
   };
 }
 
+// Deliberately out of order, and two Axi rows so the tie break is visible.
 const fixture: Fissure[] = [
-  fissure({ key: "a", tier: "Lith", missionType: "Capture", node: "Tessera, Venus" }),
-  fissure({ key: "b", tier: "Axi", missionType: "Defense", node: "Xini, Eris" }),
-  fissure({ key: "c", tier: "Meso", missionType: "Exterminate", node: "Io, Jupiter", steelPath: true }),
-];
+  fissure({ key: "a", tier: "Axi", node: "Xini, Eris", expiresAt: now + 7_200_000 }),
+  fissure({ key: "b", tier: "Requiem", node: "Sechura, Venus" }),
+  fissure({ key: "c", tier: "Lith", node: "Tessera, Venus", missionType: "Capture" }),
+  fissure({ key: "d", tier: "Axi", node: "Io, Jupiter", expiresAt: now + 1_800_000 }),
+  fissure({ key: "e", tier: "Meso", node: "Ur, Uranus", steelPath: true }),
+]
 
-describe("Fissures panel", () => {
-  it("lists the normal fissures with their tier and node", () => {
+function nodeOrder() {
+  const rows = within(screen.getByRole("table")).getAllByRole("row").slice(1);
+  return rows.map((r) => r.textContent ?? "");
+}
+
+describe("Fissures table", () => {
+  it("lists tiers in relic order and the soonest first inside a tier", () => {
     render(<FissuresPanel fissures={fixture} />);
-    const rows = screen.getAllByRole("listitem").map((li) => li.textContent);
-    expect(rows.some((t) => t?.includes("Lith") && t.includes("Capture"))).toBe(true);
-    expect(rows.some((t) => t?.includes("Axi") && t.includes("Defense"))).toBe(true);
-    expect(screen.getByText("Capture")).toBeInTheDocument();
-    expect(screen.getByText("Defense")).toBeInTheDocument();
-    expect(screen.getByText(/Tessera, Venus/)).toBeInTheDocument();
-    expect(screen.queryByText(/Io, Jupiter/)).not.toBeInTheDocument();
+    const order = nodeOrder();
+    expect(order[0]).toContain("Tessera, Venus");
+    expect(order[1]).toContain("Ur, Uranus");
+    expect(order[2]).toContain("Io, Jupiter");
+    expect(order[3]).toContain("Xini, Eris");
+    expect(order[4]).toContain("Sechura, Venus");
   });
 
-  it("shows Steel Path fissures once the toggle is on", async () => {
+  it("reverses the tier order when the Tier header is clicked twice", async () => {
     const user = userEvent.setup();
     render(<FissuresPanel fissures={fixture} />);
-    await user.click(screen.getByRole("switch"));
-    expect(screen.getByText(/Io, Jupiter/)).toBeInTheDocument();
-    expect(screen.queryByText(/Tessera, Venus/)).not.toBeInTheDocument();
+    const header = screen.getByRole("button", { name: /Tier/ });
+    await user.click(header);
+    await user.click(header);
+    expect(nodeOrder()[0]).toContain("Sechura, Venus");
   });
 
-  it("filters to one tier when its tab is picked", async () => {
-    const user = userEvent.setup();
+  it("says Steel Path in words, not as a chip a reader has to decode", () => {
     render(<FissuresPanel fissures={fixture} />);
-    await user.click(screen.getByRole("tab", { name: "Lith" }));
-    expect(screen.getByText(/Tessera, Venus/)).toBeInTheDocument();
-    expect(screen.queryByText(/Xini, Eris/)).not.toBeInTheDocument();
+    expect(screen.getByText("Steel Path")).toBeInTheDocument();
+    expect(screen.getAllByText("Normal").length).toBe(4);
   });
 
   it("says so when nothing matches", () => {

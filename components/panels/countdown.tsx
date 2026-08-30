@@ -1,7 +1,8 @@
 "use client";
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { countdown, spoken } from "./format";
+import { absolute, countdown, spoken } from "./format";
 
 // Under five minutes is the "act now" threshold across the dashboard.
 export const SOON_MS = 5 * 60_000;
@@ -19,17 +20,24 @@ export function Countdown({
 }) {
   const soon = target - now <= SOON_MS;
   return (
-    <span
-      className={cn(
-        "shrink-0 whitespace-nowrap font-mono text-xs tabular-nums",
-        soon ? "text-warning" : "text-muted-foreground",
-        className,
-      )}
-    >
-      <span aria-hidden="true">{countdown(target, now)}</span>
-      <span className="sr-only">
-        {verb} in {spoken(target, now)}
-      </span>
-    </span>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            className={cn(
+              "shrink-0 whitespace-nowrap font-mono text-xs tabular-nums",
+              soon ? "text-warning" : "text-muted-foreground",
+              className,
+            )}
+          />
+        }
+      >
+        <span aria-hidden="true">{countdown(target, now)}</span>
+        <span className="sr-only">
+          {verb} in {spoken(target, now)}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>{absolute(target)}</TooltipContent>
+    </Tooltip>
   );
 }

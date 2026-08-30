@@ -25,3 +25,14 @@ export function spoken(target: number, now: number): string {
   if (m > 0) return unit(m, "minute");
   return unit(left, "second");
 }
+
+// The countdown answers "how long", the tooltip answers "when", in the reader's own zone.
+export function absolute(target: number): string {
+  return new Date(target).toLocaleString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
