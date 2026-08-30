@@ -90,9 +90,9 @@ const WIDTHS = {
 // Steel Path is the split people actually filter on, so it is a control, not a search.
 const PATH = [
   { value: "all", label: "All" },
+  { value: "normal", label: "Normal" },
   { value: "steel", label: "Steel Path" },
   { value: "storm", label: "Void Storm" },
-  { value: "normal", label: "Normal" },
 ] as const;
 type Path = (typeof PATH)[number]["value"];
 
