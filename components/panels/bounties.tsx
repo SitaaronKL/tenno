@@ -1,13 +1,11 @@
 "use client";
 
+import { useState } from "react";
+
+import { Segmented } from "@/components/segmented";
+
 import type { Bounty, BountyJob, RewardChances, WorldState } from "@/lib/contracts/worldstate";
 import { WorkflowIcon } from "@/components/icons/workflow";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
 import { TruncatedCell } from "@/components/ui/data-table";
@@ -75,48 +73,55 @@ function Job({ job }: { job: BountyJob }) {
   );
 }
 
+// Short names keep seven boards on one toggle row.
+const SHORT: Record<string, string> = {
+  Ostrons: "Cetus",
+  "Solaris United": "Fortuna",
+  Entrati: "Deimos",
+  "The Holdfasts": "Zariman",
+  Cavia: "Cavia",
+  "Vox Solaris": "Vox",
+  "The Hex": "Hex",
+};
+
 export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
   const now = useNow();
   const open = bounties.filter((b) => b.expiresAt > now);
+  const [pick, setPick] = useState<string | null>(null);
+  const options = open.map((b) => ({ value: b.syndicate, label: SHORT[b.syndicate] ?? b.syndicate }));
+  const board = open.find((b) => b.syndicate === pick) ?? open[0];
 
   return (
     <Panel
       title="Bounties"
       icon={WorkflowIcon}
-      count={open.length}
-      className="md:col-span-2 lg:col-span-2"
+      count={board ? `${board.jobs.length}` : undefined}
+      className="md:col-span-2 lg:col-span-3"
+      action={
+        open.length > 1 ? (
+          <Segmented label="Bounty board" options={options} value={board.syndicate} onChange={setPick} />
+        ) : undefined
+      }
     >
-      {open.length === 0 ? (
+      {!board ? (
         <Empty>No bounties offered.</Empty>
       ) : (
-        <Accordion multiple={false} className="text-sm">
-          {open.map((b) => (
-            <AccordionItem key={`${b.syndicate}-${b.node}`} value={`${b.syndicate}-${b.node}`}>
-              <AccordionTrigger className="gap-2">
-                <span className="flex min-w-0 flex-1 items-center gap-2">
-                  <span data-primary className="truncate">{b.syndicate}</span>
-                  <span className="truncate text-xs font-normal text-muted-foreground">
-                    {b.node}
-                  </span>
-                  {/* Upstream sends this board with no jobs, the pool below is the drop table. */}
-                  {b.static ? (
-                    <span className="shrink-0 text-xs font-normal text-muted-foreground">
-                      fixed board
-                    </span>
-                  ) : null}
-                  <Countdown target={b.expiresAt} now={now} className="ml-auto" />
-                </span>
-              </AccordionTrigger>
-              <AccordionContent>
-                <ul className="divide-y divide-border">
-                  {b.jobs.map((job, index) => (
-                    <Job key={`${job.level}-${index}`} job={job} />
-                  ))}
-                </ul>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+        <>
+          <div className="mb-2 flex items-center gap-2 text-sm">
+            <span className="truncate font-medium">{board.syndicate}</span>
+            <span className="truncate text-xs text-muted-foreground">{board.node}</span>
+            {/* Upstream sends this board with no jobs, the pool below is the drop table. */}
+            {board.static ? (
+              <span className="shrink-0 text-xs text-muted-foreground">fixed board</span>
+            ) : null}
+            <Countdown target={board.expiresAt} now={now} className="ml-auto" />
+          </div>
+          <ul className="divide-y divide-border">
+            {board.jobs.map((job, index) => (
+              <Job key={`${job.level}-${index}`} job={job} />
+            ))}
+          </ul>
+        </>
       )}
     </Panel>
   );

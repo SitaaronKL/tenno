@@ -24,17 +24,24 @@ const fixture: Bounty[] = [
   },
 ];
 
+
+// One board shows at a time, the toggle only exists when there is more than one.
+async function pickBoard(user: ReturnType<typeof userEvent.setup>, name: RegExp) {
+  const radio = screen.queryByRole("radio", { name });
+  if (radio) await user.click(radio);
+}
+
 describe("Bounties card", () => {
   it("shows the syndicate and where to pick the bounty up", () => {
     render(<BountiesPanel bounties={fixture} />);
     expect(screen.getByText("Ostron")).toBeInTheDocument();
-    expect(screen.getByText("Cetus")).toBeInTheDocument();
+    expect(screen.getAllByText(/Cetus/).length).toBeGreaterThan(0);
   });
 
   it("opens a syndicate to reveal its jobs, levels and standing", async () => {
     const user = userEvent.setup();
     render(<BountiesPanel bounties={fixture} />);
-    await user.click(screen.getByRole("button", { name: /Ostron/ }));
+    await pickBoard(user, /Cetus/);
     expect(screen.getByText("Tier 1")).toBeInTheDocument();
     expect(screen.getByText("Nitain Extract, Cetus Wisp")).toBeInTheDocument();
     expect(screen.getByText(/lvl 5 to 15/)).toBeInTheDocument();
@@ -62,7 +69,7 @@ describe("a board that lists the same level range twice", () => {
       },
     ];
     render(<BountiesPanel bounties={board} />);
-    await user.click(screen.getByRole("button", { name: /Entrati/ }));
+    await pickBoard(user, /Deimos/);
 
     expect(screen.getByText("Arcane")).toBeInTheDocument();
     expect(screen.getByText("Vault mod")).toBeInTheDocument();
@@ -100,7 +107,7 @@ describe("a fixed board", () => {
   it("groups the rewards by rotation with their chances", async () => {
     const user = userEvent.setup();
     render(<BountiesPanel bounties={fixed} />);
-    await user.click(screen.getByRole("button", { name: /Holdfasts/ }));
+    await pickBoard(user, /Zariman/);
     expect(screen.getByText("Rotation A")).toBeInTheDocument();
     expect(screen.getByText("Rotation C")).toBeInTheDocument();
     expect(screen.getByText("Voidplume Down")).toBeInTheDocument();
@@ -111,7 +118,7 @@ describe("a fixed board", () => {
   it("leaves standing out when the board does not print it", async () => {
     const user = userEvent.setup();
     render(<BountiesPanel bounties={fixed} />);
-    await user.click(screen.getByRole("button", { name: /Holdfasts/ }));
+    await pickBoard(user, /Zariman/);
     expect(screen.queryByText(/0 standing/)).not.toBeInTheDocument();
     expect(screen.getByText(/lvl 50 to 55/)).toBeInTheDocument();
   });

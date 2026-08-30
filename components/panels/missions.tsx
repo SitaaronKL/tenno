@@ -11,7 +11,7 @@ import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
 
-const CLASS = "md:col-span-1 lg:col-span-2";
+const CLASS = "md:col-span-2 lg:col-span-3";
 
 // Sortie and Archon Hunt share a shape and a box, the toggle picks which one shows.
 const SETS = [

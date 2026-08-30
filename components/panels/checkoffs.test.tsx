@@ -42,12 +42,12 @@ function Harness({ canSave }: { canSave: boolean }) {
 describe("check offs", () => {
   it("strikes a sortie stage through and counts down what is left", async () => {
     render(<Harness canSave />);
-    expect(screen.getByText("3 of 3 left")).toBeInTheDocument();
+    expect(screen.getByText("0 / 3")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("checkbox", { name: "Rescue, War (Mars)" }));
 
     expect(screen.getByText("War (Mars)").closest("li")).toHaveClass("line-through");
-    expect(screen.getByText("2 of 3 left")).toBeInTheDocument();
+    expect(screen.getByText("1 / 3")).toBeInTheDocument();
   });
 
   it("asks a guest to sign in and leaves the box unticked", async () => {
@@ -58,6 +58,6 @@ describe("check offs", () => {
 
     expect(await screen.findByText("Sign in to save this")).toBeInTheDocument();
     expect(box).not.toBeChecked();
-    expect(screen.getByText("3 of 3 left")).toBeInTheDocument();
+    expect(screen.getByText("0 / 3")).toBeInTheDocument();
   });
 });
