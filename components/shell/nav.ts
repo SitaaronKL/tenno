@@ -2,7 +2,6 @@ import type { ComponentType, RefAttributes } from "react";
 import { LayoutGridIcon } from "@/components/icons/layout-grid";
 import { WorkflowIcon } from "@/components/icons/workflow";
 import { MessageCircleIcon } from "@/components/icons/message-circle";
-import { SettingsIcon } from "@/components/icons/settings";
 import { AtomIcon } from "@/components/icons/atom";
 
 // Every animated icon exposes the same imperative handle, so the nav item can drive it on its own hover.
@@ -26,7 +25,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/rules", label: "Rules", icon: WorkflowIcon },
   { href: "/chat", label: "Chat", icon: MessageCircleIcon },
   { href: "/mastery", label: "Mastery", icon: AtomIcon },
-  { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 // The breadcrumb reads the route, so a label lives next to the path that produced it.

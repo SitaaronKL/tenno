@@ -25,9 +25,10 @@ describe("app shell", () => {
   it("shows every section link and marks the current one", () => {
     render(<AppShell>page body</AppShell>);
     const nav = within(sidebar());
-    for (const label of ["Dashboard", "Rules", "Chat", "Settings"]) {
+    for (const label of ["Dashboard", "Rules", "Chat", "Mastery"]) {
       expect(nav.getByRole("link", { name: label })).toBeInTheDocument();
     }
+    expect(nav.queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();
     expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByText("page body")).toBeInTheDocument();
   });
