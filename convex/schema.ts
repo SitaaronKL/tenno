@@ -212,7 +212,9 @@ export default defineSchema({
     sentAt: v.optional(v.number()),
   })
     .index("by_rule_event", ["ruleId", "eventId"])
-    .index("by_user_status", ["userId", "status"]),
+    .index("by_user_status", ["userId", "status"])
+    // Digest eligibility is a seek, not a scan past everything queued for instant delivery.
+    .index("by_user_status_mode", ["userId", "status", "mode"]),
 
   // round2-mastery block, added by the mastery slice. Keep it last.
   items: defineTable({

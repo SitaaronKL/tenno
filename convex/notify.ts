@@ -169,24 +169,25 @@ export const pendingDigestFor = internalQuery({
   returns: v.any(),
   handler: async (ctx, { userId }): Promise<Delivery[]> => {
     const out: Delivery[] = [];
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    const user = await ctx.db.get(userId);
     let cursor: string | null = null;
     let isDone = false;
     while (!isDone && out.length < 200) {
       const page = await ctx.db
         .query("notifications")
-        .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "pending"))
+        .withIndex("by_user_status_mode", (q) =>
+          q.eq("userId", userId).eq("status", "pending").eq("mode", "digest"),
+        )
         .paginate({ cursor, numItems: 100 });
       cursor = page.continueCursor;
       isDone = page.isDone;
       for (const notification of page.page) {
-        if (notification.mode !== "digest") continue;
         const rule = await ctx.db.get("rules", notification.ruleId);
         const event = await ctx.db.get("worldEvents", notification.eventId);
-        const profile = await ctx.db
-          .query("profiles")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
-          .first();
-        const user = await ctx.db.get(userId);
         out.push({
           notificationId: notification._id,
           userId,
@@ -204,6 +205,27 @@ export const pendingDigestFor = internalQuery({
       }
     }
     return out;
+  },
+});
+
+// Claim then send. Recording the hour after a dispatch lets a second cron run send it again.
+export const claimDigest = internalMutation({
+  args: { userId: v.id("users"), now: v.number() },
+  returns: v.boolean(),
+  handler: async (ctx, { userId, now }) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (!profile) return false;
+    if (
+      profile.lastDigestAt !== undefined &&
+      localHourKey(profile.timezone, profile.lastDigestAt) === localHourKey(profile.timezone, now)
+    ) {
+      return false;
+    }
+    await ctx.db.patch(profile._id, { lastDigestAt: now });
+    return true;
   },
 });
 
@@ -234,6 +256,33 @@ export const retryLater = internalMutation({
       error,
     });
     await ctx.scheduler.runAfter(delay, internal.notify.send, { notificationId });
+    return null;
+  },
+});
+
+// A digest group stays pending and the whole digest is attempted again after a backoff.
+export const retryDigestLater = internalMutation({
+  args: {
+    userId: v.id("users"),
+    ids: v.array(v.id("notifications")),
+    attempts: v.number(),
+    error: v.string(),
+    now: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { userId, ids, attempts, error, now }) => {
+    const delay = 60_000 * 2 ** (attempts - 1);
+    for (const id of ids) {
+      await ctx.db.patch("notifications", id, { attempts, nextAttemptAt: Date.now() + delay, error });
+    }
+    // The claim is released so the retry run can claim the same hour again.
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (profile) await ctx.db.patch(profile._id, { lastDigestAt: undefined });
+    // The same hour, so the retry finds the user due again rather than waiting for tomorrow.
+    await ctx.scheduler.runAfter(delay, internal.notify.digest, { now });
     return null;
   },
 });
@@ -365,6 +414,9 @@ export const digest = internalAction({
       for (const userId of page.userIds) {
         const pending = (await ctx.runQuery(internal.notify.pendingDigestFor, { userId })) as Delivery[];
         if (pending.length === 0) continue;
+        // Claim the hour first, so a second run of the cron finds nothing left to send.
+        const claimed: boolean = await ctx.runMutation(internal.notify.claimDigest, { userId, now });
+        if (!claimed) continue;
 
         const groups = new Map<string, Delivery[]>();
         for (const delivery of pending) {
@@ -395,16 +447,33 @@ export const digest = internalAction({
                 url: siteUrl(),
               },
             });
-            await ctx.runMutation(internal.notify.mark, { notificationIds: ids, status: "sent" });
-          } catch (e) {
             await ctx.runMutation(internal.notify.mark, {
               notificationIds: ids,
-              status: "failed",
-              error: e instanceof Error ? e.message : String(e),
+              status: "sent",
+              attempts: (group[0].attempts ?? 0) + 1,
             });
+          } catch (e) {
+            // A provider blip must not lose the whole digest, the same three tries as an instant send.
+            const attempts = (group[0].attempts ?? 0) + 1;
+            const error = e instanceof Error ? e.message : String(e);
+            if (attempts < MAX_ATTEMPTS) {
+              await ctx.runMutation(internal.notify.retryDigestLater, {
+                userId,
+                ids,
+                attempts,
+                error,
+                now,
+              });
+            } else {
+              await ctx.runMutation(internal.notify.mark, {
+                notificationIds: ids,
+                status: "failed",
+                error,
+                attempts,
+              });
+            }
           }
         }
-        await ctx.runMutation(internal.notify.recordDigest, { userId, at: now });
       }
     }
     return null;

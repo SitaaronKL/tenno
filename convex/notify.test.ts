@@ -295,3 +295,86 @@ describe("notify.send", () => {
     expect(sent.emails).toHaveLength(0);
   });
 });
+
+describe("the digest under load", () => {
+  test("two crons for the same hour send one digest, not two", async () => {
+    const t = setup();
+    const { userId } = await seedDigest(t, "America/New_York", 9);
+
+    // Both runs read the user as due before either has finished sending.
+    const claimed = await t.mutation(internal.notify.claimDigest, {
+      userId,
+      now: NINE_IN_NEW_YORK,
+    });
+    const second = await t.mutation(internal.notify.claimDigest, {
+      userId,
+      now: NINE_IN_NEW_YORK,
+    });
+
+    expect(claimed).toBe(true);
+    expect(second).toBe(false);
+  });
+
+  test("a second cron in the same hour does not mail the user again", async () => {
+    const t = setup();
+    await seedDigest(t, "America/New_York", 9);
+
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+
+    // The hour was claimed by the first run, the second one leaves it alone.
+    expect(sent.emails).toHaveLength(1);
+  });
+
+  test("a provider blip does not lose a whole digest", async () => {
+    const t = setup();
+    await seedDigest(t, "America/New_York", 9);
+    sent.failuresLeft = 1;
+    vi.useFakeTimers();
+
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+    expect(sent.emails).toHaveLength(1);
+    const rows = await t.run(async (ctx) => await ctx.db.query("notifications").collect());
+    expect(rows.map((r) => r.status)).toEqual(["sent"]);
+  });
+
+  test("a provider that stays down leaves the digest failed, not retrying forever", async () => {
+    const t = setup();
+    await seedDigest(t, "America/New_York", 9);
+    sent.failuresLeft = 99;
+    vi.useFakeTimers();
+
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+
+    const rows = await t.run(async (ctx) => await ctx.db.query("notifications").collect());
+    expect(rows.map((r) => r.status)).toEqual(["failed"]);
+    expect(rows[0].attempts).toBe(3);
+  });
+
+  test("digest rows are found without reading the instant queue first", async () => {
+    const t = setup();
+    const { userId } = await seedDigest(t, "America/New_York", 9);
+    // A pile of instant rows ahead of the digest row must not be read to find it.
+    await t.run(async (ctx) => {
+      const rule = (await ctx.db.query("rules").first())!;
+      const event = (await ctx.db.query("worldEvents").first())!;
+      for (let i = 0; i < 300; i++) {
+        await ctx.db.insert("notifications", {
+          userId,
+          ruleId: rule._id,
+          eventId: event._id,
+          channel: "email" as const,
+          mode: "instant" as const,
+          status: "pending" as const,
+          createdAt: Date.now(),
+        });
+      }
+    });
+
+    const pending = await t.query(internal.notify.pendingDigestFor, { userId });
+    expect(pending).toHaveLength(1);
+  });
+});
