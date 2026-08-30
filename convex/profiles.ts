@@ -6,6 +6,15 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireUser } from "./lib/auth";
 import { normalizePhone } from "./lib/phone";
 
+// Photon always sends E.164, so a number typed without a country code would never match its sender.
+function toE164(raw: string): string {
+  const key = normalizePhone(raw);
+  if (key === "" || raw.trim().startsWith("+")) return key;
+  const digits = key.slice(1);
+  // The Photon line is a US number, so a bare ten digits is a US number too.
+  return digits.length === 10 ? `+1${digits}` : key;
+}
+
 const DEFAULT_TIMEZONE = "UTC";
 const DEFAULT_DIGEST_HOUR = 9;
 
@@ -83,7 +92,7 @@ export const update = mutation({
       throw new Error("User row is missing");
     }
     const existing = await load(ctx, userId);
-    const nextPhone = args.phone === undefined ? undefined : args.phone === null ? null : normalizePhone(args.phone);
+    const nextPhone = args.phone === undefined ? undefined : args.phone === null ? null : toE164(args.phone);
     const phoneChanged = nextPhone !== undefined && nextPhone !== (existing?.phone ?? null);
 
     const next = {
@@ -94,7 +103,7 @@ export const update = mutation({
           ? existing?.phone
           : args.phone === null
             ? undefined
-            : normalizePhone(args.phone) || undefined,
+            : toE164(args.phone) || undefined,
       photonUserId: phoneChanged ? undefined : existing?.photonUserId,
       photonSpaceId: phoneChanged ? undefined : existing?.photonSpaceId,
       lastDigestAt: existing?.lastDigestAt,
@@ -159,7 +168,7 @@ export const userForVerifiedPhone = internalQuery({
   args: { phone: v.string() },
   returns: v.union(v.id("users"), v.null()),
   handler: async (ctx, { phone }) => {
-    const key = normalizePhone(phone);
+    const key = toE164(phone);
     if (!key) return null;
     const profile = await ctx.db
       .query("profiles")
@@ -188,7 +197,7 @@ export const linkInbound = internalMutation({
     if (seen) return { duplicate: true, firstContact: false };
     await ctx.db.insert("photonInbound", { messageId, receivedAt: Date.now() });
 
-    const key = normalizePhone(phone);
+    const key = toE164(phone);
     const profile = key
       ? await ctx.db
           .query("profiles")
@@ -201,7 +210,7 @@ export const linkInbound = internalMutation({
     await ctx.db.patch(profile._id, {
       photonSpaceId: spaceId,
       // A sender id that is not a phone number is the Photon user id for this line.
-      photonUserId: normalizePhone(senderId) === key ? profile.photonUserId : senderId,
+      photonUserId: toE164(senderId) === key ? profile.photonUserId : senderId,
       phoneVerifiedAt: profile.phoneVerifiedAt ?? Date.now(),
     });
     return { duplicate: false, firstContact };
@@ -213,8 +222,13 @@ export const linkPhoton = internalAction({
   args: { profileId: v.id("profiles"), phone: v.string() },
   returns: v.null(),
   handler: async (ctx, { profileId, phone }) => {
-    const photonUserId = await ctx.runAction(internal.photon.registerUser, { phone });
-    await ctx.runMutation(internal.profiles.storePhotonUserId, { profileId, photonUserId });
+    try {
+      const photonUserId = await ctx.runAction(internal.photon.registerUser, { phone });
+      await ctx.runMutation(internal.profiles.storePhotonUserId, { profileId, photonUserId });
+    } catch (error) {
+      // The inbound text is what verifies a phone, so a registration hiccup must not block the opt in.
+      console.error("Photon registration failed", error);
+    }
     return null;
   },
 });

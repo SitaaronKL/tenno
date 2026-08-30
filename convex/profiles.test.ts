@@ -65,3 +65,57 @@ describe("profiles", () => {
     await expect(t.mutation(api.profiles.update, { digestHour: 3 })).rejects.toThrow();
   });
 });
+
+// The whole iMessage opt in: save a number, text the line, the page flips to verified.
+describe("phone opt in", () => {
+  async function withUser() {
+    const t = convexTest(schema, modules);
+    const userId = await t.run(async (ctx) => ctx.db.insert("users", { email: "tenno@example.com" }));
+    return { t, asUser: t.withIdentity({ subject: `${userId}|session` }) };
+  }
+
+  test("a number typed the way people type it is stored the way Photon sends it", async () => {
+    const { asUser } = await withUser();
+    const saved = await asUser.mutation(api.profiles.update, { phone: "(415) 555 0100" });
+    expect(saved.phone).toBe("+14155550100");
+  });
+
+  test("the first inbound text verifies the phone, and says so once", async () => {
+    const { t, asUser } = await withUser();
+    await asUser.mutation(api.profiles.update, { phone: "(415) 555 0100" });
+    expect((await asUser.query(api.profiles.me, {})).profile.phoneVerified).toBe(false);
+
+    const first = await t.mutation(internal.profiles.linkInbound, {
+      messageId: "m1",
+      phone: "+14155550100",
+      spaceId: "space-1",
+      senderId: "+14155550100",
+    });
+    expect(first).toEqual({ duplicate: false, firstContact: true });
+    expect((await asUser.query(api.profiles.me, {})).profile.phoneVerified).toBe(true);
+
+    // Photon delivers at least once, a redelivery must not greet the user twice.
+    const again = await t.mutation(internal.profiles.linkInbound, {
+      messageId: "m1",
+      phone: "+14155550100",
+      spaceId: "space-1",
+      senderId: "+14155550100",
+    });
+    expect(again.duplicate).toBe(true);
+  });
+
+  test("changing the number asks for a fresh opt in", async () => {
+    const { t, asUser } = await withUser();
+    await asUser.mutation(api.profiles.update, { phone: "415 555 0100" });
+    await t.mutation(internal.profiles.linkInbound, {
+      messageId: "m1",
+      phone: "+14155550100",
+      spaceId: "space-1",
+      senderId: "+14155550100",
+    });
+    expect((await asUser.query(api.profiles.me, {})).profile.phoneVerified).toBe(true);
+
+    await asUser.mutation(api.profiles.update, { phone: "415 555 0199" });
+    expect((await asUser.query(api.profiles.me, {})).profile.phoneVerified).toBe(false);
+  });
+});

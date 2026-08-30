@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuthActions } from "@convex-dev/auth/react";
@@ -24,13 +24,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/shell/page-header";
 import { ThemeCard } from "@/components/shell/theme-card";
 import { useProfile, useUpdateProfile, type Profile } from "@/components/rules/api";
+import {
+  DEFAULT_DIGEST_HOUR,
+  detectTimezone,
+  shouldAdoptTimezone,
+} from "@/components/settings/timezone";
 import { ClientOnly } from "@/components/rules/client-only";
 import { cn } from "@/lib/utils";
 
-const PHOTON_NUMBER = "+1 (415) 603-5536";
+// The Photon shared pool assigns the line, so the deployment names it and the page never guesses.
+const PHOTON_NUMBER = process.env.NEXT_PUBLIC_PHOTON_NUMBER || "+1 (415) 603-5536";
 const START_TEXT = `Text START to ${PHOTON_NUMBER} from this phone`;
 // RFC 5724 sms link, so scanning the code opens Messages with START already typed.
-const SMS_LINK = "sms:+14156035536?body=START";
+const SMS_LINK = `sms:${PHOTON_NUMBER.replace(/[^\d+]/g, "")}?body=START`;
 
 function timezones(): string[] {
   const supported = Intl as unknown as { supportedValuesOf?: (k: string) => string[] };
@@ -119,8 +125,19 @@ function SettingsForm({
   const [timezone, setTimezone] = useState(profile.timezone);
   const [digestHour, setDigestHour] = useState(profile.digestHour);
   const [saved, setSaved] = useState(false);
+  const adopted = useRef(false);
 
   const optedIn = Boolean(profile.phone);
+
+  // The digest cron needs a real zone, so the first load fills one in and saves it once.
+  useEffect(() => {
+    const detected = detectTimezone();
+    if (adopted.current || !shouldAdoptTimezone(profile.timezone, detected)) return;
+    adopted.current = true;
+    setTimezone(detected);
+    setDigestHour(DEFAULT_DIGEST_HOUR);
+    void update({ timezone: detected, digestHour: DEFAULT_DIGEST_HOUR });
+  }, [profile.timezone, update]);
 
   async function save(next?: { phone?: string | null }) {
     // An empty field means remove the number, undefined would mean leave it alone.
@@ -195,7 +212,8 @@ function SettingsForm({
               onValueChange={(value) => setDigestHour(Number(value))}
             >
               <SelectTrigger id="digest-hour" className="w-full">
-                <SelectValue />
+                {/* The trigger holds the raw value, so it reads the hour back the way the list writes it. */}
+                <SelectValue>{(value: string) => `${String(value).padStart(2, "0")}:00`}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {Array.from({ length: 24 }, (_, h) => (
