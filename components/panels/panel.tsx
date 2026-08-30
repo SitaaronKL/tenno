@@ -88,7 +88,7 @@ export function Panel({
 }: {
   title: string;
   icon?: PanelIcon;
-  count?: number;
+  count?: number | string;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
