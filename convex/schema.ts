@@ -104,6 +104,8 @@ const bounty = v.object({
       maxLevel: v.number(),
       standing: v.number(),
       rewards: v.array(v.string()),
+      // Optional because a job path DE does not name leaves it out.
+      missionType: v.optional(v.string()),
     }),
   ),
 });

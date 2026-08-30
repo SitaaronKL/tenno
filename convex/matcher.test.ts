@@ -92,13 +92,13 @@ const cases: { name: string; filter: RuleFilter; event: { kind: string; payload:
   },
   {
     name: "sortie boss and mission type",
-    filter: { kind: "sortie", boss: ["Tyl Regor"], missionTypes: ["Rescue"] },
+    filter: { kind: "sortie", boss: ["Tyl Regor"], missionTypes: ["Rescue"], modifiers: null },
     event: { kind: "sortie", payload: { boss: "Tyl Regor", missions: [{ missionType: "Rescue" }, { missionType: "Survival" }] } },
     want: true,
   },
   {
     name: "sortie boss right but mission type absent",
-    filter: { kind: "sortie", boss: ["Tyl Regor"], missionTypes: ["Spy"] },
+    filter: { kind: "sortie", boss: ["Tyl Regor"], missionTypes: ["Spy"], modifiers: null },
     event: { kind: "sortie", payload: { boss: "Tyl Regor", missions: [{ missionType: "Rescue" }] } },
     want: false,
   },
@@ -116,19 +116,19 @@ const cases: { name: string; filter: RuleFilter; event: { kind: string; payload:
   },
   {
     name: "cycle world and state",
-    filter: { kind: "cycle", world: "cetus", state: "night" },
+    filter: { kind: "cycle", world: "cetus", state: "night", leadMinutes: null },
     event: { kind: "cycle", payload: { world: "cetus", state: "night" } },
     want: true,
   },
   {
     name: "cycle right world wrong state",
-    filter: { kind: "cycle", world: "cetus", state: "night" },
+    filter: { kind: "cycle", world: "cetus", state: "night", leadMinutes: null },
     event: { kind: "cycle", payload: { world: "cetus", state: "day" } },
     want: false,
   },
   {
     name: "cycle other world",
-    filter: { kind: "cycle", world: "vallis", state: "warm" },
+    filter: { kind: "cycle", world: "vallis", state: "warm", leadMinutes: null },
     event: { kind: "cycle", payload: { world: "cambion", state: "warm" } },
     want: false,
   },
@@ -142,6 +142,99 @@ const cases: { name: string; filter: RuleFilter; event: { kind: string; payload:
     name: "kind mismatch never matches",
     filter: { kind: "nightwave" },
     event: { kind: "fissure", payload: {} },
+    want: false,
+  },
+  {
+    name: "bounty level 5 mission type matches the fifth job on the board",
+    filter: { kind: "bounty", syndicates: ["The Holdfasts"], level: 5, missionTypes: ["Exterminate"] },
+    event: {
+      kind: "bounty",
+      payload: {
+        syndicate: "The Holdfasts",
+        jobs: [
+          { missionType: "Assassinate" },
+          { missionType: "Survival" },
+          { missionType: "Rescue" },
+          { missionType: "Capture" },
+          { missionType: "Exterminate" },
+        ],
+      },
+    },
+    want: true,
+  },
+  {
+    name: "bounty level 5 ignores an Exterminate lower on the board",
+    filter: { kind: "bounty", syndicates: null, level: 5, missionTypes: ["Exterminate"] },
+    event: {
+      kind: "bounty",
+      payload: {
+        syndicate: "Ostrons",
+        jobs: [
+          { missionType: "Exterminate" },
+          { missionType: "Survival" },
+          { missionType: "Rescue" },
+          { missionType: "Capture" },
+          { missionType: "Assassinate" },
+        ],
+      },
+    },
+    want: false,
+  },
+  {
+    name: "bounty without a level looks at every job on the board",
+    filter: { kind: "bounty", syndicates: null, level: null, missionTypes: ["Excavation"] },
+    event: {
+      kind: "bounty",
+      payload: { syndicate: "Cavia", jobs: [{ missionType: "Survival" }, { missionType: "Excavation" }] },
+    },
+    want: true,
+  },
+  {
+    name: "bounty from another syndicate never matches",
+    filter: { kind: "bounty", syndicates: ["The Hex"], level: null, missionTypes: null },
+    event: { kind: "bounty", payload: { syndicate: "Ostrons", jobs: [{ missionType: "Capture" }] } },
+    want: false,
+  },
+  {
+    name: "bounty level past the end of a short board never matches",
+    filter: { kind: "bounty", syndicates: null, level: 5, missionTypes: null },
+    event: { kind: "bounty", payload: { syndicate: "Cavia", jobs: [{ missionType: "Survival" }] } },
+    want: false,
+  },
+  {
+    name: "daily reset matches the daily period",
+    filter: { kind: "reset", period: "daily" },
+    event: { kind: "reset", payload: { period: "daily", date: "2026-08-30" } },
+    want: true,
+  },
+  {
+    name: "weekly reset does not match the daily period",
+    filter: { kind: "reset", period: "weekly" },
+    event: { kind: "reset", payload: { period: "daily", date: "2026-08-30" } },
+    want: false,
+  },
+  {
+    name: "sortie modifier matches the mission that carries it",
+    filter: { kind: "sortie", boss: null, missionTypes: null, modifiers: ["Melee Only"] },
+    event: {
+      kind: "sortie",
+      payload: {
+        boss: "Vay Hek",
+        missions: [
+          { missionType: "Survival", modifier: "Eximus Stronghold" },
+          { missionType: "Defense", modifier: "Melee Only" },
+        ],
+      },
+    },
+    want: true,
+  },
+  {
+    name: "sortie without that modifier does not match",
+    filter: { kind: "sortie", boss: null, missionTypes: null, modifiers: ["Melee Only"] },
+    event: {
+      kind: "sortie",
+      payload: { boss: "Vay Hek", missions: [{ missionType: "Survival", modifier: "Eximus Stronghold" }] },
+    },
     want: false,
   },
 ];

@@ -34,6 +34,8 @@ export const SortieFilter = z.object({
   kind: z.literal("sortie"),
   boss: z.array(z.string()).nullable(),
   missionTypes: z.array(z.string()).nullable(),
+  // Matches the modifier text a sortie mission prints, "Melee Only", "Eximus Stronghold".
+  modifiers: z.array(z.string()).nullable().default(null),
 });
 
 export const ArchonFilter = z.object({
@@ -45,6 +47,21 @@ export const CycleFilter = z.object({
   kind: z.literal("cycle"),
   world: z.enum(["cetus", "vallis", "cambion", "earth", "duviri", "zariman"]),
   state: z.string(), // "night", "day", "warm", "cold", "fass", "vome", spiral names, corpus/grineer
+  // Minutes of warning before the state begins, null means tell me when it begins.
+  leadMinutes: z.number().int().min(1).max(120).nullable().default(null),
+});
+
+export const BountyFilter = z.object({
+  kind: z.literal("bounty"),
+  syndicates: z.array(z.string()).nullable(), // "Ostrons", "The Holdfasts", "Cavia", ...
+  level: z.number().int().min(1).max(5).nullable(), // the job's position on the board, 1 is the lowest
+  missionTypes: z.array(z.string()).nullable(),
+});
+
+// Daily is 00:00 UTC, weekly is Monday 00:00 UTC.
+export const ResetFilter = z.object({
+  kind: z.literal("reset"),
+  period: z.enum(["daily", "weekly"]),
 });
 
 export const NightwaveFilter = z.object({ kind: z.literal("nightwave") }); // new weekly acts
@@ -58,6 +75,8 @@ export const RuleFilter = z.discriminatedUnion("kind", [
   ArchonFilter,
   CycleFilter,
   NightwaveFilter,
+  BountyFilter,
+  ResetFilter,
 ]);
 
 export const RuleInput = z.object({

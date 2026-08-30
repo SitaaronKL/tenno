@@ -9,6 +9,8 @@ export const KIND_LABELS: Record<RuleFilter["kind"], string> = {
   archonHunt: "Archon Hunt",
   cycle: "World cycle",
   nightwave: "Nightwave",
+  bounty: "Bounty",
+  reset: "Reset",
 };
 
 export const WORLD_LABELS: Record<string, string> = {
@@ -56,17 +58,33 @@ export function ruleSentence(filter: RuleFilter): string {
     case "sortie": {
       const boss = some(filter.boss);
       const missions = some(filter.missionTypes);
+      const modifiers = some(filter.modifiers);
       const parts = [boss ? `Sortie against ${joinOr(boss)}` : "Any sortie"];
       if (missions) parts.push(joinOr(missions));
+      if (modifiers) parts.push(joinOr(modifiers));
       return parts.join(", ");
     }
     case "archonHunt": {
       const boss = some(filter.boss);
       return boss ? `Archon Hunt against ${joinOr(boss)}` : "Any Archon Hunt";
     }
-    case "cycle":
-      return `${WORLD_LABELS[filter.world] ?? filter.world} turns ${filter.state}`;
+    case "cycle": {
+      const turns = `${WORLD_LABELS[filter.world] ?? filter.world} turns ${filter.state}`;
+      const lead = filter.leadMinutes ?? null;
+      if (lead === null) return turns;
+      return `${lead} ${lead === 1 ? "minute" : "minutes"} before ${turns}`;
+    }
     case "nightwave":
       return "New Nightwave acts";
+    case "bounty": {
+      const syndicates = some(filter.syndicates);
+      const missions = some(filter.missionTypes);
+      const board = filter.level === null ? "Any bounty" : `Tier ${filter.level} bounty`;
+      const parts = [syndicates ? `${board} from ${joinOr(syndicates)}` : board];
+      if (missions) parts.push(joinOr(missions));
+      return parts.join(", ");
+    }
+    case "reset":
+      return filter.period === "daily" ? "Daily reset" : "Weekly reset";
   }
 }

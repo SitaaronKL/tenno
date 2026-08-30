@@ -56,6 +56,8 @@ export interface BountyJob {
   maxLevel: number;
   standing: number;
   rewards: string[];
+  // Derived from DE's job path, absent when the job carries none, like an Isolation Vault run.
+  missionType?: string;
 }
 
 export interface Bounty {

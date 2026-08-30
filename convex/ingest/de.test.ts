@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import raw from "./__fixtures__/de.json";
-import { normalizeDe } from "./de";
+import { bountyMissionType, normalizeDe } from "./de";
 
 // Fixture was captured live from api.warframe.com/cdn/worldState.php on 2026-08-30.
 const FETCHED_AT = Date.parse("2026-08-30T04:21:00.000Z");
@@ -169,5 +169,48 @@ describe("normalizeDe", () => {
     // Deimos and Narmer tables are absent from the language table, they resolve through drop data.
     const entrati = state.bounties!.find((b) => b.syndicate === "Entrati")!;
     expect(entrati.jobs.at(-1)!.rewards).toContain("Sporothrix Blueprint");
+  });
+
+  test("derives a friendly mission type for every job that names one", () => {
+    const ostron = state.bounties!.find((b) => b.syndicate === "Ostrons")!;
+    expect(ostron.jobs.map((j) => j.missionType)).toEqual([
+      "Capture",
+      "Sabotage",
+      "Sabotage",
+      "Capture",
+      "Exterminate",
+      "Rescue",
+      "Assassinate",
+    ]);
+
+    const solaris = state.bounties!.find((b) => b.syndicate === "Solaris United")!;
+    expect(solaris.jobs.map((j) => j.missionType)).toEqual([
+      "Excavation",
+      "Spy",
+      "Assassinate",
+      "Assassinate",
+      "Spy",
+      "Recovery",
+      "Exterminate",
+    ]);
+
+    const entrati = state.bounties!.find((b) => b.syndicate === "Entrati")!;
+    expect(entrati.jobs.slice(0, 6).map((j) => j.missionType)).toEqual([
+      "Survival",
+      "Survival",
+      "Defense",
+      "Assassinate",
+      "Excavation",
+      "Defense",
+    ]);
+    // Isolation Vault runs carry no job path, so they carry no mission type either.
+    expect(entrati.jobs.slice(6).every((j) => j.missionType === undefined)).toBe(true);
+  });
+
+  test("reads the Zariman style path the fixture does not carry", () => {
+    expect(bountyMissionType("/Lotus/Types/Gameplay/Zariman/Jobs/ZarimanBadLandscapeExterminateBounty")).toBe(
+      "Exterminate",
+    );
+    expect(bountyMissionType("")).toBe("");
   });
 });

@@ -138,6 +138,13 @@ export const remove = mutation({
   },
 });
 
+// A lead rule wants the warning before the phase starts, so it is scheduled, not sent now.
+function leadSendAt(filter: RuleFilter, startsAt: number): number | null {
+  if (filter.kind !== "cycle") return null;
+  const lead = filter.leadMinutes ?? null;
+  return lead === null ? null : startsAt - lead * 60_000;
+}
+
 export const evaluate = internalMutation({
   args: { eventIds: v.array(v.id("worldEvents")) },
   returns: v.null(),
@@ -159,6 +166,10 @@ export const evaluate = internalMutation({
           .first();
         if (already) continue;
 
+        const sendAt = leadSendAt(rule.filter as RuleFilter, event.startsAt);
+        // The warning window is gone, so there is nothing worth writing down.
+        if (sendAt !== null && sendAt <= Date.now()) continue;
+
         for (const channel of rule.channels) {
           // One unit per delivery, and an over limit match is written down so the user can see it.
           const { ok } = await rateLimiter.limit(ctx, "notifications", { key: rule.userId });
@@ -173,7 +184,8 @@ export const evaluate = internalMutation({
             createdAt: Date.now(),
           });
           if (ok && rule.mode === "instant") {
-            await ctx.scheduler.runAfter(0, internal.notify.send, { notificationId });
+            if (sendAt === null) await ctx.scheduler.runAfter(0, internal.notify.send, { notificationId });
+            else await ctx.scheduler.runAt(sendAt, internal.notify.send, { notificationId });
           }
         }
       }

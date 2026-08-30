@@ -230,6 +230,30 @@ describe("worldstate.get", () => {
     expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
   });
 
+  test("one bounty event per board rotation, keyed by syndicate and expiry", async () => {
+    const t = convexTest(schema, modules);
+    const current = state();
+    expect(current.bounties!.length).toBeGreaterThan(1);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: current });
+
+    const first = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    const boards = first.filter((e) => e.kind === "bounty");
+    expect(boards).toHaveLength(current.bounties!.length);
+    expect(boards[0].payload.jobs.length).toBeGreaterThan(0);
+
+    // The same rotation pulled again is not news.
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state(FETCHED_AT + 60_000) });
+    const second = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    expect(second.filter((e) => e.kind === "bounty")).toHaveLength(boards.length);
+
+    // A new rotation is.
+    const rolled = state(FETCHED_AT + 120_000);
+    rolled.bounties = rolled.bounties!.map((b) => ({ ...b, expiresAt: b.expiresAt + 3 * 60 * 60_000 }));
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: rolled });
+    const third = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    expect(third.filter((e) => e.kind === "bounty")).toHaveLength(boards.length * 2);
+  });
+
   test("prune drops what expired so the stored snapshot does not grow stale", async () => {
     const t = convexTest(schema, modules);
     await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
