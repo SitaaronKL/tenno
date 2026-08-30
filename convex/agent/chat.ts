@@ -1,9 +1,11 @@
 import { createThread, getThreadMetadata, listUIMessages, saveMessage } from "@convex-dev/agent";
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { action, internalAction, mutation, query } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { requireUser } from "../lib/auth";
 import { agentComponent, tenno } from "./index";
+import { checkLimit } from "./limits";
 
 type Ctx = Parameters<typeof getThreadMetadata>[0];
 
@@ -36,6 +38,12 @@ export const sendMessage = action({
   handler: async (ctx, { threadId, text }): Promise<null> => {
     const { userId } = await requireUser(ctx);
     await requireThread(ctx, threadId, userId);
+    await checkLimit(
+      ctx,
+      "chatMessages",
+      userId,
+      "That is too many messages this hour. Try again a little later.",
+    );
     const { messageId } = await saveMessage(ctx, agentComponent, {
       threadId,
       userId,
@@ -46,21 +54,28 @@ export const sendMessage = action({
   },
 });
 
+// Paginated: the component answers newest first, so a long thread loads a page at a time
+// and the client reverses each page for display.
 export const listMessages = query({
-  args: { threadId: v.string() },
-  returns: v.array(
-    v.object({ key: v.string(), role: v.string(), text: v.string(), status: v.string() }),
-  ),
-  handler: async (ctx, { threadId }) => {
+  args: { threadId: v.string(), paginationOpts: paginationOptsValidator },
+  returns: v.object({
+    page: v.array(
+      v.object({ key: v.string(), role: v.string(), text: v.string(), status: v.string() }),
+    ),
+    isDone: v.boolean(),
+    continueCursor: v.string(),
+  }),
+  handler: async (ctx, { threadId, paginationOpts }) => {
     const { userId } = await requireUser(ctx);
     await requireThread(ctx, threadId, userId);
-    const page = await listUIMessages(ctx, agentComponent, {
-      threadId,
-      paginationOpts: { cursor: null, numItems: 100 },
-    });
-    return page.page
-      .filter((m) => m.role === "user" || m.role === "assistant")
-      .map((m) => ({ key: m.key, role: m.role, text: m.text, status: m.status }));
+    const result = await listUIMessages(ctx, agentComponent, { threadId, paginationOpts });
+    return {
+      page: result.page
+        .filter((m) => m.role === "user" || m.role === "assistant")
+        .map((m) => ({ key: m.key, role: m.role, text: m.text, status: m.status })),
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+    };
   },
 });
 

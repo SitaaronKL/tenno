@@ -10,6 +10,7 @@
 
 import type * as agent_chat from "../agent/chat.js";
 import type * as agent_index from "../agent/index.js";
+import type * as agent_limits from "../agent/limits.js";
 import type * as agent_ruleBuilder from "../agent/ruleBuilder.js";
 import type * as agent_tools from "../agent/tools.js";
 import type * as auth from "../auth.js";
@@ -49,6 +50,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   "agent/chat": typeof agent_chat;
   "agent/index": typeof agent_index;
+  "agent/limits": typeof agent_limits;
   "agent/ruleBuilder": typeof agent_ruleBuilder;
   "agent/tools": typeof agent_tools;
   auth: typeof auth;

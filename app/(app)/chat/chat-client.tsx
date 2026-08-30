@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useAction, useMutation, usePaginatedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { ChatEmptyState } from "@/components/chat/empty-state";
 import { ChatFrame, Composer } from "@/components/chat/composer";
 import { Message, type ChatMessage } from "@/components/chat/message";
+
+const PAGE_SIZE = 50;
 
 export default function Chat() {
   const startThread = useMutation(api.agent.chat.startThread);
@@ -27,12 +29,15 @@ export default function Chat() {
     };
   }, [startThread]);
 
-  const messages = useQuery(
+  // The thread answers newest first, so each page is reversed to read top to bottom.
+  const { results, status, loadMore } = usePaginatedQuery(
     api.agent.chat.listMessages,
     threadId ? { threadId } : "skip",
-  ) as ChatMessage[] | undefined;
+    { initialNumItems: PAGE_SIZE },
+  );
+  const messages = useMemo(() => [...(results as ChatMessage[])].reverse(), [results]);
 
-  const count = messages?.length ?? 0;
+  const count = messages.length;
   useEffect(() => {
     // Only a new message scrolls, so opening the page leaves the view where it is.
     if (count > seen.current && seen.current > 0) {
@@ -57,13 +62,23 @@ export default function Chat() {
 
   // An unopened thread and an empty thread look the same, so nothing flashes while it loads.
   const empty = count === 0;
+  const canLoadMore = status === "CanLoadMore";
 
   return (
     <ChatFrame
       log={
         <>
           {empty && <ChatEmptyState onPick={(s) => void send(s)} disabled={!threadId || sending} />}
-          {messages?.map((m) => <Message key={m.key} message={m} />)}
+          {canLoadMore && (
+            <button
+              type="button"
+              onClick={() => loadMore(PAGE_SIZE)}
+              className="mx-auto block text-sm text-muted-foreground underline underline-offset-4"
+            >
+              Load older messages
+            </button>
+          )}
+          {messages.map((m) => <Message key={m.key} message={m} />)}
           {sending && <p className="text-sm text-muted-foreground">Voidwatch is thinking</p>}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div ref={bottom} />

@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { requireUser } from "./lib/auth";
 
 const API = "https://wiki.warframe.com/api.php";
@@ -65,6 +65,14 @@ export async function fetchSearch(q: string): Promise<SearchResult> {
   cache.set(q, { at: Date.now(), value });
   return value;
 }
+
+// The agent runs without a session over iMessage, so the lookup itself carries no auth.
+// The wiki is public game data, the same for everyone.
+export const search = internalAction({
+  args: { q: v.string() },
+  returns: vResult,
+  handler: async (_ctx, { q }) => await fetchSearch(q),
+});
 
 export const searchItems = action({
   args: { q: v.string() },

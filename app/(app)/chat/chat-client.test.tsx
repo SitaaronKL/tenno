@@ -1,20 +1,31 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = { messages: undefined as unknown };
+const state = {
+  results: [] as { key: string; role: string; text: string; status: string }[],
+  status: "Exhausted" as string,
+  loadMore: vi.fn(),
+};
 
 // The thread never resolves here, which is exactly the first paint we care about.
 vi.mock("convex/react", () => ({
   useMutation: () => () => new Promise(() => {}),
   useAction: () => () => new Promise(() => {}),
-  useQuery: () => state.messages,
+  usePaginatedQuery: () => ({
+    results: state.results,
+    status: state.status,
+    loadMore: state.loadMore,
+  }),
 }));
 
 import Chat from "./chat-client";
 
 describe("Chat", () => {
   beforeEach(() => {
-    state.messages = undefined;
+    state.results = [];
+    state.status = "Exhausted";
+    state.loadMore = vi.fn();
   });
 
   it("greets the player on the first paint, with no loading line", () => {
@@ -32,8 +43,35 @@ describe("Chat", () => {
   });
 
   it("keeps the greeting once the thread loads empty", () => {
-    state.messages = [];
+    state.results = [];
     render(<Chat />);
     expect(screen.getByText("What do you want to know, Tenno?")).toBeInTheDocument();
+  });
+
+  it("reads oldest at the top even though the thread answers newest first", () => {
+    state.results = [
+      { key: "b", role: "assistant", text: "second", status: "success" },
+      { key: "a", role: "user", text: "first", status: "success" },
+    ];
+    render(<Chat />);
+
+    const shown = screen.getAllByText(/first|second/).map((el) => el.textContent);
+    expect(shown).toEqual(["first", "second"]);
+  });
+
+  it("offers older messages only when there are older messages", async () => {
+    const user = userEvent.setup();
+    state.results = [{ key: "a", role: "user", text: "hello", status: "success" }];
+    state.status = "CanLoadMore";
+    render(<Chat />);
+
+    await user.click(screen.getByRole("button", { name: "Load older messages" }));
+    expect(state.loadMore).toHaveBeenCalledWith(50);
+  });
+
+  it("does not offer older messages at the start of a thread", () => {
+    state.results = [{ key: "a", role: "user", text: "hello", status: "success" }];
+    render(<Chat />);
+    expect(screen.queryByRole("button", { name: "Load older messages" })).not.toBeInTheDocument();
   });
 });

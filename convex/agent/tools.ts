@@ -47,6 +47,6 @@ export const searchItems = createTool({
   description: "Search the Warframe wiki for an item, mission, or mechanic, and read the top article.",
   inputSchema: z.object({ q: z.string().describe("search text, for example Primed Chamber") }),
   execute: async (ctx, { q }): Promise<SearchResult> => {
-    return await ctx.runAction(api.wiki.searchItems, { q });
+    return await ctx.runAction(internal.wiki.search, { q });
   },
 });
