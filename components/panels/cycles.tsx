@@ -8,7 +8,7 @@ import { EarthIcon } from "@/components/icons/earth";
 import { TornadoIcon } from "@/components/icons/tornado";
 import { AtomIcon } from "@/components/icons/atom";
 import { TimerIcon } from "@/components/icons/timer";
-import type { Baro, Cycle } from "@/lib/contracts/worldstate";
+import type { Arbitration, Baro, Cycle } from "@/lib/contracts/worldstate";
 import { cn } from "@/lib/utils";
 import { Countdown, SOON_MS } from "./countdown";
 import type { IconHandle, PanelIcon } from "./panel";
@@ -70,14 +70,22 @@ export function nextWeeklyReset(now: number): number {
   return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() + daysToMonday);
 }
 
-export function CycleTiles({ cycles, baro }: { cycles: Cycle[]; baro?: Baro | null }) {
+export function CycleTiles({
+  cycles,
+  baro,
+  arbitration,
+}: {
+  cycles: Cycle[];
+  baro?: Baro | null;
+  arbitration?: Arbitration | null;
+}) {
   const now = useNow();
   const order = Object.keys(WORLDS) as Cycle["world"][];
   const rows = order
     .map((w) => cycles.find((c) => c.world === w))
     .filter((c): c is Cycle => Boolean(c));
 
-  if (rows.length === 0) return null;
+  if (rows.length === 0 && !arbitration) return null;
 
   return (
     <ul aria-label="World cycles" className="ml-auto grid shrink-0 grid-cols-[repeat(5,max-content)] gap-1.5 lg:mr-8">
@@ -89,6 +97,16 @@ export function CycleTiles({ cycles, baro }: { cycles: Cycle[]; baro?: Baro | nu
           expiresAt={baro.active ? baro.expiresAt : baro.startsAt}
           now={now}
           verb={baro.active ? "leaves" : "arrives"}
+        />
+      ) : null}
+      {arbitration ? (
+        <Tile
+          icon={AtomIcon}
+          label="Arbitration"
+          state={arbitration.missionType}
+          expiresAt={arbitration.expiresAt}
+          now={now}
+          verb="rotates"
         />
       ) : null}
       <Tile icon={TimerIcon} label="Daily reset" state="" expiresAt={nextDailyReset(now)} now={now} verb="resets" />
@@ -111,5 +129,5 @@ export function CycleTiles({ cycles, baro }: { cycles: Cycle[]; baro?: Baro | nu
 export function CycleTilesLive() {
   const state = useQuery(api.worldstate.get, { platform: "pc" });
   if (!state) return null;
-  return <CycleTiles cycles={state.cycles} baro={state.baro} />;
+  return <CycleTiles cycles={state.cycles} baro={state.baro} arbitration={state.arbitration} />;
 }

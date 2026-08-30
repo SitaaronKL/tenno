@@ -11,6 +11,7 @@ export const KIND_LABELS: Record<RuleFilter["kind"], string> = {
   nightwave: "Nightwave",
   bounty: "Bounty",
   archimedea: "Archimedea",
+  arbitration: "Arbitration",
   reset: "Reset",
 };
 
@@ -95,6 +96,13 @@ export function ruleSentence(filter: RuleFilter): string {
       const parts = [set];
       if (deviations) parts.push(`deviation ${joinOr(deviations)}`);
       if (risks) parts.push(`risk ${joinOr(risks)}`);
+      return parts.join(", ");
+    }
+    case "arbitration": {
+      const missions = some(filter.missionTypes);
+      const tiers = some(filter.tiers);
+      const parts = [missions ? `Arbitration is ${joinOr(missions)}` : "Any arbitration"];
+      if (tiers) parts.push(`tier ${joinOr(tiers)}`);
       return parts.join(", ");
     }
     case "reset":

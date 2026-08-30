@@ -99,6 +99,38 @@ export interface Archimedea {
   eliteBonus?: string[];
 }
 
+// One hour of the arbitration rotation. The schedule is browse.wf's, the names are ours.
+export interface Arbitration {
+  node: string;
+  missionType: string;
+  faction: string;
+  // Arbitration Goons tier, S down to F. Empty when they have not rated the node.
+  tier: string;
+  expiresAt: number;
+}
+
+// The Circuit's weekly offering, from DE's EndlessXpSchedule. Normal is frames, Steel Path is weapons.
+export interface Circuit {
+  normal: string[];
+  steelPath: string[];
+  expiresAt: number;
+}
+
+// Darvo's daily deal. Stock is what is left of the run, discount is a percentage.
+export interface DarvoDeal {
+  item: string;
+  discount: number;
+  stock: number;
+  expiresAt: number;
+}
+
+// A running in game event or tactical alert, from DE's Goals. Names only, no progress.
+export interface GameEvent {
+  key: string;
+  name: string;
+  expiresAt: number;
+}
+
 export interface Cycle {
   world: "cetus" | "vallis" | "cambion" | "earth" | "duviri" | "zariman";
   state: string;
@@ -129,4 +161,11 @@ export interface WorldState {
   bounties?: Bounty[];
   // Optional so world state rows written before Archimedea existed still read back.
   archimedea?: Archimedea[];
+  // Steel Path Incursions for the UTC day, six friendly node names. The schedule file carries
+  // nodes only, so there is no mission type to go with them.
+  incursions?: string[];
+  arbitration?: Arbitration | null;
+  circuit?: Circuit | null;
+  darvo?: DarvoDeal | null;
+  events?: GameEvent[];
 }

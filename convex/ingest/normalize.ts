@@ -13,6 +13,7 @@ import type {
 } from "../../lib/contracts/worldstate";
 import { bountyNode, job } from "./bounties";
 import { withStaticBounties } from "./staticBounties";
+import { currentArbitration, todaysIncursions } from "./schedules";
 
 // Raw upstream JSON is unknown shaped, every field is read through the coercers below.
 type Raw = Record<string, unknown>;
@@ -236,7 +237,8 @@ function cycles(raw: Raw): Cycle[] {
 }
 
 // Every upstream entity is kept, expiry is applied where the data is read.
-// Arbitration is dropped: upstream derives it and currently serves a broken placeholder.
+// Incursions and arbitration come from the shipped schedules, they are clock math, not upstream.
+// Upstream's own arbitration is dropped: it derives it and currently serves a broken placeholder.
 export function normalize(raw: Raw, fetchedAt: number = Date.now()): WorldState {
   const upstreamTimestamp = ms(raw.timestamp) || fetchedAt;
   return {
@@ -254,5 +256,7 @@ export function normalize(raw: Raw, fetchedAt: number = Date.now()): WorldState 
     nightwave: nightwave(raw),
     cycles: cycles(raw),
     bounties: bounties(raw, fetchedAt),
+    incursions: todaysIncursions(fetchedAt),
+    arbitration: currentArbitration(fetchedAt),
   };
 }

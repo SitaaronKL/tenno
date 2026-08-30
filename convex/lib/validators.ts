@@ -66,6 +66,12 @@ export const vRuleFilter = v.union(
     deviations: v.union(v.array(v.string()), v.null()),
     risks: v.union(v.array(v.string()), v.null()),
   }),
+  v.object({
+    kind: v.literal("arbitration"),
+    missionTypes: v.union(v.array(v.string()), v.null()),
+    // Arbitration Goons tiers, S down to F.
+    tiers: v.union(v.array(v.string()), v.null()),
+  }),
   v.object({ kind: v.literal("reset"), period: v.union(v.literal("daily"), v.literal("weekly")) }),
 );
 

@@ -277,3 +277,24 @@ describe("worldstate.get", () => {
     expect(archimedea.map((e) => e.key).sort()).toEqual(["deep:1788134400000", "temporal:1788134400000"]);
   });
 });
+
+describe("arbitration events", () => {
+  test("one event per hour of the rotation, so a repeat pull stays quiet", async () => {
+    const t = convexTest(schema, modules);
+    const first = state();
+    expect(first.arbitration).not.toBeNull();
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: first });
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state(FETCHED_AT + 60_000) });
+
+    const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    const arbitration = events.filter((e) => e.kind === "arbitration");
+    expect(arbitration).toHaveLength(1);
+    expect(arbitration[0].expiresAt).toBe(first.arbitration!.expiresAt);
+
+    // The next hour is a different node, which is worth telling a player about.
+    const later = state(first.arbitration!.expiresAt + 60_000);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: later });
+    const after = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    expect(after.filter((e) => e.kind === "arbitration")).toHaveLength(2);
+  });
+});

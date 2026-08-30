@@ -41,6 +41,9 @@ const ARCHIMEDEA_VARIANTS = [
 ] as const;
 type ArchimedeaVariant = (typeof ARCHIMEDEA_VARIANTS)[number]["value"];
 
+// The Arbitration Goons rate a node S down to F, and they leave plenty of nodes unrated.
+const ARBITRATION_TIERS = ["S", "A", "B", "C", "D", "F"];
+
 const WORLDS = ["cetus", "vallis", "cambion", "earth", "duviri", "zariman"] as const;
 const CHANNEL_LABELS: Record<string, string> = { email: "Email", imessage: "iMessage" };
 
@@ -167,7 +170,9 @@ export function RuleForm({
   const [kind, setKind] = useState<EventKind>(initial?.filter.kind ?? "fissure");
   const [tiers, setTiers] = useState<string[]>(f && f.kind === "fissure" ? (f.tiers ?? []) : []);
   const [missionTypes, setMissionTypes] = useState<string[]>(
-    f && (f.kind === "fissure" || f.kind === "sortie" || f.kind === "bounty") ? (f.missionTypes ?? []) : [],
+    f && (f.kind === "fissure" || f.kind === "sortie" || f.kind === "bounty" || f.kind === "arbitration")
+      ? (f.missionTypes ?? [])
+      : [],
   );
   const [steelPath, setSteelPath] = useState<SteelPath>(() =>
     f?.kind === "fissure" ? tristate(f.steelPath) : "any",
@@ -200,6 +205,7 @@ export function RuleForm({
     f?.kind === "archimedea" ? (f.deviations ?? []) : [],
   );
   const [risks, setRisks] = useState<string[]>(f?.kind === "archimedea" ? (f.risks ?? []) : []);
+  const [nodeTiers, setNodeTiers] = useState<string[]>(f?.kind === "arbitration" ? (f.tiers ?? []) : []);
   const [period, setPeriod] = useState<"daily" | "weekly">(f?.kind === "reset" ? f.period : "daily");
   const [mode, setMode] = useState<"instant" | "digest">(initial?.mode ?? "instant");
   const [channels, setChannels] = useState<string[]>(initial?.channels ?? ["email"]);
@@ -244,6 +250,8 @@ export function RuleForm({
           deviations: some(deviations),
           risks: some(risks),
         };
+      case "arbitration":
+        return { kind, missionTypes: some(missionTypes), tiers: some(nodeTiers) };
       case "reset":
         return { kind, period };
     }
@@ -365,6 +373,17 @@ export function RuleForm({
             </Chip>
             <Chip label="Risks" value={risks.length ? joinOr(risks) : "any risk"}>
               <TagInput label="Risks" values={risks} onChange={setRisks} />
+            </Chip>
+          </>
+        )}
+
+        {kind === "arbitration" && (
+          <>
+            <Chip label="Mission types" value={missionTypes.length ? joinOr(missionTypes) : "any mission"}>
+              <CheckboxList options={MISSION_TYPES} values={missionTypes} onChange={setMissionTypes} />
+            </Chip>
+            <Chip label="Node tiers" value={nodeTiers.length ? joinOr(nodeTiers) : "any tier"}>
+              <CheckboxList options={ARBITRATION_TIERS} values={nodeTiers} onChange={setNodeTiers} />
             </Chip>
           </>
         )}

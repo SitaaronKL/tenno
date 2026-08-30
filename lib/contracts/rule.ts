@@ -66,6 +66,13 @@ export const ArchimedeaFilter = z.object({
   risks: z.array(z.string()).nullable(),
 });
 
+// The arbitration rotates every hour. Tiers are the Arbitration Goons ratings, S down to F.
+export const ArbitrationFilter = z.object({
+  kind: z.literal("arbitration"),
+  missionTypes: z.array(z.string()).nullable(),
+  tiers: z.array(z.string()).nullable(),
+});
+
 // Daily is 00:00 UTC, weekly is Monday 00:00 UTC.
 export const ResetFilter = z.object({
   kind: z.literal("reset"),
@@ -85,6 +92,7 @@ export const RuleFilter = z.discriminatedUnion("kind", [
   NightwaveFilter,
   BountyFilter,
   ArchimedeaFilter,
+  ArbitrationFilter,
   ResetFilter,
 ]);
 

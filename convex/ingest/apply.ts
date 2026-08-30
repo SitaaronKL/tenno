@@ -57,6 +57,11 @@ function eventsOf(state: WorldState): NewEvent[] {
   for (const a of state.archimedea ?? []) {
     push("archimedea", a.key, state.fetchedAt, a.expiresAt, a);
   }
+  // The arbitration rotates on the hour, so its own expiry is what keys the hour it belongs to.
+  if (state.arbitration) {
+    const a = state.arbitration;
+    push("arbitration", `${a.node}:${a.expiresAt}`, a.expiresAt - 3_600_000, a.expiresAt, a);
+  }
   // One event per phase. The start is rounded to the minute so every pull inside a phase agrees.
   for (const c of state.cycles) {
     const startsAt = Math.round((c.startsAt ?? c.expiresAt) / 60_000) * 60_000;
