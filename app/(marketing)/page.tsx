@@ -1,5 +1,6 @@
 import { Hero } from "@/components/marketing/hero";
 import { ProductShot } from "@/components/marketing/product-shot";
+import { FloatingBar } from "@/components/marketing/floating-bar";
 import { Features } from "@/components/marketing/features";
 import { IMessageMock } from "@/components/marketing/imessage";
 import { HowItWorks } from "@/components/marketing/how-it-works";
@@ -14,6 +15,7 @@ export default function LandingPage() {
       <IMessageMock />
       <HowItWorks />
       <Footer />
+      <FloatingBar />
     </main>
   );
 }
