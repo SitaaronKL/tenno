@@ -15,6 +15,17 @@ import {
 export { vRuleFilter, vRuleInput } from "./lib/validators";
 export { platform, channel, deliveryMode, fissureTier, cycleWorld, ruleFilter, source };
 
+// round2-mastery: what kind of thing a mastery item is, drives the table filters.
+export const masteryKind = v.union(
+  v.literal("warframe"),
+  v.literal("primary"),
+  v.literal("secondary"),
+  v.literal("melee"),
+  v.literal("companion"),
+  v.literal("archwing"),
+  v.literal("other"),
+);
+
 const reward = v.object({ item: v.string(), count: v.number(), credits: v.number() });
 
 const fissure = v.object({
@@ -177,4 +188,36 @@ export default defineSchema({
   })
     .index("by_rule_event", ["ruleId", "eventId"])
     .index("by_user_status", ["userId", "status"]),
+
+  // round2-mastery block, added by the mastery slice. Keep it last.
+  items: defineTable({
+    uniqueName: v.string(),
+    name: v.string(),
+    category: v.string(),
+    kind: masteryKind,
+    masteryReq: v.number(),
+    masteryXp: v.number(),
+    buildable: v.boolean(),
+    components: v.array(v.object({ itemType: v.string(), count: v.number() })),
+  })
+    .index("by_unique_name", ["uniqueName"])
+    .index("by_kind", ["kind"]),
+
+  starNodes: defineTable({
+    uniqueName: v.string(),
+    name: v.string(),
+    planet: v.string(),
+    masteryReq: v.number(),
+  }).index("by_unique_name", ["uniqueName"]),
+
+  // One row per player id, refreshed at most every six hours, DE bans on abuse.
+  profileCache: defineTable({
+    playerId: v.string(),
+    fetchedAt: v.number(),
+    displayName: v.string(),
+    masteryRank: v.number(),
+    nodesCompleted: v.number(),
+    xpByItem: v.array(v.object({ uniqueName: v.string(), xp: v.number() })),
+  }).index("by_player", ["playerId"]),
+  // end round2-mastery block
 });

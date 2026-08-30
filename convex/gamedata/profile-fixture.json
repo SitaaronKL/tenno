@@ -1,0 +1,21 @@
+{
+  "Results": [
+    {
+      "AccountId": { "$oid": "5b1f0a0000000000000000aa" },
+      "DisplayName": "TennoTester",
+      "PlayerLevel": 27,
+      "Missions": [
+        { "Tag": "SolNode1", "Completes": 12, "Tier": 1 },
+        { "Tag": "SolNode2", "Completes": 3 },
+        { "Tag": "SolNode3", "Completes": 0 }
+      ],
+      "XPInfo": [
+        { "ItemType": "/Lotus/Powersuits/Excalibur/Excalibur", "XP": 6000 },
+        { "ItemType": "/Lotus/Weapons/Tenno/Rifle/Rifle", "XP": 3000 },
+        { "ItemType": "/Lotus/Weapons/Tenno/Rifle/Rifle", "XP": 900 },
+        { "ItemType": "/Lotus/Weapons/Tenno/Pistol/Lato", "XP": 1200 }
+      ]
+    }
+  ],
+  "XpComponents": {}
+}
