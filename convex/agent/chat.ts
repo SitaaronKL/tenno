@@ -1,6 +1,7 @@
 import { createThread, getThreadMetadata, listUIMessages, saveMessage } from "@convex-dev/agent";
 import { v } from "convex/values";
 import { action, internalAction, mutation, query } from "../_generated/server";
+import { internal } from "../_generated/api";
 import { requireUser } from "../lib/auth";
 import { agentComponent, tenno } from "./index";
 
@@ -63,12 +64,16 @@ export const listMessages = query({
   },
 });
 
-// Inbound iMessage has no signed in user, so the thread is keyed by the phone that texted us.
+const LINK_FIRST =
+  "I do not know this number yet. Add it under Settings in Voidwatch, then text me again.";
+
+// Inbound iMessage has no session, the verified phone says which user the agent acts for.
 export const replyToInbound = internalAction({
   args: { phone: v.string(), text: v.string() },
   returns: v.string(),
   handler: async (ctx, { phone, text }): Promise<string> => {
-    const userId = `phone:${phone}`;
+    const userId: string | null = await ctx.runQuery(internal.profiles.userForVerifiedPhone, { phone });
+    if (!userId) return LINK_FIRST;
     const existing = await ctx.runQuery(agentComponent.threads.listThreadsByUserId, {
       userId,
       order: "desc",

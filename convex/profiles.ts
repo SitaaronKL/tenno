@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { internalAction, internalMutation, mutation, query } from "./_generated/server";
+import { internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -151,6 +151,22 @@ export const storePhotonUserId = internalMutation({
   handler: async (ctx, { profileId, photonUserId }) => {
     await ctx.db.patch(profileId, { photonUserId });
     return null;
+  },
+});
+
+// The iMessage surface has no session, a verified phone is the only identity it has.
+export const userForVerifiedPhone = internalQuery({
+  args: { phone: v.string() },
+  returns: v.union(v.id("users"), v.null()),
+  handler: async (ctx, { phone }) => {
+    const key = normalizePhone(phone);
+    if (!key) return null;
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_phone", (q) => q.eq("phone", key))
+      .first();
+    if (!profile || profile.phoneVerifiedAt === undefined) return null;
+    return profile.userId;
   },
 });
 

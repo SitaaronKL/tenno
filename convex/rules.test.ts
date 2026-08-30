@@ -56,6 +56,27 @@ async function seed(t: ReturnType<typeof setup>, mode: "instant" | "digest") {
   });
 }
 
+describe("rules for the iMessage agent", () => {
+  test("the agent can list and create rules for a phone's owner without a session", async () => {
+    const t = setup();
+    const { userId } = await seed(t, "instant");
+
+    const created = await t.mutation(internal.rules.createForUser, {
+      userId,
+      input: {
+        name: "Baro arrivals",
+        filter: { kind: "baro", items: null },
+        mode: "instant",
+        channels: ["email"],
+      },
+    });
+    expect(created).toBeTruthy();
+
+    const rules = await t.query(internal.rules.listForUser, { userId });
+    expect(rules.map((r) => r.name).sort()).toEqual(["Axi survival", "Baro arrivals"]);
+  });
+});
+
 describe("rules.evaluate", () => {
   test("a matching rule queues one notification and sends it right away", async () => {
     const t = setup();

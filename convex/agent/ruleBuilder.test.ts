@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import { generateObject } from "ai";
 import { mockModel } from "@convex-dev/agent";
-import { RuleInput } from "../lib/contracts/rule";
-import { buildPrompt, toRuleInput } from "./agent/ruleBuilder";
+import { RuleInput } from "../../lib/contracts/rule";
+import { buildPrompt, toRuleInput } from "./ruleBuilder";
 
 function modelReturning(object: unknown) {
   return mockModel({ content: [{ type: "text", text: JSON.stringify(object) }] });

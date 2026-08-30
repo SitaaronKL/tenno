@@ -1,12 +1,12 @@
 import { v } from "convex/values";
 import { RateLimiter, HOUR } from "@convex-dev/rate-limiter";
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query, internalMutation, internalQuery } from "./_generated/server";
 import { components, internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { requireUser } from "./lib/auth";
 import { matches } from "./matcher";
 import { RuleInput, type RuleFilter } from "../lib/contracts/rule";
-import { vRuleFilter } from "./lib/validators";
+import { vRuleFilter, vRuleInput } from "./lib/validators";
 
 // Cap the noise a single rule storm can cause per user.
 // Cast because codegen without a deployment types components loosely.
@@ -31,6 +31,36 @@ export const list = query({
       .query("rules")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
+  },
+});
+
+// The iMessage agent has no session, it acts for the user its verified phone belongs to.
+export const listForUser = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.array(v.any()),
+  handler: async (ctx, { userId }) => {
+    return await ctx.db
+      .query("rules")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+  },
+});
+
+export const createForUser = internalMutation({
+  args: { userId: v.id("users"), input: vRuleInput, source: v.optional(v.union(v.literal("manual"), v.literal("ai"))) },
+  returns: v.id("rules"),
+  handler: async (ctx, { userId, input, source }) => {
+    const parsed = RuleInput.parse(input);
+    return await ctx.db.insert("rules", {
+      userId,
+      name: parsed.name,
+      filter: parsed.filter,
+      mode: parsed.mode,
+      channels: parsed.channels,
+      enabled: true,
+      source: source ?? "ai",
+      createdAt: Date.now(),
+    });
   },
 });
 

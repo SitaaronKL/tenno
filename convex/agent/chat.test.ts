@@ -1,15 +1,33 @@
 import { describe, expect, test } from "vitest";
 import { convexTest } from "convex-test";
 import agentTest from "@convex-dev/agent/test";
-import { api } from "./_generated/api";
+import schema from "../schema";
+import { api, internal } from "../_generated/api";
 
-const modules = import.meta.glob("./**/*.ts");
+// convex-test wants paths relative to the convex root, this test sits one directory down.
+const modules = Object.fromEntries(
+  Object.entries(import.meta.glob("../**/*.ts")).map(([path, load]) => [
+    path.startsWith("../") ? path.replace("../", "./") : path.replace("./", "./agent/"),
+    load,
+  ]),
+);
 
 function setup() {
-  const t = convexTest(undefined, modules);
+  const t = convexTest(schema, modules);
   agentTest.register(t);
   return t;
 }
+
+describe("inbound iMessage", () => {
+  test("a phone we do not know is told how to link it", async () => {
+    const t = setup();
+    const answer = await t.action(internal.agent.chat.replyToInbound, {
+      phone: "+15550009999",
+      text: "list my rules",
+    });
+    expect(answer).toContain("Settings");
+  });
+});
 
 describe("chat threads", () => {
   test("a signed out visitor cannot start a chat", async () => {
