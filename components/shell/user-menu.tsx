@@ -71,9 +71,9 @@ export function UserCard() {
               {me?.image ? <AvatarImage src={me.image} alt="" /> : null}
               <AvatarFallback className="rounded-full">{name.slice(0, 1).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <span className="grid flex-1 text-left leading-tight">
+            <span className="grid min-w-0 flex-1 text-left leading-tight">
               <span className="truncate font-medium">{name}</span>
-              {me?.email ? (
+              {me?.email && me.email !== name ? (
                 <span className="truncate text-xs text-muted-foreground">{me.email}</span>
               ) : null}
             </span>
