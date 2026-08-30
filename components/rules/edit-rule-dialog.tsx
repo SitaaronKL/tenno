@@ -22,10 +22,11 @@ export function EditRuleDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-xl">
+      <DialogContent className="grid-rows-[auto_minmax(0,1fr)] overflow-hidden sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>Edit rule</DialogTitle>
         </DialogHeader>
+        <div className="max-h-[60vh] min-h-[24rem] overflow-y-auto">
         <RuleForm
           initial={{ name: rule.name, filter: rule.filter, mode: rule.mode, channels: rule.channels }}
           submitLabel="Save changes"
@@ -34,6 +35,7 @@ export function EditRuleDialog({
             onOpenChange(false);
           }}
         />
+        </div>
       </DialogContent>
     </Dialog>
   );

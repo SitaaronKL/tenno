@@ -36,7 +36,7 @@ function Chip({
     <Popover>
       <PopoverTrigger
         aria-label={`${label}: ${value}`}
-        className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 align-middle text-sm font-medium text-foreground ring-1 ring-border transition-colors duration-150 ease-out hover:bg-accent-soft hover:text-accent-strong"
+        className="inline-flex h-7 items-center gap-1 rounded-full bg-surface-2 px-2.5 text-sm font-medium text-foreground ring-1 ring-border transition-colors duration-150 ease-out hover:bg-accent-soft hover:text-foreground"
       >
         {value}
         <ChevronDownIcon size={12} className="text-muted-foreground" aria-hidden="true" />
@@ -64,7 +64,7 @@ function CheckboxList({
         <label key={o} className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
-            className="accent-primary"
+            className="accent-foreground"
             checked={values.includes(o)}
             onChange={(e) => onChange(e.target.checked ? [...values, o] : values.filter((v) => v !== o))}
           />
@@ -93,7 +93,7 @@ function RadioList<T extends string>({
           <input
             type="radio"
             name={name}
-            className="accent-primary"
+            className="accent-foreground"
             checked={value === o.value}
             onChange={() => onChange(o.value)}
           />
@@ -199,9 +199,9 @@ export function RuleForm({
         <Input id="rule-name" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
 
-      {/* The rule reads as a sentence, each chip opens the choices behind one bracket. */}
-      <div className="rounded-xl bg-surface-2 p-4 text-sm leading-9 ring-1 ring-border">
-        <span className="text-muted-foreground">When </span>
+      {/* The sentence is a flex row, so every chip and word sits on one baseline. */}
+      <div className="flex flex-wrap items-center gap-x-1.5 gap-y-2 rounded-xl bg-surface-2 p-4 text-sm ring-1 ring-border">
+        <span className="text-muted-foreground">When</span>
         <Chip label="Event kind" value={KIND_LABELS[kind]}>
           <RadioList
             name="rule-kind"
@@ -213,21 +213,19 @@ export function RuleForm({
 
         {kind === "fissure" && (
           <>
-            {" "}
             <Chip label="Relic tiers" value={tiers.length ? joinOr(tiers) : "any tier"}>
               <CheckboxList options={TIERS} values={tiers} onChange={setTiers} />
-            </Chip>{" "}
+            </Chip>
             <Chip label="Mission types" value={missionTypes.length ? joinOr(missionTypes) : "any mission"}>
               <CheckboxList options={MISSION_TYPES} values={missionTypes} onChange={setMissionTypes} />
-            </Chip>{" "}
-            <span className="text-muted-foreground">with Steel Path </span>
+            </Chip>
+            <span className="text-muted-foreground">with Steel Path</span>
             <Segmented label="Steel Path" options={STEEL_PATH} value={steelPath} onChange={setSteelPath} />
           </>
         )}
 
         {(kind === "invasion" || kind === "alert" || kind === "baro" || kind === "archonHunt") && (
           <>
-            {" "}
             <Chip label={nameList} value={names.length ? joinOr(names) : `any ${nameList.toLowerCase()}`}>
               <TagInput label={nameList} values={names} onChange={setNames} />
             </Chip>
@@ -236,10 +234,9 @@ export function RuleForm({
 
         {kind === "sortie" && (
           <>
-            {" "}
             <Chip label="Bosses" value={names.length ? joinOr(names) : "any boss"}>
               <TagInput label="Bosses" values={names} onChange={setNames} />
-            </Chip>{" "}
+            </Chip>
             <Chip label="Mission types" value={missionTypes.length ? joinOr(missionTypes) : "any mission"}>
               <CheckboxList options={MISSION_TYPES} values={missionTypes} onChange={setMissionTypes} />
             </Chip>
@@ -248,7 +245,6 @@ export function RuleForm({
 
         {kind === "cycle" && (
           <>
-            {" "}
             <Chip label="World" value={world}>
               <RadioList
                 name="cycle-world"
@@ -256,8 +252,8 @@ export function RuleForm({
                 onChange={setWorld}
                 options={WORLDS.map((w) => ({ value: w, label: w }))}
               />
-            </Chip>{" "}
-            <span className="text-muted-foreground">turns </span>
+            </Chip>
+            <span className="text-muted-foreground">turns</span>
             <Chip label="State" value={cycleState || "any state"}>
               <div className="grid gap-2">
                 <Label htmlFor="cycle-state" className="sr-only">
@@ -273,7 +269,7 @@ export function RuleForm({
           </>
         )}
 
-        <span className="text-muted-foreground"> then notify me by </span>
+        <span className="text-muted-foreground">then notify me by</span>
         <Chip
           label="Channels"
           value={channels.length ? joinOr(channels.map((c) => CHANNEL_LABELS[c] ?? c)) : "no channel"}
@@ -283,7 +279,7 @@ export function RuleForm({
             values={channels.map((c) => CHANNEL_LABELS[c] ?? c)}
             onChange={(next) => setChannels(next.map((n) => (n === "Email" ? "email" : "imessage")))}
           />
-        </Chip>{" "}
+        </Chip>
         <Chip label="Delivery" value={mode === "instant" ? "Instant" : "Hourly digest"}>
           <RadioList
             name="rule-mode"
