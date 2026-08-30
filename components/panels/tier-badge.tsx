@@ -26,7 +26,7 @@ export function TierBadge({ tier }: { tier: string }) {
   return (
     <span
       className={cn(
-        "relative inline-flex w-[5.5rem] shrink-0 items-center gap-1.5 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium ring-1",
+        "relative inline-flex w-[5.5rem] shrink-0 items-center justify-center gap-1.5 rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium ring-1",
         known ? TIER_STYLE[tier as Tier] : "bg-surface-2 text-muted-foreground ring-border",
       )}
     >
