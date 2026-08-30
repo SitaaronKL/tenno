@@ -32,6 +32,8 @@ export const pull = internalAction({
       state = normalize(raw, Date.now());
     }
     await ctx.runMutation(internal.ingest.apply.apply, { platform: args.platform, state });
+    // worldstate.get carries no clock, so expiry is applied here, right after the write.
+    await ctx.runMutation(internal.ingest.prune.prune, { platform: args.platform });
     return null;
   },
 });

@@ -8,6 +8,20 @@ import { worldStateValidator } from "../schema";
 
 type NewEvent = Pick<Doc<"worldEvents">, "kind" | "key" | "startsAt" | "expiresAt" | "payload">;
 
+// Relic order, the way the star chart and every fissure tracker lists them.
+const TIER_ORDER = ["Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"];
+
+// Sorted here so worldstate.get can hand the stored snapshot back without touching it.
+function sorted(state: WorldState): WorldState {
+  return {
+    ...state,
+    fissures: [...state.fissures].sort(
+      (a, b) =>
+        TIER_ORDER.indexOf(a.tier) - TIER_ORDER.indexOf(b.tier) || a.expiresAt - b.expiresAt,
+    ),
+  };
+}
+
 // One row per upstream entity a rule can match on, kinds match EVENT_KINDS in lib/contracts/rule.ts.
 function eventsOf(state: WorldState): NewEvent[] {
   const out: NewEvent[] = [];
@@ -47,7 +61,7 @@ export const apply = internalMutation({
   args: { platform: vPlatform, state: worldStateValidator },
   returns: v.number(),
   handler: async (ctx, args) => {
-    const state: WorldState = args.state;
+    const state: WorldState = sorted(args.state);
     const existing = await ctx.db
       .query("worldState")
       .withIndex("by_platform", (q) => q.eq("platform", args.platform))
@@ -65,6 +79,8 @@ export const apply = internalMutation({
     const eventIds: Id<"worldEvents">[] = [];
     for (const event of eventsOf(state)) {
       if (!event.key) continue;
+      // Nobody wants to hear about something that is already over.
+      if (event.expiresAt !== undefined && event.expiresAt <= state.fetchedAt) continue;
       const seen = await ctx.db
         .query("worldEvents")
         .withIndex("by_platform_kind_key", (q) =>
@@ -81,7 +97,10 @@ export const apply = internalMutation({
       );
     }
 
-    if (eventIds.length > 0) await ctx.scheduler.runAfter(0, internal.rules.evaluate, { eventIds });
+    // The first ingest after a deploy is the whole world at once. Record it, do not text about it.
+    if (eventIds.length > 0 && existing) {
+      await ctx.scheduler.runAfter(0, internal.rules.evaluate, { eventIds });
+    }
     return eventIds.length;
   },
 });

@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import raw from "./__fixtures__/pc.json";
 import schema from "../schema";
 import { api, internal } from "../_generated/api";
@@ -172,5 +172,73 @@ describe("cycle events", () => {
     const worlds = cycles.map((e) => e.key.split(":")[0]);
     expect(new Set(worlds).size).toBe(worlds.length);
     expect(worlds).toContain("earth");
+  });
+});
+
+describe("what apply is willing to notify about", () => {
+  test("an entity that already expired is not recorded, so nobody is told about it", async () => {
+    const t = convexTest(schema, modules);
+    // The fixture's newest fissure expires at 02:57Z, read the snapshot a day later.
+    const late = state(FETCHED_AT + 24 * 60 * 60_000);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: late });
+
+    const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    expect(events.filter((e) => e.kind === "fissure")).toHaveLength(0);
+    for (const event of events) {
+      if (event.expiresAt !== undefined) expect(event.expiresAt).toBeGreaterThan(late.fetchedAt);
+    }
+  });
+
+  test("the first ingest after a deploy records history without texting anybody", async () => {
+    const t = convexTest(schema, modules);
+    const cold = await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
+    expect(cold).toBeGreaterThan(0);
+    // A cold start is the whole world at once, it is history, not news.
+    const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    expect(events.length).toBe(cold);
+    expect(await t.run(async (ctx) => (await ctx.db.system.query("_scheduled_functions").collect()).length)).toBe(0);
+
+    const next = state(FETCHED_AT + 60_000);
+    next.fissures.push({ ...next.fissures[0], key: "fresh-fissure" });
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: next });
+    expect(
+      await t.run(async (ctx) => (await ctx.db.system.query("_scheduled_functions").collect()).length),
+    ).toBe(1);
+  });
+});
+
+describe("worldstate.get", () => {
+  test("answers the same thing whatever the clock says", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
+
+    const now = await t.query(api.worldstate.get, { platform: "pc" });
+    vi.spyOn(Date, "now").mockReturnValue(FETCHED_AT + 30 * 24 * 60 * 60_000);
+    const muchLater = await t.query(api.worldstate.get, { platform: "pc" });
+    vi.restoreAllMocks();
+    expect(muchLater).toEqual(now);
+    expect(now!.fissures.length).toBeGreaterThan(0);
+  });
+
+  test("hands the panels fissures in relic order", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
+
+    const tiers = (await t.query(api.worldstate.get, { platform: "pc" }))!.fissures.map((f) => f.tier);
+    const order = ["Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"];
+    const ranks = tiers.map((tier) => order.indexOf(tier));
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b));
+  });
+
+  test("prune drops what expired so the stored snapshot does not grow stale", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
+    expect((await t.query(api.worldstate.get, { platform: "pc" }))!.fissures.length).toBeGreaterThan(0);
+
+    await t.mutation(internal.ingest.prune.prune, {
+      platform: "pc",
+      now: FETCHED_AT + 24 * 60 * 60_000,
+    });
+    expect((await t.query(api.worldstate.get, { platform: "pc" }))!.fissures).toHaveLength(0);
   });
 });

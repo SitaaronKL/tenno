@@ -1,5 +1,5 @@
 import { convexTest } from "convex-test";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import de from "./__fixtures__/de.json";
 import warframestat from "./__fixtures__/pc.json";
 import schema from "../schema";
@@ -32,7 +32,15 @@ async function storedSource(t: ReturnType<typeof convexTest>) {
   return row!.data;
 }
 
-afterEach(() => vi.unstubAllGlobals());
+// The fixtures are a snapshot of 2026-08-30, prune drops them against a real clock.
+const INSIDE_FIXTURE_WINDOW = Date.parse("2026-08-30T01:17:00.000Z");
+
+beforeEach(() => vi.setSystemTime(INSIDE_FIXTURE_WINDOW));
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 describe("pull", () => {
   test("takes the world state straight from DE", async () => {
