@@ -12,7 +12,8 @@ crons.hourly("digest", { minuteUTC: 0 }, internal.notify.digest, {});
 // The daily and weekly resets are a clock, not a feed, so they are generated here.
 crons.hourly("resets", { minuteUTC: 0 }, internal.resets.tick, {});
 
-// worldEvents and photonInbound are append only, this is what keeps them bounded.
+// worldEvents and photonInbound are append only and check offs outlive their rotation,
+// this is what keeps all three bounded.
 crons.weekly("retention", { dayOfWeek: "sunday", hourUTC: 4, minuteUTC: 0 }, internal.retention.sweep, {});
 
 export default crons;

@@ -259,6 +259,17 @@ export default defineSchema({
     .index("by_user_status_mode", ["userId", "status", "mode"])
     .index("by_email", ["emailId"]),
 
+  // One row per task a user ticked off. The key is stable per rotation, so a new sortie starts clean.
+  completions: defineTable({
+    userId: v.id("users"),
+    key: v.string(),
+    expiresAt: v.number(),
+    doneAt: v.number(),
+  })
+    .index("by_user_key", ["userId", "key"])
+    // Retention sweeps by expiry, so a finished rotation's rows leave without a scan.
+    .index("by_expires", ["expiresAt"]),
+
   // round2-mastery block, added by the mastery slice. Keep it last.
   items: defineTable({
     uniqueName: v.string(),

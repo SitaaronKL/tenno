@@ -11,7 +11,7 @@ const PAGE = 200;
 
 export const sweep = internalMutation({
   args: { now: v.optional(v.number()) },
-  returns: v.object({ events: v.number(), inbound: v.number() }),
+  returns: v.object({ events: v.number(), inbound: v.number(), completions: v.number() }),
   handler: async (ctx, args) => {
     const now = args.now ?? Date.now();
 
@@ -27,6 +27,13 @@ export const sweep = internalMutation({
       .take(PAGE);
     for (const row of inbound) await ctx.db.delete(row._id);
 
-    return { events: events.length, inbound: inbound.length };
+    // A check off only means something while its rotation runs, past that it is dead weight.
+    const completions = await ctx.db
+      .query("completions")
+      .withIndex("by_expires", (q) => q.lt("expiresAt", now))
+      .take(PAGE);
+    for (const row of completions) await ctx.db.delete(row._id);
+
+    return { events: events.length, inbound: inbound.length, completions: completions.length };
   },
 });
