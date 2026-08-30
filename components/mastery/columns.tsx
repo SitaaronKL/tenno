@@ -2,10 +2,10 @@
 
 import { createColumnHelper } from "@tanstack/react-table";
 import { CheckIcon } from "@/components/icons/check";
-import type { MasteryTableFeatures } from "./data-table-features";
+import type { DataTableFeatures } from "@/components/ui/data-table";
 import { KIND_LABELS, type MasteryRow } from "./types";
 
-const helper = createColumnHelper<MasteryTableFeatures, MasteryRow>();
+const helper = createColumnHelper<DataTableFeatures, MasteryRow>();
 
 export const masteryColumns = helper.columns([
   helper.accessor("name", {

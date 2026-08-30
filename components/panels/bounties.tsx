@@ -1,6 +1,6 @@
 "use client";
 
-import type { WorldState } from "@/lib/contracts/worldstate";
+import type { Bounty, BountyJob, WorldState } from "@/lib/contracts/worldstate";
 import { WorkflowIcon } from "@/components/icons/workflow";
 import {
   Accordion,
@@ -10,28 +10,12 @@ import {
 } from "@/components/ui/accordion";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
-import { TruncatedCell } from "./data-table";
+import { TruncatedCell } from "@/components/ui/data-table";
 import { useNow } from "./use-now";
 
-export type BountyJob = {
-  level: string;
-  minLevel: number;
-  maxLevel: number;
-  rewards: string[];
-  standing: number;
-};
-
-export type Bounty = {
-  syndicate: string;
-  node: string;
-  expiresAt: number;
-  jobs: BountyJob[];
-};
-
-// The data slice adds bounties to WorldState, so read it as optional until that lands.
+// The data slice writes bounties into world state, so the panel reads the contract type.
 export function bountiesOf(state: WorldState): Bounty[] {
-  const value = (state as WorldState & { bounties?: Bounty[] }).bounties;
-  return Array.isArray(value) ? value : [];
+  return state.bounties ?? [];
 }
 
 export function levelRange(job: BountyJob): string {

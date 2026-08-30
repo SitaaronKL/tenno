@@ -11,7 +11,7 @@ import {
 import { Chip } from "./tier-badge";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
-import { TruncatedCell } from "./data-table";
+import { TruncatedCell } from "@/components/ui/data-table";
 import { useNow } from "./use-now";
 
 export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {

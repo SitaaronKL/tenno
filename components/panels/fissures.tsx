@@ -14,7 +14,7 @@ import {
   TruncatedCell,
 
   type DataTableFeatures,
-} from "./data-table";
+} from "@/components/ui/data-table";
 
 // Lith, Meso, Neo, Axi, Requiem, Omnia first, then soonest to expire inside a tier.
 export function sortFissures(fissures: Fissure[]): Fissure[] {
@@ -92,6 +92,7 @@ export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
   return (
     <Panel title="Fissures" icon={AtomIcon} count={rows.length} className={CLASS}>
       <DataTable
+        dense
         label="Void fissures"
         columns={columns}
         data={rows}

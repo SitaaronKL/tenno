@@ -4,7 +4,7 @@ import { createColumnHelper } from "@tanstack/react-table";
 import type { Invasion, Reward } from "@/lib/contracts/worldstate";
 import { TornadoIcon } from "@/components/icons/tornado";
 import { Empty, Panel } from "./panel";
-import { DataTable, SortableHeader, TruncatedCell, type DataTableFeatures } from "./data-table";
+import { DataTable, SortableHeader, TruncatedCell, type DataTableFeatures } from "@/components/ui/data-table";
 
 export function rewardText(r: Reward | null): string {
   if (!r) return "No reward";
@@ -85,6 +85,7 @@ export function InvasionsPanel({ invasions }: { invasions: Invasion[] }) {
       className="md:col-span-2 lg:col-span-3"
     >
       <DataTable
+        dense
         label="Invasions"
         columns={columns}
         data={invasions}

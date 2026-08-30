@@ -6,7 +6,7 @@ import { BellIcon } from "@/components/icons/bell";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
-import { DataTable, SortableHeader, TruncatedCell, type DataTableFeatures } from "./data-table";
+import { DataTable, SortableHeader, TruncatedCell, type DataTableFeatures } from "@/components/ui/data-table";
 
 export function alertRewards(a: Alert): string {
   const text = a.rewards.map((r) => r.item || `${r.credits.toLocaleString()} cr`).join(", ");
@@ -69,6 +69,7 @@ export function AlertsPanel({ alerts }: { alerts: Alert[] }) {
       className="md:col-span-2 lg:col-span-3"
     >
       <DataTable
+        dense
         label="Alerts"
         columns={columns}
         data={rows}

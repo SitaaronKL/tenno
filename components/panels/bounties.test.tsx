@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import { BountiesPanel, type Bounty } from "./bounties";
+import type { Bounty } from "@/lib/contracts/worldstate";
+import { BountiesPanel } from "./bounties";
 
 const now = Date.now();
 

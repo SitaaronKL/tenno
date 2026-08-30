@@ -10,7 +10,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Segmented } from "@/components/segmented";
-import { MasteryDataTable } from "./data-table";
+import { DataTable } from "@/components/ui/data-table";
+import { masteryColumns } from "./columns";
 import { KIND_LABELS, isPrime, type MasteryKind, type MasteryRow } from "./types";
 
 type PrimeFilter = "any" | "only" | "hide";
@@ -78,7 +79,15 @@ export function MasteryTable({ rows }: { rows: MasteryRow[] }) {
           onChange={setMastered}
         />
       </div>
-      <MasteryDataTable rows={filtered} search={search} />
+      <DataTable
+        label="Mastery items"
+        columns={masteryColumns}
+        data={filtered}
+        columnFilters={[{ id: "name", value: search }]}
+        pageSize={25}
+        bordered
+        countLabel="items"
+      />
     </div>
   );
 }

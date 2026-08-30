@@ -5,7 +5,7 @@ import { TimerIcon } from "@/components/icons/timer";
 import { Empty, Panel } from "./panel";
 import { countdown, spoken } from "./format";
 import { Countdown } from "./countdown";
-import { TruncatedCell } from "./data-table";
+import { TruncatedCell } from "@/components/ui/data-table";
 import { useNow } from "./use-now";
 
 const CLASS = "md:col-span-1 lg:col-span-2";
