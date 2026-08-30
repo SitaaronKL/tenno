@@ -14,7 +14,7 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
 ```
                  api.warframestat.us  (fallback: api.warframe.com/cdn/worldState.php)
                             |
-                  cron: ingest every 5 min, digest hourly                 
+                  cron: ingest every 5 min, digest hourly, retention weekly
                             v
   +------------------------------------------------------------------------------------------------------------------------+
   |  Convex  components: resend, agent, rateLimiter, workflow                                                              |
