@@ -52,7 +52,7 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton
               tooltip="Voidwatch"
-              render={<Link href="/dashboard" />}
+              render={<Link href="/" />}
               className="h-12 group-data-[collapsible=icon]:h-8"
             >
               <Logo className="size-6 group-data-[collapsible=icon]:size-4" />
