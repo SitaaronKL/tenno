@@ -2,9 +2,7 @@
 
 import { createColumnHelper } from "@tanstack/react-table";
 import type { Invasion, Reward } from "@/lib/contracts/worldstate";
-import { TornadoIcon } from "@/components/icons/tornado";
-import { Empty, Panel } from "./panel";
-import { DataTable, SortableHeader, TruncatedCell, type DataTableFeatures } from "@/components/ui/data-table";
+import { SortableHeader, TruncatedCell, type DataTableFeatures } from "@/components/ui/data-table";
 
 export function rewardText(r: Reward | null): string {
   if (!r) return "No reward";
@@ -12,88 +10,29 @@ export function rewardText(r: Reward | null): string {
   return `${r.credits.toLocaleString()} credits`;
 }
 
-// Upstream counts from minus Goal to plus Goal, so this is the attacking side's share of the
-// fight, not a task that runs to done. Under 50 means the defenders are ahead.
-function Progress({ value }: { value: number }) {
-  const pct = Math.min(100, Math.max(0, value));
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        role="progressbar"
-        aria-valuenow={Math.round(pct)}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        className="h-1 w-full overflow-hidden rounded-full bg-surface-2"
-      >
-        <div className="h-full bg-foreground" style={{ width: `${pct}%` }} />
-      </div>
-      <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
-        {pct.toFixed(0)}%
-      </span>
-    </div>
-  );
+
+// Rewards are the only thing people read off an invasion. A side without a reward is the
+// Infested side of a one sided fight, so the row says who you fight instead.
+export function invasionRewards(i: Invasion): string {
+  const a = i.attacker.reward ? rewardText(i.attacker.reward) : null;
+  const d = i.defender.reward ? rewardText(i.defender.reward) : null;
+  if (a && d) return `${a} / ${d}`;
+  return `${a ?? d ?? "No reward"} · vs ${a ? i.defender.faction : i.attacker.faction}`;
 }
 
 const helper = createColumnHelper<DataTableFeatures, Invasion>();
-
-const columns = helper.columns([
+export const invasionColumns = helper.columns([
   helper.accessor("node", {
     id: "node",
     header: ({ column }) => <SortableHeader column={column}>Node</SortableHeader>,
     cell: ({ row }) => <TruncatedCell text={row.original.node} className="font-medium" />,
   }),
-  helper.accessor("description", {
-    id: "description",
-    header: ({ column }) => <SortableHeader column={column}>Fight</SortableHeader>,
+  helper.accessor((i) => invasionRewards(i), {
+    id: "rewards",
+    header: ({ column }) => <SortableHeader column={column}>Rewards</SortableHeader>,
     cell: ({ row }) => (
-      <TruncatedCell text={row.original.description} className="text-muted-foreground" />
+      <TruncatedCell text={invasionRewards(row.original)} className="text-muted-foreground" />
     ),
-  }),
-  helper.accessor((i) => rewardText(i.attacker.reward), {
-    id: "attacker",
-    header: ({ column }) => <SortableHeader column={column}>Attacker</SortableHeader>,
-    cell: ({ row }) => (
-      <TruncatedCell
-        text={`${row.original.attacker.faction}: ${rewardText(row.original.attacker.reward)}`}
-        className="text-muted-foreground"
-      />
-    ),
-  }),
-  helper.accessor((i) => rewardText(i.defender.reward), {
-    id: "defender",
-    header: ({ column }) => <SortableHeader column={column}>Defender</SortableHeader>,
-    cell: ({ row }) => (
-      <TruncatedCell
-        text={`${row.original.defender.faction}: ${rewardText(row.original.defender.reward)}`}
-        className="text-muted-foreground"
-      />
-    ),
-  }),
-  helper.accessor("completion", {
-    id: "completion",
-    header: ({ column }) => <SortableHeader column={column}>Attacker share</SortableHeader>,
-    cell: ({ row }) => <Progress value={row.original.completion} />,
   }),
 ]);
-
-const WIDTHS = { node: "w-32", completion: "w-32" };
-
-export function InvasionsPanel({ invasions }: { invasions: Invasion[] }) {
-  return (
-    <Panel
-      title="Invasions"
-      icon={TornadoIcon}
-      count={invasions.length}
-      className="md:col-span-2 lg:col-span-3"
-    >
-      <DataTable
-        dense
-        label="Invasions"
-        columns={columns}
-        data={invasions}
-        widths={WIDTHS}
-        empty={<Empty>No invasions running.</Empty>}
-      />
-    </Panel>
-  );
-}
+export const invasionWidths = { node: "w-40" };

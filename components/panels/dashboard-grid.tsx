@@ -9,8 +9,7 @@ import { FissuresPanel } from "./fissures";
 import { MissionSetPanel } from "./missions";
 import { BaroPanel } from "./baro";
 import { NightwavePanel } from "./nightwave";
-import { InvasionsPanel } from "./invasions";
-import { AlertsPanel } from "./alerts";
+import { EventsPanel } from "./events";
 import { BountiesPanel, bountiesOf } from "./bounties";
 
 // Bento: six columns on desktop, and each card claims the width its content needs.
@@ -76,8 +75,7 @@ export function Panels({ state }: { state: WorldState }) {
       <div className={GRID}>
         <FissuresPanel fissures={state.fissures} />
         <BountiesPanel bounties={bountiesOf(state)} />
-        <InvasionsPanel invasions={state.invasions} />
-        <AlertsPanel alerts={state.alerts} />
+        <EventsPanel invasions={state.invasions} alerts={state.alerts} />
         <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
         <BaroPanel baro={state.baro} />
         <NightwavePanel nightwave={state.nightwave} />
