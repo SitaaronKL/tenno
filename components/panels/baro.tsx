@@ -8,7 +8,7 @@ import { Countdown } from "./countdown";
 import { TruncatedCell } from "@/components/ui/data-table";
 import { useNow } from "./use-now";
 
-const CLASS = "md:col-span-1 lg:col-span-2";
+const CLASS = "md:col-span-2 lg:col-span-3";
 
 export function BaroPanel({ baro }: { baro: Baro | null }) {
   const now = useNow();

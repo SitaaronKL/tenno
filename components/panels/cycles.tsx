@@ -59,6 +59,30 @@ function Tile({
   );
 }
 
+// Each world's phases in order with their length in minutes. DE only reports the phase it is in,
+// so between pulls the tile walks the cycle forward itself instead of saying expired.
+const PHASES: Record<Cycle["world"], [string, number][]> = {
+  cetus: [["day", 100], ["night", 50]],
+  cambion: [["fass", 100], ["vome", 50]],
+  vallis: [["warm", 400 / 60], ["cold", 1200 / 60]],
+  earth: [["day", 240], ["night", 240]],
+  duviri: [["joy", 120], ["anger", 120], ["envy", 120], ["sorrow", 120], ["fear", 120]],
+  zariman: [["corpus", 150], ["grineer", 150]],
+};
+
+export function rollCycle(cycle: Cycle, now: number): Cycle {
+  if (cycle.expiresAt > now) return cycle;
+  const phases = PHASES[cycle.world];
+  let index = Math.max(0, phases.findIndex(([state]) => state === cycle.state.toLowerCase()));
+  let expiresAt = cycle.expiresAt;
+  // Bounded walk, a snapshot is never more than a few phases old.
+  for (let step = 0; step < 64 && expiresAt <= now; step += 1) {
+    index = (index + 1) % phases.length;
+    expiresAt += phases[index][1] * 60_000;
+  }
+  return { ...cycle, state: phases[index][0], expiresAt };
+}
+
 // Daily reset is 00:00 UTC, weekly is Monday 00:00 UTC, both are fixed by the game.
 export function nextDailyReset(now: number): number {
   const d = new Date(now);
@@ -83,7 +107,8 @@ export function CycleTiles({
   const order = Object.keys(WORLDS) as Cycle["world"][];
   const rows = order
     .map((w) => cycles.find((c) => c.world === w))
-    .filter((c): c is Cycle => Boolean(c));
+    .filter((c): c is Cycle => Boolean(c))
+    .map((c) => rollCycle(c, now));
 
   if (rows.length === 0 && !arbitration) return null;
 

@@ -133,4 +133,4 @@ export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
   );
 }
 
-const CLASS = "md:col-span-2 lg:col-span-4";
+const CLASS = "md:col-span-2 lg:col-span-6";

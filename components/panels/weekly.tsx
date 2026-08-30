@@ -9,7 +9,7 @@ import { nextWeeklyReset } from "./cycles";
 import { Panel } from "./panel";
 import { useNow } from "./use-now";
 
-const CLASS = "md:col-span-1 lg:col-span-2";
+const CLASS = "md:col-span-2 lg:col-span-3";
 
 function Lines({ label, value }: { label: string; value: string }) {
   return (

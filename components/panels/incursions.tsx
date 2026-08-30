@@ -7,7 +7,7 @@ import { nextDailyReset } from "./cycles";
 import { Empty, Panel } from "./panel";
 import { useNow } from "./use-now";
 
-const CLASS = "md:col-span-1 lg:col-span-2";
+const CLASS = "md:col-span-2 lg:col-span-3";
 
 // Six Steel Path nodes a day, from the schedule browse.wf publishes. The file lists nodes only,
 // so there is no mission type to print beside them.

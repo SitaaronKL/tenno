@@ -53,8 +53,8 @@ export function DashboardGrid() {
           ))}
         </div>
         <div className={GRID}>
-          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-4" />
-          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-2" />
+          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-6" />
+          <Skeleton className="h-72 w-full rounded-xl md:col-span-2 lg:col-span-3" />
           <Skeleton className="h-56 w-full rounded-xl md:col-span-2 lg:col-span-3" />
           <Skeleton className="h-56 w-full rounded-xl md:col-span-2 lg:col-span-3" />
         </div>
