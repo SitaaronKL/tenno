@@ -37,6 +37,7 @@ import type * as photon from "../photon.js";
 import type * as photonHttp from "../photonHttp.js";
 import type * as profileSync from "../profileSync.js";
 import type * as profiles from "../profiles.js";
+import type * as resendHttp from "../resendHttp.js";
 import type * as rules from "../rules.js";
 import type * as wiki from "../wiki.js";
 import type * as worldstate from "../worldstate.js";
@@ -77,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   photonHttp: typeof photonHttp;
   profileSync: typeof profileSync;
   profiles: typeof profiles;
+  resendHttp: typeof resendHttp;
   rules: typeof rules;
   wiki: typeof wiki;
   worldstate: typeof worldstate;

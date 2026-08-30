@@ -4,15 +4,22 @@ import { Resend } from "@convex-dev/resend";
 import { createElement } from "react";
 import { render } from "@react-email/components";
 import { v } from "convex/values";
-import { components } from "./_generated/api";
+import { components, internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
 import { Digest } from "./emails/Digest";
 import { MagicLink } from "./emails/MagicLink";
 import { RuleMatch } from "./emails/RuleMatch";
 
+// An empty string is not a key either, and === undefined would call it configured.
+export function emailConfigured(): boolean {
+  return (process.env.RESEND_API_KEY ?? "").trim() !== "";
+}
+
 // Test mode only delivers to resend.dev addresses, so real sending needs the key.
 export const resend: Resend = new Resend(components.resend, {
-  testMode: process.env.RESEND_API_KEY === undefined,
+  testMode: !emailConfigured(),
+  // Resend tells us what actually happened to the mail, notify moves the row off "queued".
+  onEmailEvent: internal.notify.onEmailEvent,
 });
 
 export const FROM = `Voidwatch <alerts@${process.env.EMAIL_DOMAIN ?? "resend.dev"}>`;
@@ -46,10 +53,19 @@ export const vReact = v.union(
   v.object({ template: v.literal("MagicLink"), props: magicLinkProps }),
 );
 
+export class EmailNotConfigured extends Error {
+  constructor() {
+    super("email not configured");
+  }
+}
+
 export const sendEmail = internalAction({
   args: { to: v.string(), subject: v.string(), react: vReact },
   returns: v.string(),
   handler: async (ctx, { to, subject, react }) => {
+    // Without a key the component runs in test mode and rejects every real address after three
+    // retries. Say so once, immediately, instead of burning the schedule.
+    if (!emailConfigured()) throw new EmailNotConfigured();
     // createElement keeps this file .ts as the contract names it.
     const element =
       react.template === "RuleMatch"

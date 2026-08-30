@@ -203,18 +203,23 @@ export default defineSchema({
     nextAttemptAt: v.optional(v.number()),
     status: v.union(
       v.literal("pending"),
+      // Resend accepted it, delivery is not confirmed until its webhook says so.
+      v.literal("queued"),
       v.literal("sent"),
       v.literal("failed"),
       v.literal("skipped"),
     ),
     error: v.optional(v.string()),
+    // The Resend component's id for the mail, so its delivery event finds this row.
+    emailId: v.optional(v.string()),
     createdAt: v.number(),
     sentAt: v.optional(v.number()),
   })
     .index("by_rule_event", ["ruleId", "eventId"])
     .index("by_user_status", ["userId", "status"])
     // Digest eligibility is a seek, not a scan past everything queued for instant delivery.
-    .index("by_user_status_mode", ["userId", "status", "mode"]),
+    .index("by_user_status_mode", ["userId", "status", "mode"])
+    .index("by_email", ["emailId"]),
 
   // round2-mastery block, added by the mastery slice. Keep it last.
   items: defineTable({

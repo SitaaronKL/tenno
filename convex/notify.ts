@@ -1,3 +1,4 @@
+import { vOnEmailEventArgs } from "@convex-dev/resend";
 import { v } from "convex/values";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import type { ActionCtx } from "./_generated/server";
@@ -290,19 +291,55 @@ export const retryDigestLater = internalMutation({
 export const mark = internalMutation({
   args: {
     notificationIds: v.array(v.id("notifications")),
-    status: v.union(v.literal("sent"), v.literal("failed"), v.literal("skipped")),
+    status: v.union(
+      v.literal("queued"),
+      v.literal("sent"),
+      v.literal("failed"),
+      v.literal("skipped"),
+    ),
     error: v.optional(v.string()),
     attempts: v.optional(v.number()),
+    emailId: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, { notificationIds, status, error, attempts }) => {
+  handler: async (ctx, { notificationIds, status, error, attempts, emailId }) => {
     for (const id of notificationIds) {
       await ctx.db.patch("notifications", id, {
         status,
         error,
         attempts,
+        emailId,
         nextAttemptAt: undefined,
         sentAt: status === "sent" ? Date.now() : undefined,
+      });
+    }
+    return null;
+  },
+});
+
+// Resend says what became of the mail. Until it does, the row reads queued, not sent.
+export const onEmailEvent = internalMutation({
+  args: vOnEmailEventArgs,
+  returns: v.null(),
+  handler: async (ctx, { id, event }) => {
+    const type = event.type;
+    const status =
+      type === "email.delivered"
+        ? ("sent" as const)
+        : type === "email.bounced" || type === "email.failed" || type === "email.complained"
+          ? ("failed" as const)
+          : null;
+    if (!status) return null;
+
+    const rows = await ctx.db
+      .query("notifications")
+      .withIndex("by_email", (q) => q.eq("emailId", id as unknown as string))
+      .collect();
+    for (const row of rows) {
+      await ctx.db.patch(row._id, {
+        status,
+        sentAt: status === "sent" ? Date.now() : undefined,
+        error: status === "failed" ? type : undefined,
       });
     }
     return null;
@@ -323,23 +360,31 @@ function undeliverable(delivery: Delivery): string | null {
   return null;
 }
 
+// The email id when the mail went to Resend, null for iMessage which is sent and done.
 async function dispatch(
   ctx: ActionCtx,
   delivery: Delivery,
   subject: string,
   body: string,
   react: EmailBody,
-): Promise<void> {
+): Promise<string | null> {
   if (delivery.channel === "email") {
     // A React element cannot cross a Convex function boundary, so the caller names the template.
-    await ctx.runAction(internal.email.sendEmail, { to: delivery.email, subject, react });
-    return;
+    return await ctx.runAction(internal.email.sendEmail, { to: delivery.email, subject, react });
   }
   await ctx.runAction(internal.photon.sendText, {
     photonUserId: delivery.photonUserId ?? undefined,
     phone: delivery.phone ?? undefined,
     text: body,
   });
+  return null;
+}
+
+// Email is not configured, so the row is settled now rather than retried into a wall.
+const NOT_CONFIGURED = "email not configured";
+
+function notConfigured(e: unknown): boolean {
+  return e instanceof Error && e.message === NOT_CONFIGURED;
 }
 
 export const send = internalAction({
@@ -360,26 +405,36 @@ export const send = internalAction({
     try {
       const ends = delivery.expiresAtText ? `Ends ${delivery.expiresAtText}` : undefined;
       const body = ends ? `${delivery.line}\n${ends}` : delivery.line;
-      await dispatch(ctx, delivery, `Voidwatch: ${delivery.ruleName}`, body, {
+      // The expiry is on its own line already, the template must not print it twice.
+      const emailId = await dispatch(ctx, delivery, `Voidwatch: ${delivery.ruleName}`, body, {
         template: "RuleMatch",
         props: {
           ruleName: delivery.ruleName,
           kind: delivery.kind,
           title: delivery.line,
-          detail: ends,
           expiresAt: delivery.expiresAtText,
           url: siteUrl(),
         },
       });
       await ctx.runMutation(internal.notify.mark, {
         notificationIds: [notificationId],
-        status: "sent",
+        // Email is queued until Resend reports delivery, iMessage is sent the moment it goes.
+        status: emailId ? "queued" : "sent",
         attempts: delivery.attempts + 1,
+        emailId: emailId ?? undefined,
       });
     } catch (e) {
       const attempts = delivery.attempts + 1;
       const error = e instanceof Error ? e.message : String(e);
-      if (attempts < MAX_ATTEMPTS) {
+      if (notConfigured(e)) {
+        // No key, no amount of retrying will help, and the user should see why.
+        await ctx.runMutation(internal.notify.mark, {
+          notificationIds: [notificationId],
+          status: "skipped",
+          error: NOT_CONFIGURED,
+          attempts,
+        });
+      } else if (attempts < MAX_ATTEMPTS) {
         await ctx.runMutation(internal.notify.retryLater, { notificationId, attempts, error });
       } else {
         await ctx.runMutation(internal.notify.mark, {
@@ -436,7 +491,7 @@ export const digest = internalAction({
             .map((d) => (d.expiresAtText ? `${d.line} (ends ${d.expiresAtText})` : d.line))
             .join("\n");
           try {
-            await dispatch(ctx, group[0], `Voidwatch digest: ${group.length} matches`, body, {
+            const emailId = await dispatch(ctx, group[0], `Voidwatch digest: ${group.length} matches`, body, {
               template: "Digest",
               props: {
                 items: group.map((d) => ({
@@ -449,14 +504,22 @@ export const digest = internalAction({
             });
             await ctx.runMutation(internal.notify.mark, {
               notificationIds: ids,
-              status: "sent",
+              status: emailId ? "queued" : "sent",
               attempts: (group[0].attempts ?? 0) + 1,
+              emailId: emailId ?? undefined,
             });
           } catch (e) {
             // A provider blip must not lose the whole digest, the same three tries as an instant send.
             const attempts = (group[0].attempts ?? 0) + 1;
             const error = e instanceof Error ? e.message : String(e);
-            if (attempts < MAX_ATTEMPTS) {
+            if (notConfigured(e)) {
+              await ctx.runMutation(internal.notify.mark, {
+                notificationIds: ids,
+                status: "skipped",
+                error: NOT_CONFIGURED,
+                attempts,
+              });
+            } else if (attempts < MAX_ATTEMPTS) {
               await ctx.runMutation(internal.notify.retryDigestLater, {
                 userId,
                 ids,

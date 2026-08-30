@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { ConvexError } from "convex/values";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,9 +18,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogoMark } from "@/components/shell/logo-mark";
 
-// A sign in route only appears where the deployment has its keys.
-const on = (value: string | undefined) => value === "true";
-
 type Flow = "signIn" | "signUp";
 
 // Convex Auth hides the reason for a refused password, so the copy has to cover both halves.
@@ -31,10 +30,12 @@ function messageFor(error: unknown, flow: Flow) {
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
-  const discord = on(process.env.NEXT_PUBLIC_AUTH_DISCORD);
-  const magicLink = on(process.env.NEXT_PUBLIC_AUTH_RESEND);
-  const password = on(process.env.NEXT_PUBLIC_AUTH_PASSWORD);
-  const guest = on(process.env.NEXT_PUBLIC_ALLOW_GUEST);
+  // One source of truth: the server registers a provider only where its secret exists, and says so.
+  const enabled = useQuery(api.auth.providers, {});
+  const discord = enabled?.discord ?? false;
+  const magicLink = enabled?.magicLink ?? false;
+  const password = enabled?.password ?? false;
+  const guest = enabled?.guest ?? false;
   const [email, setEmail] = useState("");
   const [secret, setSecret] = useState("");
   const [flow, setFlow] = useState<Flow>("signIn");
