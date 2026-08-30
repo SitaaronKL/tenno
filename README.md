@@ -51,7 +51,9 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
      npx convex dev                         creates a dev deployment, writes .env.local
                                             leave this running
 
-  3. npx convex env set OPENAI_API_KEY sk-...        OpenAI (agent, rule builder)
+  3. npx @convex-dev/auth                  generates JWT_PRIVATE_KEY and JWKS on the deployment,
+                                            sign in fails without them
+     npx convex env set OPENAI_API_KEY sk-...        OpenAI (agent, rule builder)
      npx convex env set AUTH_ALLOW_GUEST true        guest sign in, dev only
      echo NEXT_PUBLIC_ALLOW_GUEST=true >> .env.local
 
