@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import raw from "./__fixtures__/pc.json";
 import { normalize } from "./normalize";
+import { currentArbitration } from "./schedules";
 
 // Fixture was captured live from api.warframestat.us/pc on 2026-08-29.
 const FETCHED_AT = Date.parse("2026-08-30T01:17:00.000Z");
@@ -89,9 +90,9 @@ describe("normalize", () => {
     for (const cycle of state.cycles) expect(cycle.expiresAt).toBeGreaterThan(0);
   });
 
-  test("hides arbitration, which upstream serves as a broken placeholder", () => {
+  test("takes arbitration from our own schedule, never upstream's broken placeholder", () => {
     expect(JSON.stringify(state)).not.toContain("SolNode000");
-    expect(Object.keys(state)).not.toContain("arbitration");
+    expect(state.arbitration).toEqual(currentArbitration(FETCHED_AT));
   });
 
   test("builds the same bounty boards the DE reader builds", () => {

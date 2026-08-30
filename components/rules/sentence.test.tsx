@@ -84,3 +84,17 @@ describe("rule sentence", () => {
     ).toBe("Any Archimedea");
   });
 });
+
+describe("arbitration sentences", () => {
+  it("reads as the mission types the player wants", () => {
+    expect(
+      ruleSentence({ kind: "arbitration", missionTypes: ["Defense", "Interception"], tiers: null }),
+    ).toBe("Arbitration is Defense or Interception");
+  });
+
+  it("adds the node tier when the rule asks for one", () => {
+    expect(ruleSentence({ kind: "arbitration", missionTypes: null, tiers: ["S", "A"] })).toBe(
+      "Any arbitration, tier S or A",
+    );
+  });
+});

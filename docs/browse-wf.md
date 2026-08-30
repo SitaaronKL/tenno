@@ -62,7 +62,7 @@ Notifications are browser toasts driven from the same refresh loop (new alert, n
 
 Steel Path Incursions: not derived from DE's feed. They ship `sp-incursions.txt`, a precomputed day by node schedule (six nodes per UTC day, covering 2025-01-13 to 2028-09) that someone recorded or reverse engineered from the game's seeded rotation. The page takes `floor(now / 86400)` and looks up the row. Missions are Steel Path so levels are node level plus 100. We could mirror the file (100 KB) and do the same lookup.
 
-Teshin's weekly Steel Path Honors item: a hard coded 8 entry cycle in `live.js` (Umbra Forma Blueprint, 50,000 Kuva, Kitgun Riven, 3 Forma, Zaw Riven, 30,000 Endo, Rifle Riven, Shotgun Riven), `week = floor((now - 2025-01-06) / 7d)`, item `week % 8`. No API involved.
+Teshin's weekly Steel Path Honors item: a hard coded 8 entry cycle in `live.js` (Umbra Forma Blueprint, 50,000 Kuva, Kitgun Riven, 3 Forma, Zaw Riven, 30,000 Endo, Rifle Riven, Shotgun Riven), `week = floor((now - 2025-01-06) / 7d)`, item `week % 8`. No API involved. Verified against `wiki.warframe.com/w/The_Steel_Path`, section Weekly Rotating Offer: same eight items in the same order, and the wiki's epoch of 2020-11-16 is 216 weeks before 2025-01-06, a whole number of 8 week loops, so the two agree. `lib/teshin.ts` is that function.
 
 Palladino (Iron Wake): nothing but a per week completion checkbox. They do not show her stock.
 
@@ -96,4 +96,4 @@ We show and they do not: Nightwave, invasion completion percentage, Cetus, Fortu
 
 - Their oracle caps at 10 s on the world state and returns 34 KB instead of DE's 135 KB, and it is public with CORS. It is a viable second fallback after DE, but it is one person's server, so treat it like semlar's kuvalog: optional, never the only source.
 - `min` is a good pattern for us: a tiny change token so clients skip the big fetch. Convex subscriptions already give us this, so no need to copy it.
-- The static schedule files are the real value: incursions and arbitrations are otherwise only available from Cloudflare gated or scraped sources (see `docs/de-endpoints.md` section 8).
+- The static schedule files are the real value: incursions and arbitrations are otherwise only available from Cloudflare gated or scraped sources (see `docs/de-endpoints.md` section 8). We now mirror all three, trimmed, through `scripts/refresh-schedules.mjs`, with the credit they ask for in `docs/de-endpoints.md` section 5b.

@@ -98,6 +98,12 @@ export function matches(filter: RuleFilter, event: MatchEvent): boolean {
       }
       return true;
     }
+    case "arbitration": {
+      if (!oneOf(filter.missionTypes, str(p.missionType))) return false;
+      // An unrated node carries no tier, so it can never satisfy a tier filter.
+      if (some(filter.tiers) !== null && str(p.tier) === "") return false;
+      return oneOf(filter.tiers, str(p.tier));
+    }
     case "reset":
       return str(p.period) === filter.period;
   }

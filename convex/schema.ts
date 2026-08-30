@@ -149,6 +149,29 @@ const cycle = v.object({
   expiresAt: v.number(),
 });
 
+const arbitration = v.object({
+  node: v.string(),
+  missionType: v.string(),
+  faction: v.string(),
+  tier: v.string(),
+  expiresAt: v.number(),
+});
+
+const circuit = v.object({
+  normal: v.array(v.string()),
+  steelPath: v.array(v.string()),
+  expiresAt: v.number(),
+});
+
+const darvo = v.object({
+  item: v.string(),
+  discount: v.number(),
+  stock: v.number(),
+  expiresAt: v.number(),
+});
+
+const gameEvent = v.object({ key: v.string(), name: v.string(), expiresAt: v.number() });
+
 export const worldStateValidator = v.object({
   platform,
   fetchedAt: v.number(),
@@ -168,6 +191,12 @@ export const worldStateValidator = v.object({
   bounties: v.optional(v.array(bounty)),
   // Optional so world state rows written before Archimedea existed still validate.
   archimedea: v.optional(v.array(archimedea)),
+  // Optional so world state rows written before the daily and weekly extras still validate.
+  incursions: v.optional(v.array(v.string())),
+  arbitration: v.optional(v.union(arbitration, v.null())),
+  circuit: v.optional(v.union(circuit, v.null())),
+  darvo: v.optional(v.union(darvo, v.null())),
+  events: v.optional(v.array(gameEvent)),
 });
 
 export default defineSchema({

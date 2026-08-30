@@ -280,6 +280,42 @@ const cases: { name: string; filter: RuleFilter; event: { kind: string; payload:
     },
     want: false,
   },
+  {
+    name: "arbitration on a mission type the player farms",
+    filter: { kind: "arbitration", missionTypes: ["Defense", "Interception"], tiers: null },
+    event: {
+      kind: "arbitration",
+      payload: { node: "Hydron (Sedna)", missionType: "Defense", faction: "Grineer", tier: "B" },
+    },
+    want: true,
+  },
+  {
+    name: "arbitration on a mission type the player skips",
+    filter: { kind: "arbitration", missionTypes: ["Defense"], tiers: null },
+    event: {
+      kind: "arbitration",
+      payload: { node: "Cinxia (Ceres)", missionType: "Survival", faction: "Grineer", tier: "S" },
+    },
+    want: false,
+  },
+  {
+    name: "arbitration on a top tier node",
+    filter: { kind: "arbitration", missionTypes: null, tiers: ["S", "A"] },
+    event: {
+      kind: "arbitration",
+      payload: { node: "Tyana Pass (Mars)", missionType: "Defense", faction: "Grineer", tier: "S" },
+    },
+    want: true,
+  },
+  {
+    name: "arbitration on a node the Goons never rated",
+    filter: { kind: "arbitration", missionTypes: null, tiers: ["S"] },
+    event: {
+      kind: "arbitration",
+      payload: { node: "Sechura (Pluto)", missionType: "Defense", faction: "Corpus", tier: "" },
+    },
+    want: false,
+  },
 ];
 
 describe("matches", () => {

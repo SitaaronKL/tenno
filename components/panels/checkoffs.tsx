@@ -20,6 +20,9 @@ import { cn } from "@/lib/utils";
 export const sortieKey = (setKey: string, key: string, node: string) => `${setKey}:${key}:${node}`;
 export const nightwaveKey = (act: string) => `nightwave:${act}`;
 export const invasionKey = (key: string) => `invasion:${key}`;
+// The incursion set is per UTC day, the weekly chores are per weekly reset.
+export const incursionKey = (day: number, node: string) => `incursion:${day}:${node}`;
+export const weeklyKey = (task: string, reset: number) => `weekly:${task}:${reset}`;
 
 // An invasion has no end time upstream, a week past its start is well past its life.
 export const INVASION_LIFE = 7 * 24 * 60 * 60 * 1000;

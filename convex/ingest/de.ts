@@ -5,8 +5,11 @@ import type {
   ArchonHunt,
   Baro,
   Bounty,
+  Circuit,
   Cycle,
+  DarvoDeal,
   Fissure,
+  GameEvent,
   Invasion,
   Nightwave,
   Reward,
@@ -14,6 +17,8 @@ import type {
   WorldState,
 } from "../../lib/contracts/worldstate";
 import { bountyNode, job } from "./bounties";
+import { nodeEnemy, nodeMissionType, nodeName as node } from "./names";
+import { currentArbitration, todaysIncursions } from "./schedules";
 import { STALE_AFTER_MS } from "./normalize";
 import { withStaticBounties } from "./staticBounties";
 import tables from "./de-names.json";
@@ -26,7 +31,6 @@ export const DE_ENDPOINT = "https://api.warframe.com/cdn/worldState.php";
 type Raw = Record<string, unknown>;
 
 interface NameTables {
-  nodes: Record<string, { value: string; enemy: string; type: string }>;
   missionTypes: Record<string, string>;
   factions: Record<string, string>;
   sortieBosses: Record<string, { name: string; faction: string }>;
@@ -68,19 +72,6 @@ function num(value: unknown, fallback = 0): number {
 function ms(value: unknown): number {
   const inner = rec(rec(value).$date);
   return num(inner.$numberLong ?? rec(value).$date ?? value);
-}
-
-function node(key: unknown): string {
-  const id = str(key);
-  return T.nodes[id]?.value ?? id;
-}
-
-function nodeEnemy(key: unknown): string {
-  return T.nodes[str(key)]?.enemy ?? "";
-}
-
-function nodeMissionType(key: unknown): string {
-  return T.nodes[str(key)]?.type ?? "";
 }
 
 function missionType(key: unknown): string {
@@ -517,6 +508,43 @@ function cycles(raw: Raw, at: number): Cycle[] {
   return out;
 }
 
+// EndlessXpSchedule is the Circuit's week: EXC_NORMAL is the three frames, EXC_HARD the five
+// Steel Path weapons. DE resets this cycle now and then, so read it rather than compute it.
+function circuit(raw: Raw): Circuit | null {
+  const week = arr(raw.EndlessXpSchedule)[0];
+  if (!week) return null;
+  const choices = (category: string): string[] => {
+    const found = arr(week.CategoryChoices).find((c) => str(c.Category) === category);
+    return (Array.isArray(found?.Choices) ? found.Choices : []).map(str);
+  };
+  return {
+    normal: choices("EXC_NORMAL"),
+    steelPath: choices("EXC_HARD"),
+    expiresAt: ms(week.Expiry),
+  };
+}
+
+// Darvo runs one deal a day off a fixed stock, so what is left is the part worth printing.
+function darvo(raw: Raw): DarvoDeal | null {
+  const deal = arr(raw.DailyDeals)[0];
+  if (!deal) return null;
+  return {
+    item: named(deal.StoreItem).value,
+    discount: num(deal.Discount),
+    stock: Math.max(0, num(deal.AmountTotal) - num(deal.AmountSold)),
+    expiresAt: ms(deal.Expiry),
+  };
+}
+
+// Goals are the running events and tactical alerts. We take the name and the clock, no progress.
+function events(raw: Raw): GameEvent[] {
+  return arr(raw.Goals).map((g) => ({
+    key: str(rec(g._id).$oid),
+    name: named(g.Desc).value,
+    expiresAt: ms(g.Expiry),
+  }));
+}
+
 export function normalizeDe(raw: Raw, fetchedAt: number = Date.now()): WorldState {
   const upstreamTimestamp = num(raw.Time) * 1000 || fetchedAt;
   return {
@@ -535,5 +563,10 @@ export function normalizeDe(raw: Raw, fetchedAt: number = Date.now()): WorldStat
     cycles: cycles(raw, fetchedAt),
     bounties: bounties(raw, fetchedAt),
     archimedea: archimedea(raw),
+    incursions: todaysIncursions(fetchedAt),
+    arbitration: currentArbitration(fetchedAt),
+    circuit: circuit(raw),
+    darvo: darvo(raw),
+    events: events(raw),
   };
 }

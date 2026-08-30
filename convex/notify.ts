@@ -75,6 +75,8 @@ function summarize(event: Doc<"worldEvents"> | null): string {
       return `${text(p.world)} is ${text(p.state)}`;
     case "archimedea":
       return `${p.variant === "temporal" ? "Temporal" : "Deep"} Archimedea, new week`;
+    case "arbitration":
+      return `Arbitration: ${text(p.missionType)}${at}${p.tier ? ` (tier ${text(p.tier)})` : ""}`;
     default:
       return event?.kind ?? "event";
   }

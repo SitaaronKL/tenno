@@ -20,6 +20,9 @@ Companion doc: `docs/warframe-api.md` covers WarframeStat.us, warframe.market an
 | 10 | Forum update notes RSS | `forums.warframe.com/forum/3-pc-update-notes.xml/` | none | RSS 2.0 | `s-maxage=900`, 25 items | 878 KB | medium, 403 without the exact path |
 | 11 | News site | `warframe.com/en/news` | none | HTML | on publish | 67 KB | low |
 | 12 | Kuva and arbitration log | `10o.io/kuvalog.json` (semlar, not DE) | none | JSON | hourly | small | Cloudflare 403 to curl |
+| 13 | Steel Path Incursion schedule | `browse.wf/sp-incursions.txt` (browse.wf, not DE) | none | text, `epochDay;SolNode,...` | Last-Modified 2025-01-14, runs to 2028 | 100 KB | low |
+| 14 | Arbitration schedule | `browse.wf/arbys.txt` (browse.wf, not DE) | none | text, `epochHour,SolNode` | Last-Modified 2024-12-25, about five years ahead | 940 KB | low |
+| 15 | Arbitration node tiers | `browse.wf/supplemental-data/arbyTiers.js` (browse.wf, not DE) | none | JS object literal | Last-Modified 2026-04-21 | 1.5 KB | low |
 
 ## 1. worldState.php
 
@@ -114,6 +117,28 @@ DE's world state lists four boards with zero jobs, so nothing downstream can sho
 
 `scripts/build-static-bounties.mjs` downloads `https://drops.warframestat.us/data/all.json`, trims those rows to syndicate, node, level band and per rotation `[{ item, chance }]`, and writes `convex/ingest/staticBounties.json` (about 10 KB) with the source URL and the `modified` stamp from `info.json` inside it. Current snapshot: `modified` 1782419611000, 2026-06-25T20:33:31Z, hash `a0ece5e9be2e2d55c75040720ef3226a`. `convex/ingest/staticBounties.ts` fills a board from that file when upstream sends it with no jobs, keeping the expiry upstream printed for the board so the rotation still cycles.
 
+## 5b. Steel Path Incursions and Arbitration, mirrored from browse.wf
+
+Neither rotation is in DE's world state, and semlar's kuvalog is Cloudflare gated (section 8). browse.wf
+publishes both as precomputed schedule files. Their About page says the raw data is free to use with credit,
+so: **the incursion and arbitration schedules come from browse.wf, and the arbitration node tiers are the
+Arbitration Goons' work, republished by browse.wf.**
+
+`scripts/refresh-schedules.mjs` downloads all three, trims them to a window that opens a day back, and writes
+them as JSON beside the ingest code:
+
+| File | From | Shape | Size |
+|---|---|---|---|
+| `convex/ingest/spIncursions.json` | `sp-incursions.txt` | `{ from, days: [[SolNode x6], ...] }`, `from` is the epoch second of `days[0]`, one entry per UTC day | 58 KB, 800 days |
+| `convex/ingest/arbitrations.json` | `arbys.txt` | `{ from, hours: [SolNode, ...] }`, `from` is the epoch second of `hours[0]`, one entry per hour | 10 KB, 31 days |
+| `convex/ingest/arbyTiers.json` | `arbyTiers.js` | `{ tiers: { SolNode: "S" } }`, S down to F, about half the arbitration nodes are unrated | 700 B |
+
+`convex/ingest/schedules.ts` reads them by clock: `todaysIncursions(now)` returns the six friendly node names
+for the UTC day, `currentArbitration(now)` returns the node, mission type, faction, tier and the next hour
+boundary. Both are pure and both return nothing rather than guessing once the window runs out, so the
+arbitration file has to be re-trimmed about monthly. Run the script after a game update, or when the
+arbitration tile goes quiet.
+
 ## 6. Player profile
 
 `GET https://api.warframe.com/cdn/getProfileViewingData.php?playerId=<24 hex account id>`. Per platform host as in section 2. Since Update 38.0.8 lookup by name is dead: `?n=Name` returns 200 with an empty body, unknown ids return 409 `Could not find requested account`. `Cache-Control: public, max-age=600`, so the profile refreshes every 10 minutes at most. `content.warframe.com/dynamic/getProfileViewingData.php` (the path most tutorials quote and the one `@wfcd/profile-parser` still names) is 404 now.
@@ -175,18 +200,18 @@ worldState extras
 
 Our v1 ingest reads alerts, fissures, sorties, archon hunt, Baro, nightwave, cycles, invasions and bounties. Everything else:
 
-- Goals: running events and tactical alerts (WaterFight today) with Count, Goal, InterimGoals, BonusGoal, per node requirements, rewards and Personal or Clan flags. Worth surfacing: event progress bar and a rule kind for new events.
+- Goals: running events and tactical alerts (WaterFight today) with Count, Goal, InterimGoals, BonusGoal, per node requirements, rewards and Personal or Clan flags. We read the name and the expiry, nothing else, and print them above the dashboard grid. Still worth adding: the progress bar and a rule kind.
 - Events: the in game news console, 30 localized messages with links, `MobileOnly`, `Priority`, `Community`. Worth a "news" strip and a source for the patch feed since DE posts hotfix links here.
 - PVPChallengeInstances: 12 Conclave daily and weekly challenges by type ref. Low value, Conclave is dead, skip.
 - PVPAlternativeModes, PVPActiveTournaments: empty. Skip.
-- DailyDeals: Darvo's deal, StoreItem, Discount, SalePrice, AmountTotal, AmountSold, expiry. Cheap card, mildly worth it.
+- DailyDeals: Darvo's deal, StoreItem, Discount, SalePrice, AmountTotal, AmountSold, expiry. Read into `WorldState.darvo` as item, discount, remaining stock and expiry, one row in the Weekly box.
 - FlashSales: 41 market discounts on bundles with PremiumOverride price and dates. Low value unless we add a market page.
 - SkuSales: empty, platform store sales. Skip.
 - InGameMarket: LandingPage categories with item lists (New Player, New, Featured). Skip.
 - GlobalUpgrades: active global boosters (today 2x kill XP with UpgradeType and OperationType). Worth a banner and a rule kind, players plan around double events.
 - ConstructionProjects and ProjectPct: Fomorian and Razorback build percentage (three floats). Worth a small gauge, it predicts the next Balor Fomorian or Razorback event.
 - KnownCalendarSeasons: the 1999 Hex calendar, per day CET_CHALLENGE, CET_REWARD, CET_PLOT events. Worth a weekly planner card, rewards include arcane unlockers and boosters.
-- EndlessXpSchedule: Circuit rotation, normal frames and hard weapons this week. Worth a card, it drives what people farm.
+- EndlessXpSchedule: Circuit rotation, normal frames and hard weapons this week. Read into `WorldState.circuit`, two rows in the Weekly box. Safer than the static table browse.wf uses, DE has reset the cycle before.
 - SeasonInfo: Nightwave season, phase, ActiveChallenges with daily flag. We use it via warframestat already; direct read removes the lag.
 - Conquests: Elite and normal Archimedea missions with deviations and risks. Worth a card and a rule for "Archimedea has mission X".
 - Descents: Descendia weekly challenge set (type, arena, enemy spec, aura). Worth a card once the mode matters, low priority.
@@ -204,4 +229,4 @@ Our v1 ingest reads alerts, fissures, sorties, archon hunt, Baro, nightwave, cyc
 - WeeklyChallenges: absent today, the parser still reads it. Skip.
 - Tmp: JSON string with `pgr` (Kinepage, the 1999 pager message), `sfn` (sentient anomaly node), `fbst` (Faceoff bonus times), `QTCCFloofCount`. Anomaly is worth a rule kind for Shedu and Sentient farmers.
 - WorldSeed, Version, MobileVersion, BuildLabel, ForceLogoutVersion: signature and build metadata. `BuildLabel` is worth storing, a change is the cheapest hotfix detector we have and it fires before the forum RSS.
-- Arbitration and Kuva siphons: not in the file, derived from semlar's kuvalog which is Cloudflare gated. Worth doing only if we copy the rotation algorithm or proxy with a browser UA.
+- Arbitration and Kuva siphons: not in the file. Arbitration now comes from browse.wf's schedule (section 5b). Kuva siphons still need semlar's kuvalog, which is Cloudflare gated.

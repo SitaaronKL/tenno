@@ -12,6 +12,9 @@ import { BaroPanel } from "./baro";
 import { NightwavePanel } from "./nightwave";
 import { EventsPanel } from "./events";
 import { BountiesPanel, bountiesOf } from "./bounties";
+import { IncursionsPanel } from "./incursions";
+import { WeeklyPanel } from "./weekly";
+import { ActiveEvents } from "./active-events";
 import { CheckoffsProvider } from "./checkoffs-store";
 
 // Bento: six columns on desktop, and each card claims the width its content needs.
@@ -79,12 +82,15 @@ export function Panels({ state }: { state: WorldState }) {
   return (
     <div>
       {state.stale && <StaleNotice state={state} />}
+      <ActiveEvents events={state.events ?? []} />
       <div className={GRID}>
         <FissuresPanel fissures={state.fissures} />
         <BountiesPanel bounties={bountiesOf(state)} />
         <EventsPanel invasions={state.invasions} alerts={state.alerts} />
         <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
         <ArchimedeaPanel archimedea={state.archimedea ?? []} />
+        <WeeklyPanel circuit={state.circuit} darvo={state.darvo} />
+        <IncursionsPanel incursions={state.incursions ?? []} />
         {state.baro?.active ? <BaroPanel baro={state.baro} /> : null}
         <NightwavePanel nightwave={state.nightwave} />
       </div>
