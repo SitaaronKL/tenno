@@ -80,7 +80,7 @@ export function CycleTiles({ cycles, baro }: { cycles: Cycle[]; baro?: Baro | nu
   if (rows.length === 0) return null;
 
   return (
-    <ul aria-label="World cycles" className="ml-auto grid shrink-0 grid-cols-[repeat(3,max-content)] gap-1.5 lg:mr-24">
+    <ul aria-label="World cycles" className="ml-auto grid shrink-0 grid-cols-[repeat(5,max-content)] gap-1.5 lg:mr-8">
       {baro ? (
         <Tile
           icon={TimerIcon}
