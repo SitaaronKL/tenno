@@ -28,7 +28,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 // One features object for the whole app, so a caller never registers its own.
@@ -84,17 +83,9 @@ export function SortableHeader<TData extends RowData>({
 }
 
 // Every cell that can truncate carries its full text in a tooltip.
+// Clipped text stays clipped, the boxes carry no hover popovers.
 export function TruncatedCell({ text, className }: { text: string; className?: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={<span className={cn("block max-w-full truncate text-left", className)} />}
-      >
-        {text}
-      </TooltipTrigger>
-      <TooltipContent>{text}</TooltipContent>
-    </Tooltip>
-  );
+  return <span className={cn("block max-w-full truncate text-left", className)}>{text}</span>;
 }
 
 export function DataTable<TData extends RowData>({
