@@ -159,6 +159,9 @@ export default defineSchema({
     ruleId: v.id("rules"),
     eventId: v.id("worldEvents"),
     channel,
+    mode: deliveryMode,
+    attempts: v.optional(v.number()),
+    nextAttemptAt: v.optional(v.number()),
     status: v.union(
       v.literal("pending"),
       v.literal("sent"),

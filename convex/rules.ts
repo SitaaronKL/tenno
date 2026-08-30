@@ -145,19 +145,20 @@ export const evaluate = internalMutation({
           .first();
         if (already) continue;
 
-        const { ok } = await rateLimiter.limit(ctx, "notifications", { key: rule.userId });
-        if (!ok) continue;
-
         for (const channel of rule.channels) {
+          // One unit per delivery, and an over limit match is written down so the user can see it.
+          const { ok } = await rateLimiter.limit(ctx, "notifications", { key: rule.userId });
           const notificationId: Id<"notifications"> = await ctx.db.insert("notifications", {
             userId: rule.userId,
             ruleId: rule._id,
             eventId,
             channel,
-            status: "pending",
+            mode: rule.mode,
+            status: ok ? "pending" : "skipped",
+            error: ok ? undefined : "rate limited",
             createdAt: Date.now(),
           });
-          if (rule.mode === "instant") {
+          if (ok && rule.mode === "instant") {
             await ctx.scheduler.runAfter(0, internal.notify.send, { notificationId });
           }
         }

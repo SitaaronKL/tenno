@@ -78,6 +78,73 @@ describe("rules for the iMessage agent", () => {
 });
 
 describe("rules.evaluate", () => {
+  test("past the hourly limit a match is recorded as skipped, not dropped", async () => {
+    const t = setup();
+    const { userId } = await seed(t, "digest");
+    const eventIds = await t.run(async (ctx) => {
+      const ids = [];
+      for (let i = 0; i < 31; i++) {
+        ids.push(
+          await ctx.db.insert("worldEvents", {
+            platform: "pc" as const,
+            kind: "fissure",
+            key: `storm-${i}`,
+            startsAt: Date.now(),
+            seenAt: Date.now(),
+            payload: { tier: "Axi", missionType: "Survival", node: "Ani (Void)", steelPath: false, storm: false },
+          }),
+        );
+      }
+      return ids;
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds });
+
+    const rows = await t.run((ctx) =>
+      ctx.db
+        .query("notifications")
+        .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "skipped"))
+        .collect(),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].error).toBe("rate limited");
+    const all = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(all).toHaveLength(31);
+  });
+
+  test("each channel of a two channel rule costs its own unit", async () => {
+    const t = setup();
+    const { userId, ruleId } = await seed(t, "digest");
+    await t.run((ctx) => ctx.db.patch("rules", ruleId, { channels: ["email", "imessage"] }));
+    const eventIds = await t.run(async (ctx) => {
+      const ids = [];
+      for (let i = 0; i < 16; i++) {
+        ids.push(
+          await ctx.db.insert("worldEvents", {
+            platform: "pc" as const,
+            kind: "fissure",
+            key: `pair-${i}`,
+            startsAt: Date.now(),
+            seenAt: Date.now(),
+            payload: { tier: "Axi", missionType: "Survival", node: "Ani (Void)", steelPath: false, storm: false },
+          }),
+        );
+      }
+      return ids;
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds });
+
+    const skipped = await t.run((ctx) =>
+      ctx.db
+        .query("notifications")
+        .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "skipped"))
+        .collect(),
+    );
+    // Thirty deliveries fit in the window, the last two are visible as skipped.
+    expect(skipped).toHaveLength(2);
+  });
+
   test("a matching rule queues one notification and sends it right away", async () => {
     const t = setup();
     const { eventId } = await seed(t, "instant");
