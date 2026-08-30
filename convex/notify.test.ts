@@ -7,7 +7,7 @@ import type { Id } from "./_generated/dataModel";
 
 // The provider boundaries are mocked, the payloads they are handed are what these tests assert.
 const sent = vi.hoisted(() => ({
-  emails: [] as { to: string; subject: string }[],
+  emails: [] as { to: string; subject: string; react: { props: Record<string, string> } }[],
   texts: [] as { to: string; text: string }[],
   failuresLeft: 0,
 }));
@@ -19,12 +19,12 @@ vi.mock("./email", async () => {
     sendEmail: internalAction({
       args: { to: v.string(), subject: v.string(), react: v.any() },
       returns: v.string(),
-      handler: async (_ctx, { to, subject }) => {
+      handler: async (_ctx, { to, subject, react }) => {
         if (sent.failuresLeft > 0) {
           sent.failuresLeft -= 1;
           throw new Error("provider is having a moment");
         }
-        sent.emails.push({ to, subject });
+        sent.emails.push({ to, subject, react });
         return "test-email-id";
       },
     }),
@@ -66,6 +66,8 @@ type SeedOptions = {
   email?: string;
   channels?: ("email" | "imessage")[];
   profile?: { phone?: string; phoneVerifiedAt?: number; email?: string } | null;
+  timezone?: string;
+  expiresAt?: number;
 };
 
 async function seed(t: ReturnType<typeof setup>, options: SeedOptions = {}) {
@@ -77,7 +79,7 @@ async function seed(t: ReturnType<typeof setup>, options: SeedOptions = {}) {
         email: options.profile.email ?? options.email ?? "tenno@example.com",
         phone: options.profile.phone,
         phoneVerifiedAt: options.profile.phoneVerifiedAt,
-        timezone: "UTC",
+        timezone: options.timezone ?? "UTC",
         digestHour: 9,
         platform: "pc" as const,
       });
@@ -92,12 +94,13 @@ async function seed(t: ReturnType<typeof setup>, options: SeedOptions = {}) {
       source: "manual" as const,
       createdAt: Date.now(),
     });
+    const expiresAt = options.expiresAt ?? Date.now() + 3_600_000;
     const eventId = await ctx.db.insert("worldEvents", {
       platform: "pc" as const,
       kind: "fissure",
       key: "f1",
       startsAt: Date.now(),
-      expiresAt: Date.now() + 3_600_000,
+      expiresAt,
       seenAt: Date.now(),
       payload: {
         tier: "Axi",
@@ -105,7 +108,7 @@ async function seed(t: ReturnType<typeof setup>, options: SeedOptions = {}) {
         node: "Ani (Void)",
         steelPath: false,
         storm: false,
-        expiresAt: Date.now() + 3_600_000,
+        expiresAt,
       },
     });
     return { userId: userId as Id<"users">, ruleId, eventId };
@@ -184,6 +187,25 @@ describe("notify.digest", () => {
 });
 
 describe("notify.send", () => {
+  test("the message names the fissure and when it ends, in the user's timezone", async () => {
+    const t = setup();
+    const { eventId } = await seed(t, {
+      profile: { phone: undefined },
+      timezone: "America/New_York",
+      expiresAt: Date.parse("2026-08-30T18:30:00.000Z"),
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    const props = sent.emails[0].react.props;
+    expect(props.title).toContain("Axi");
+    expect(props.title).toContain("Survival");
+    expect(props.title).toContain("Ani (Void)");
+    // 18:30 UTC is 14:30 in New York.
+    expect(props.expiresAt).toContain("2:30");
+  });
+
   test("a provider blip is retried, the user still gets the mail", async () => {
     const t = setup();
     sent.failuresLeft = 1;

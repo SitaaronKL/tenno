@@ -27,14 +27,59 @@ type Delivery = {
   photonUserId: string | null;
   phoneVerified: boolean;
   attempts: number;
+  expiresAtText?: string;
 };
+
+function text(value: unknown): string {
+  return typeof value === "string" ? value : "";
+}
+
+// What actually matched, per kind, so the message says more than "fissure".
+function summarize(event: Doc<"worldEvents"> | null): string {
+  const p = (event?.payload ?? {}) as Record<string, unknown>;
+  const node = text(p.node);
+  const at = node ? ` at ${node}` : "";
+  switch (event?.kind) {
+    case "fissure":
+      return `${text(p.tier)} ${text(p.missionType)}${p.steelPath ? " (Steel Path)" : ""}${at}`.trim();
+    case "alert":
+      return `Alert: ${text(p.missionType)}${at}`;
+    case "invasion":
+      return `Invasion${at}: ${text(p.description)}`;
+    case "sortie":
+      return `Sortie: ${text(p.boss)}`;
+    case "archonHunt":
+      return `Archon Hunt: ${text(p.boss)}`;
+    case "baro":
+      return `Baro Ki'Teer has arrived at ${text(p.location)}`;
+    case "nightwave":
+      return `Nightwave season ${String(p.season ?? "")}, new acts are up`;
+    case "cycle":
+      return `${text(p.world)} is ${text(p.state)}`;
+    default:
+      return event?.kind ?? "event";
+  }
+}
 
 // One line per match, used by both the instant message and the digest.
 function describe(rule: Doc<"rules"> | null, event: Doc<"worldEvents"> | null): string {
-  const payload = (event?.payload ?? {}) as Record<string, unknown>;
-  const node = typeof payload.node === "string" ? payload.node : "";
-  const where = node ? ` at ${node}` : "";
-  return `${rule?.name ?? "Rule"}: ${event?.kind ?? "event"}${where}`;
+  return `${rule?.name ?? "Rule"}: ${summarize(event)}`;
+}
+
+// The user reads times in their own clock, not in UTC.
+function expiryText(event: Doc<"worldEvents"> | null, timezone: string): string | undefined {
+  if (!event?.expiresAt) return undefined;
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: timezone,
+      hour: "numeric",
+      minute: "2-digit",
+      month: "short",
+      day: "numeric",
+    }).format(new Date(event.expiresAt));
+  } catch {
+    return new Date(event.expiresAt).toISOString();
+  }
 }
 
 export const loadDelivery = internalQuery({
@@ -58,6 +103,7 @@ export const loadDelivery = internalQuery({
       ruleName: rule?.name ?? "Rule",
       kind: event?.kind ?? "event",
       line: describe(rule, event),
+      expiresAtText: expiryText(event, profile?.timezone ?? "UTC"),
       email: profile?.email || user?.email || "",
       phone: profile?.phone ?? null,
       photonUserId: profile?.photonUserId ?? null,
@@ -148,6 +194,7 @@ export const pendingDigestFor = internalQuery({
           ruleName: rule?.name ?? "Rule",
           kind: event?.kind ?? "event",
           line: describe(rule, event),
+          expiresAtText: expiryText(event, profile?.timezone ?? "UTC"),
           email: profile?.email || user?.email || "",
           phone: profile?.phone ?? null,
           photonUserId: profile?.photonUserId ?? null,
@@ -262,12 +309,16 @@ export const send = internalAction({
       return null;
     }
     try {
-      await dispatch(ctx, delivery, `Voidwatch: ${delivery.ruleName}`, delivery.line, {
+      const ends = delivery.expiresAtText ? `Ends ${delivery.expiresAtText}` : undefined;
+      const body = ends ? `${delivery.line}\n${ends}` : delivery.line;
+      await dispatch(ctx, delivery, `Voidwatch: ${delivery.ruleName}`, body, {
         template: "RuleMatch",
         props: {
           ruleName: delivery.ruleName,
           kind: delivery.kind,
           title: delivery.line,
+          detail: ends,
+          expiresAt: delivery.expiresAtText,
           url: siteUrl(),
         },
       });
@@ -329,12 +380,18 @@ export const digest = internalAction({
             await ctx.runMutation(internal.notify.mark, { notificationIds: ids, status: "skipped", error: reason });
             continue;
           }
-          const body = group.map((d) => d.line).join("\n");
+          const body = group
+            .map((d) => (d.expiresAtText ? `${d.line} (ends ${d.expiresAtText})` : d.line))
+            .join("\n");
           try {
             await dispatch(ctx, group[0], `Voidwatch digest: ${group.length} matches`, body, {
               template: "Digest",
               props: {
-                items: group.map((d) => ({ ruleName: d.ruleName, title: d.line })),
+                items: group.map((d) => ({
+                  ruleName: d.ruleName,
+                  title: d.line,
+                  detail: d.expiresAtText ? `Ends ${d.expiresAtText}` : undefined,
+                })),
                 url: siteUrl(),
               },
             });
