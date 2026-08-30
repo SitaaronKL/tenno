@@ -22,7 +22,7 @@
 
 Goal: a modern replacement for Overframe, the wiki drop tables, and a resource checklist, with the agent in the loop.
 
-### Data foundation (slice 11)
+### Data foundation (slice 11), done Aug 30 2026 through the mastery slice: Public Export items and nodes in Convex, drop tables read by the bounty boards. Mods, arcanes and drop sources land with slices 12 and 14.
 - Ingest game data into Convex: warframes, weapons, mods, arcanes, relics, drop sources.
   Sources: WFCD `warframe-items` (trimmed by uniqueName) plus wiki Lua modules
   (`Module:Warframes/data`, `Module:Mods/data`, `Module:Weapons/data`, `Module:DropTables/data`) via `api.php?action=parse`.
