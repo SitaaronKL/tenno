@@ -2,6 +2,7 @@ import { LayoutGridIcon } from "@/components/icons/layout-grid";
 import { WorkflowIcon } from "@/components/icons/workflow";
 import { MessageCircleIcon } from "@/components/icons/message-circle";
 import { SettingsIcon } from "@/components/icons/settings";
+import { AtomIcon } from "@/components/icons/atom";
 
 export type NavIcon = typeof LayoutGridIcon;
 
@@ -15,5 +16,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGridIcon },
   { href: "/rules", label: "Rules", icon: WorkflowIcon },
   { href: "/chat", label: "Chat", icon: MessageCircleIcon },
+  { href: "/mastery", label: "Mastery", icon: AtomIcon },
   { href: "/settings", label: "Settings", icon: SettingsIcon },
 ];
