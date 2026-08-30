@@ -60,6 +60,10 @@ export interface BountyJob {
   missionType?: string;
   // What the board prints above the level, only set when the level alone does not name the job.
   title?: string;
+  // The star chart node this job runs on, from the browse.wf rotation. Absent on live boards.
+  node?: string;
+  // The job's bonus objective in a few words, derived from the challenge path in the same rotation.
+  challenge?: string;
   // The drop table behind a fixed board, per rotation. Absent on live boards, upstream sends no odds.
   rewardTable?: RewardChances[];
 }
@@ -77,6 +81,18 @@ export interface Bounty {
   jobs: BountyJob[];
   // Filled from the drop tables because upstream lists this board with no jobs. Absent on live boards.
   static?: boolean;
+  // Which reward rotation the board is on right now, "A", "B" or "C". Only the fixed boards know it.
+  rotation?: string;
+}
+
+// browse.wf's read of the 2.5 hour bounty rotation, the one thing DE's feed leaves out.
+// Their oracle collects it from the game, we keep the raw shape so the mapping stays in one place.
+export interface BountyCycle {
+  expiry: number; // ms epoch, when this rotation ends
+  rot: string; // reward rotation letter for the fixed boards
+  vaultRot: string; // the Isolation Vault rotation, on its own clock
+  zarimanFaction: string; // "FC_CORPUS" or "FC_GRINEER"
+  bounties: Record<string, { node: string; challenge: string; ally?: string }[]>;
 }
 
 // One mission in a weekly Archimedea set. DE ships no star chart node for these, so node is optional.
@@ -168,4 +184,6 @@ export interface WorldState {
   circuit?: Circuit | null;
   darvo?: DarvoDeal | null;
   events?: GameEvent[];
+  // The fixed board rotation from browse.wf. Optional, the pull keeps the last one when they are down.
+  bountyCycle?: BountyCycle;
 }

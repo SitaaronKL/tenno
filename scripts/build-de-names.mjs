@@ -17,6 +17,31 @@ const [solNodes, missionTypes, factions, sortie, languages, syndicates] = await 
   ["solNodes", "missionTypes", "factionsData", "sortieData", "languages", "syndicatesData"].map(load),
 );
 
+// WFCD lags a game update by weeks, and the newest nodes are exactly the ones the fixed boards run
+// on, so DE's own star chart export fills the gaps. Credit for the mirror is in docs/de-endpoints.md.
+const PLUS = "https://browse.wf/warframe-public-export-plus";
+
+async function plus(name) {
+  const response = await fetch(`${PLUS}/${name}.json`);
+  if (!response.ok) throw new Error(`${name}: ${response.status}`);
+  return response.json();
+}
+
+const [regions, dict] = await Promise.all([plus("ExportRegions"), plus("dict.en")]);
+const say = (path) => dict[path] ?? "";
+
+// The node reads "Everview Arc (Zariman)", the same shape WFCD writes.
+function regionNode(region) {
+  const name = say(region.name);
+  const system = say(region.systemName);
+  if (!name) return null;
+  return {
+    value: system ? `${name} (${system})` : name,
+    enemy: factions[region.faction]?.value ?? "",
+    type: missionTypes[region.missionType]?.value ?? "",
+  };
+}
+
 // DE names a bounty's reward table by path only. WFCD's drop data is the only place the items
 // behind those paths are written down, keyed by the level range and rotation the game shows.
 const DROPS = "https://drops.warframestat.us/data";
@@ -56,9 +81,18 @@ for (const [path, entry] of Object.entries(languages)) {
 
 const out = {
   // Nodes keep enemy and mission type too, Void Storms name neither.
-  nodes: Object.fromEntries(
-    Object.entries(solNodes).map(([key, n]) => [key, { value: n.value, enemy: n.enemy ?? "", type: n.type ?? "" }]),
-  ),
+  nodes: {
+    ...Object.fromEntries(
+      Object.entries(regions).flatMap(([key, r]) => {
+        const node = regionNode(r);
+        return node ? [[key, node]] : [];
+      }),
+    ),
+    // WFCD wins where it has the node, its names carry the spellings the community uses.
+    ...Object.fromEntries(
+      Object.entries(solNodes).map(([key, n]) => [key, { value: n.value, enemy: n.enemy ?? "", type: n.type ?? "" }]),
+    ),
+  },
   missionTypes: values(missionTypes),
   factions: values(factions),
   sortieBosses: Object.fromEntries(
