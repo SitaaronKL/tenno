@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { WorldState } from "@/lib/contracts/worldstate";
+import { HiddenSet } from "@/components/hidden";
 import { Panels } from "./dashboard-grid";
 
 const now = Date.now();
@@ -41,6 +42,35 @@ describe("dashboard", () => {
       <Panels state={state({ stale: true, source: "de", upstreamTimestamp: now - 25 * 60_000 })} />,
     );
     expect(screen.getByText(/Live from Digital Extremes/)).toBeInTheDocument();
+  });
+});
+
+describe("hidden boxes", () => {
+  it("draws every box when nothing is hidden", () => {
+    render(<Panels state={state()} />);
+    expect(screen.getByText("Fissures")).toBeInTheDocument();
+    expect(screen.getByText("Bounties")).toBeInTheDocument();
+  });
+
+  it("skips the boxes the user turned off", () => {
+    render(
+      <HiddenSet hidden={new Set(["box.fissures", "box.nightwave"])}>
+        <Panels state={state()} />
+      </HiddenSet>,
+    );
+    expect(screen.queryByText("Fissures")).not.toBeInTheDocument();
+    expect(screen.queryByText("Nightwave")).not.toBeInTheDocument();
+    expect(screen.getByText("Bounties")).toBeInTheDocument();
+  });
+
+  it("skips the boxes the extras slice added when they are turned off", () => {
+    render(
+      <HiddenSet hidden={new Set(["box.incursions", "box.weekly"])}>
+        <Panels state={state({ incursions: ["Tyana Pass (Mars)"] })} />
+      </HiddenSet>,
+    );
+    expect(screen.queryByText("Incursions")).not.toBeInTheDocument();
+    expect(screen.queryByText("Weekly")).not.toBeInTheDocument();
   });
 });
 

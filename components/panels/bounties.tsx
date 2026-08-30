@@ -3,12 +3,15 @@
 import { useState } from "react";
 
 import { Segmented } from "@/components/segmented";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useHidden } from "@/components/hidden";
+import { boardKey } from "@/lib/contracts/preferences";
 
 import type { Bounty, BountyJob, RewardChances, WorldState } from "@/lib/contracts/worldstate";
 import { WorkflowIcon } from "@/components/icons/workflow";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
-import { TruncatedCell } from "@/components/ui/data-table";
+import { cn } from "@/lib/utils";
 import { useNow } from "./use-now";
 
 // The data slice writes bounties into world state, so the panel reads the contract type.
@@ -20,6 +23,11 @@ export function levelRange(job: BountyJob): string {
   return job.minLevel === job.maxLevel ? `${job.minLevel}` : `${job.minLevel} to ${job.maxLevel}`;
 }
 
+// Most people run a board for the mission, so the row names that and hides the rest.
+export function missionOf(job: BountyJob): string {
+  return job.missionType ?? "Bounty";
+}
+
 // Chances come out of the drop tables to two decimals, trailing zeros read as false precision.
 export function chance(percent: number): string {
   return `${Number(percent.toFixed(2))}%`;
@@ -28,7 +36,7 @@ export function chance(percent: number): string {
 // A fixed board knows its odds, so it lists the pool per rotation instead of one flat line.
 function RotationTable({ table }: { table: RewardChances[] }) {
   return (
-    <div className="mt-2 grid gap-3 sm:grid-cols-3">
+    <div className="grid gap-3 pb-2 sm:grid-cols-3">
       {table.map((rotation) => (
         <div key={rotation.rotation}>
           <p className="pb-1 text-xs font-medium tracking-wide text-muted-foreground">
@@ -50,31 +58,70 @@ function RotationTable({ table }: { table: RewardChances[] }) {
   );
 }
 
-function Job({ job }: { job: BountyJob }) {
+function Chevron({ open }: { open: boolean }) {
   return (
-    <li className="py-2">
-      <div className="flex items-baseline gap-2">
-        <span className="w-24 shrink-0 font-medium">{job.title ?? job.level}</span>
-        <span className="min-w-0 flex-1">
-          {job.rewardTable ? null : (
-            <TruncatedCell
-              text={job.rewards.join(", ") || "No listed reward"}
-              className="text-muted-foreground"
-            />
+    <svg
+      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={cn(
+        "shrink-0 text-muted-foreground transition-transform duration-150 ease-out motion-reduce:transition-none",
+        open ? "rotate-0" : "-rotate-90",
+      )}
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+function Job({
+  job,
+  open,
+  onOpenChange,
+}: {
+  job: BountyJob;
+  open: boolean;
+  onOpenChange: (next: boolean) => void;
+}) {
+  return (
+    <li>
+      <Collapsible open={open} onOpenChange={onOpenChange}>
+        {/* The whole row is the trigger, so a click anywhere opens the rewards. */}
+        <CollapsibleTrigger className="flex w-full items-center gap-3 py-2 text-left transition-colors duration-150 ease-out hover:text-foreground">
+          <span className="w-16 shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+            {levelRange(job)}
+          </span>
+          <span className="min-w-0 flex-1 truncate font-medium">{missionOf(job)}</span>
+          {job.standing > 0 ? (
+            <span className="shrink-0 font-mono text-xs tabular-nums text-muted-foreground">
+              {job.standing} standing
+            </span>
+          ) : null}
+          <Chevron open={open} />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {job.rewardTable ? (
+            <RotationTable table={job.rewardTable} />
+          ) : (
+            <p className="pb-2 text-xs text-muted-foreground">
+              {job.rewards.join(", ") || "No listed reward"}
+            </p>
           )}
-        </span>
-        <span className="shrink-0 font-mono text-xs text-muted-foreground tabular-nums">
-          lvl {levelRange(job)}
-          {job.standing > 0 ? ` · ${job.standing} standing` : ""}
-        </span>
-      </div>
-      {job.rewardTable ? <RotationTable table={job.rewardTable} /> : null}
+        </CollapsibleContent>
+      </Collapsible>
     </li>
   );
 }
 
 // Short names keep seven boards on one toggle row.
 const SHORT: Record<string, string> = {
+  Ostron: "Cetus",
   Ostrons: "Cetus",
   "Solaris United": "Fortuna",
   Entrati: "Deimos",
@@ -86,15 +133,22 @@ const SHORT: Record<string, string> = {
 
 export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
   const now = useNow();
+  const hidden = useHidden();
   // DE lists the next rotation beside the current one, one board per syndicate is enough.
   const open = Array.from(
     bounties
       .filter((b) => b.expiresAt > now)
+      .filter((b) => {
+        const key = boardKey(b.syndicate);
+        return key === null || !hidden.has(key);
+      })
       .sort((a, b) => a.expiresAt - b.expiresAt)
       .reduce((m, b) => (m.has(b.syndicate) ? m : m.set(b.syndicate, b)), new Map<string, Bounty>())
       .values(),
   );
   const [pick, setPick] = useState<string | null>(null);
+  // One row at a time, so a long reward table never buries the board below it.
+  const [row, setRow] = useState<string | null>(null);
   const options = open.map((b) => ({ value: b.syndicate, label: SHORT[b.syndicate] ?? b.syndicate }));
   const board = open.find((b) => b.syndicate === pick) ?? open[0];
 
@@ -124,9 +178,17 @@ export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
             ) : null}
           </div>
           <ul className="divide-y divide-border">
-            {board.jobs.map((job, index) => (
-              <Job key={`${job.level}-${index}`} job={job} />
-            ))}
+            {board.jobs.map((job, index) => {
+              const key = `${board.syndicate}-${index}`;
+              return (
+                <Job
+                  key={key}
+                  job={job}
+                  open={row === key}
+                  onOpenChange={(next) => setRow(next ? key : null)}
+                />
+              );
+            })}
           </ul>
         </>
       )}

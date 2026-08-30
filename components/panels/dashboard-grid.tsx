@@ -1,6 +1,7 @@
 "use client";
 
 import type { WorldState } from "@/lib/contracts/worldstate";
+import { useHidden } from "@/components/hidden";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useWorldState } from "./world-state";
 import { useNow } from "./use-now";
@@ -79,20 +80,28 @@ export function DashboardGrid() {
 }
 
 export function Panels({ state }: { state: WorldState }) {
+  // A box the user turned off never renders, so it costs nothing to keep it in the grid.
+  const hidden = useHidden();
+  const shown = (key: string) => !hidden.has(key);
+
   return (
     <div>
       {state.stale && <StaleNotice state={state} />}
       <ActiveEvents events={state.events ?? []} />
       <div className={GRID}>
-        <FissuresPanel fissures={state.fissures} />
-        <BountiesPanel bounties={bountiesOf(state)} />
-        <EventsPanel invasions={state.invasions} alerts={state.alerts} />
-        <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
-        <ArchimedeaPanel archimedea={state.archimedea ?? []} />
-        <WeeklyPanel circuit={state.circuit} darvo={state.darvo} />
-        <IncursionsPanel incursions={state.incursions ?? []} />
-        {state.baro?.active ? <BaroPanel baro={state.baro} /> : null}
-        <NightwavePanel nightwave={state.nightwave} />
+        {shown("box.fissures") ? <FissuresPanel fissures={state.fissures} /> : null}
+        {shown("box.bounties") ? <BountiesPanel bounties={bountiesOf(state)} /> : null}
+        {shown("box.events") ? (
+          <EventsPanel invasions={state.invasions} alerts={state.alerts} />
+        ) : null}
+        {shown("box.missions") ? (
+          <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
+        ) : null}
+        {shown("box.archimedea") ? <ArchimedeaPanel archimedea={state.archimedea ?? []} /> : null}
+        {shown("box.weekly") ? <WeeklyPanel circuit={state.circuit} darvo={state.darvo} /> : null}
+        {shown("box.incursions") ? <IncursionsPanel incursions={state.incursions ?? []} /> : null}
+        {state.baro?.active && shown("box.baro") ? <BaroPanel baro={state.baro} /> : null}
+        {shown("box.nightwave") ? <NightwavePanel nightwave={state.nightwave} /> : null}
       </div>
     </div>
   );

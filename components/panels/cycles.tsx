@@ -9,6 +9,7 @@ import { TornadoIcon } from "@/components/icons/tornado";
 import { AtomIcon } from "@/components/icons/atom";
 import { TimerIcon } from "@/components/icons/timer";
 import type { Arbitration, Baro, Cycle } from "@/lib/contracts/worldstate";
+import { useHidden } from "@/components/hidden";
 import { cn } from "@/lib/utils";
 import { Countdown, SOON_MS } from "./countdown";
 import type { IconHandle, PanelIcon } from "./panel";
@@ -104,17 +105,23 @@ export function CycleTiles({
   arbitration?: Arbitration | null;
 }) {
   const now = useNow();
+  const hidden = useHidden();
+  const shown = (key: string) => !hidden.has(key);
   const order = Object.keys(WORLDS) as Cycle["world"][];
   const rows = order
     .map((w) => cycles.find((c) => c.world === w))
     .filter((c): c is Cycle => Boolean(c))
+    .filter((c) => shown(`tile.${c.world}`))
     .map((c) => rollCycle(c, now));
 
-  if (rows.length === 0 && !arbitration) return null;
+  const resets = shown("tile.daily") || shown("tile.weekly");
+  const extras =
+    resets || (baro && shown("tile.baro")) || (arbitration && shown("tile.arbitration"));
+  if (rows.length === 0 && !extras) return null;
 
   return (
     <ul aria-label="World cycles" className="ml-auto grid shrink-0 grid-cols-[repeat(5,max-content)] gap-1.5 lg:mr-8">
-      {baro ? (
+      {baro && shown("tile.baro") ? (
         <Tile
           icon={TimerIcon}
           label="Baro"
@@ -124,7 +131,7 @@ export function CycleTiles({
           verb={baro.active ? "leaves" : "arrives"}
         />
       ) : null}
-      {arbitration ? (
+      {arbitration && shown("tile.arbitration") ? (
         <Tile
           icon={AtomIcon}
           label="Arbitration"
@@ -134,8 +141,12 @@ export function CycleTiles({
           verb="rotates"
         />
       ) : null}
-      <Tile icon={TimerIcon} label="Daily reset" state="" expiresAt={nextDailyReset(now)} now={now} verb="resets" />
-      <Tile icon={TimerIcon} label="Weekly reset" state="" expiresAt={nextWeeklyReset(now)} now={now} verb="resets" />
+      {shown("tile.daily") ? (
+        <Tile icon={TimerIcon} label="Daily reset" state="" expiresAt={nextDailyReset(now)} now={now} verb="resets" />
+      ) : null}
+      {shown("tile.weekly") ? (
+        <Tile icon={TimerIcon} label="Weekly reset" state="" expiresAt={nextWeeklyReset(now)} now={now} verb="resets" />
+      ) : null}
       {rows.map((c) => (
         <Tile
           key={c.world}

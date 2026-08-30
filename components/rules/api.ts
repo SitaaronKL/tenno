@@ -18,6 +18,8 @@ export type Profile = {
   phoneVerified: boolean;
   timezone: string;
   digestHour: number;
+  // What this user turned off on the world state page, see lib/contracts/preferences.ts.
+  hidden: string[];
 };
 
 export const useRules = () => {
@@ -43,6 +45,7 @@ export function useProfile(): Profile | null | undefined {
     phoneVerified: me.profile.phoneVerified,
     timezone: me.profile.timezone,
     digestHour: me.profile.digestHour,
+    hidden: me.profile.hidden,
   };
 }
 

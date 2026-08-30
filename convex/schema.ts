@@ -212,6 +212,8 @@ export default defineSchema({
     // The Warframe account this user synced. Mastery is read through it, never through an argument.
     masteryPlayerId: v.optional(v.string()),
     lastDigestAt: v.optional(v.number()),
+    // World state pieces this user turned off, keys from lib/contracts/preferences.ts.
+    hidden: v.optional(v.array(v.string())),
     timezone: v.string(),
     digestHour: v.number(),
     platform,

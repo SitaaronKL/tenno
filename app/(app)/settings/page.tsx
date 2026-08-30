@@ -32,6 +32,7 @@ import {
   shouldAdoptTimezone,
 } from "@/components/settings/timezone";
 import { ClientOnly } from "@/components/rules/client-only";
+import { WorldStateCard } from "@/components/settings/world-state-card";
 import { cn } from "@/lib/utils";
 
 // The Photon shared pool assigns the line. Unset means there is no line, not a number to invent.
@@ -301,15 +302,22 @@ function SettingsBody() {
   const update = useUpdateProfile();
 
   if (profile === undefined) return <Skeleton className="h-64 w-full rounded-xl" />;
-  if (profile === null) return <p className="text-sm">Sign in to see your settings.</p>;
 
-  // Keyed on the saved values, so a save mid typing cannot clobber the fields.
+  // The world state switches sit outside the form: a guest keeps them in the browser.
   return (
-    <SettingsForm
-      key={`${profile.phone ?? ""}|${profile.timezone}|${profile.digestHour}`}
-      profile={profile}
-      update={update}
-    />
+    <div className="grid gap-4">
+      {profile === null ? (
+        <p className="text-sm">Sign in to see your settings.</p>
+      ) : (
+        // Keyed on the saved values, so a save mid typing cannot clobber the fields.
+        <SettingsForm
+          key={`${profile.phone ?? ""}|${profile.timezone}|${profile.digestHour}`}
+          profile={profile}
+          update={update}
+        />
+      )}
+      <WorldStateCard />
+    </div>
   );
 }
 
