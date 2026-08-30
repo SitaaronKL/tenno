@@ -1,6 +1,6 @@
 import type { Bounty, BountyJob, RewardChances } from "../../lib/contracts/worldstate";
 import { bountyNode } from "./bounties";
-import table from "./static-bounties.json";
+import table from "./staticBounties.json";
 
 // Four boards are fixed: DE lists them in the world state with zero jobs, but they hand out the same
 // level bands and the same reward pools every rotation. The pools come from DE's own drop tables,

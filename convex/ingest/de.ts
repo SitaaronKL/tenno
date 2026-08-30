@@ -13,7 +13,7 @@ import type {
 } from "../../lib/contracts/worldstate";
 import { bountyNode, job } from "./bounties";
 import { STALE_AFTER_MS } from "./normalize";
-import { withStaticBounties } from "./static-bounties";
+import { withStaticBounties } from "./staticBounties";
 import tables from "./de-names.json";
 
 // DE's own world state. Every value in it is an internal id, so this file is mostly translation.

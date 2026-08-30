@@ -95,7 +95,7 @@ describe("normalize", () => {
   });
 
   test("builds the same bounty boards the DE reader builds", () => {
-    // The fixed boards upstream sends empty are filled elsewhere, see static-bounties.test.ts.
+    // The fixed boards upstream sends empty are filled elsewhere, see staticBounties.test.ts.
     expect(state.bounties!.filter((b) => !b.static).map((b) => b.syndicate)).toEqual([
       "Ostrons",
       "Entrati",

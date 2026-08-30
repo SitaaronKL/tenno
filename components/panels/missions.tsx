@@ -5,7 +5,6 @@ import { useState } from "react";
 import { Segmented } from "@/components/segmented";
 import type { ArchonHunt, Sortie } from "@/lib/contracts/worldstate";
 import { LayoutGridIcon } from "@/components/icons/layout-grid";
-import { Chip } from "./tier-badge";
 import { Empty, Panel } from "./panel";
 import { Countdown } from "./countdown";
 import { useNow } from "./use-now";
@@ -33,7 +32,7 @@ export function MissionSetPanel({
 
   return (
     <Panel
-      title={set === "sortie" ? "Sortie" : "Archon Hunt"}
+      title={set === "sortie" ? "Sortie" : data?.boss ?? "Archon Hunt"}
       icon={LayoutGridIcon}
       className={CLASS}
       action={
@@ -47,10 +46,6 @@ export function MissionSetPanel({
         <Empty>Nothing active.</Empty>
       ) : (
         <>
-          <div className="mb-2 flex items-center gap-2">
-            <span className="truncate font-medium">{data.boss}</span>
-            <Chip>{data.faction}</Chip>
-          </div>
           <ul className="divide-y divide-border">
             {data.missions.map((m) => (
               <li key={m.node} className="flex items-center gap-2 py-2">
