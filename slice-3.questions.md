@@ -10,3 +10,4 @@
 - Fissures come back with `expired` entries briefly. Assumption: I keep everything upstream returns and let the UI filter on `expiresAt`, except entries whose expiry already passed relative to `fetchedAt`.
 - Added devDependencies `vitest`, `convex-test`, `@edge-runtime/vm` and a `test` script, they were missing.
 - `crons.ts` is shared with slice 4. I added only the ingest interval and left a marked comment line where the digest cron goes.
+- `npx convex codegen` cannot reach a deployment without login, so `convex/_generated/api.d.ts` fell back to the untyped `AnyApi` form. My code compiles against it. The seam agent should re-run codegen once a deployment exists to get the typed api.
