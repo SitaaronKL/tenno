@@ -211,6 +211,7 @@ export function normalize(raw: Raw, fetchedAt: number = Date.now()): WorldState 
   return {
     platform: "pc",
     fetchedAt,
+    source: "warframestat",
     upstreamTimestamp,
     stale: fetchedAt - upstreamTimestamp > STALE_AFTER_MS,
     fissures: fissures(raw),

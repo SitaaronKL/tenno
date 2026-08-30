@@ -8,11 +8,12 @@ import {
   vFissureTier as fissureTier,
   vPlatform as platform,
   vRuleFilter as ruleFilter,
+  vSource as source,
 } from "./lib/validators";
 
 // Validators mirror lib/contracts. The rule ones live in lib/validators.ts.
 export { vRuleFilter, vRuleInput } from "./lib/validators";
-export { platform, channel, deliveryMode, fissureTier, cycleWorld, ruleFilter };
+export { platform, channel, deliveryMode, fissureTier, cycleWorld, ruleFilter, source };
 
 const reward = v.object({ item: v.string(), count: v.number(), credits: v.number() });
 
@@ -86,6 +87,8 @@ const cycle = v.object({ world: cycleWorld, state: v.string(), expiresAt: v.numb
 export const worldStateValidator = v.object({
   platform,
   fetchedAt: v.number(),
+  // Optional so world state rows written before the DE fallback still validate.
+  source: v.optional(source),
   upstreamTimestamp: v.number(),
   stale: v.boolean(),
   fissures: v.array(fissure),

@@ -33,4 +33,11 @@ describe("dashboard", () => {
     render(<Panels state={state({ stale: true, upstreamTimestamp: now - 25 * 60_000 })} />);
     expect(screen.getByText("Data is 25 minutes old")).toBeInTheDocument();
   });
+
+  it("credits DE when the feed came from DE's own endpoint", () => {
+    render(
+      <Panels state={state({ stale: true, source: "de", upstreamTimestamp: now - 25 * 60_000 })} />,
+    );
+    expect(screen.getByText(/Live from Digital Extremes/)).toBeInTheDocument();
+  });
 });
