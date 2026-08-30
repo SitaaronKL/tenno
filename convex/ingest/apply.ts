@@ -53,6 +53,10 @@ function eventsOf(state: WorldState): NewEvent[] {
   for (const b of state.bounties ?? []) {
     push("bounty", `${b.syndicate}:${b.expiresAt}`, state.fetchedAt, b.expiresAt, b);
   }
+  // One row per weekly rotation, the variant plus the expiry is what changes on a Monday.
+  for (const a of state.archimedea ?? []) {
+    push("archimedea", a.key, state.fetchedAt, a.expiresAt, a);
+  }
   // One event per phase. The start is rounded to the minute so every pull inside a phase agrees.
   for (const c of state.cycles) {
     const startsAt = Math.round((c.startsAt ?? c.expiresAt) / 60_000) * 60_000;

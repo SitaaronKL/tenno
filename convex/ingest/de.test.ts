@@ -216,3 +216,49 @@ describe("normalizeDe", () => {
     expect(bountyMissionType("")).toBe("");
   });
 });
+
+describe("Archimedea", () => {
+  const deep = state.archimedea!.find((a) => a.variant === "deep")!;
+  const temporal = state.archimedea!.find((a) => a.variant === "temporal")!;
+
+  test("reads both weekly sets and keys them by variant and expiry", () => {
+    expect(state.archimedea).toHaveLength(2);
+    expect(deep.key).toBe("deep:1788134400000");
+    expect(temporal.key).toBe("temporal:1788134400000");
+    expect(deep.expiresAt).toBe(1788134400000);
+  });
+
+  test("names the three Deep Archimedea missions, deviations and risks", () => {
+    expect(deep.missions).toEqual([
+      { missionType: "Alchemy", deviation: "Hazardous Goods", risks: ["Hostile Regeneration"] },
+      { missionType: "Survival", deviation: "Parasitic Towers", risks: ["Devil's Bargain"] },
+      { missionType: "Defense", deviation: "Glyph Inflation", risks: ["Fortified Foes"] },
+    ]);
+  });
+
+  test("carries the personal modifiers as printed names", () => {
+    expect(deep.personalModifiers).toEqual([
+      "Knifestep Syndrome",
+      "Untreatable",
+      "Abbreviated Abilities",
+      "Energy Exhaustion",
+    ]);
+  });
+
+  test("elite adds one risk per mission, in mission order", () => {
+    expect(deep.eliteBonus).toEqual(["Vampyric Liminus", "Entanglement", "Explosive Potential"]);
+  });
+
+  test("the Hex set reads as temporal with its own mission types", () => {
+    expect(temporal.missions.map((m) => m.missionType)).toEqual([
+      "Extermination",
+      "Legacyte Harvest",
+      "Defense",
+    ]);
+    expect(temporal.eliteBonus).toEqual([
+      "Devil's Bargain",
+      "Artillery Beacons",
+      "Competitive Streak",
+    ]);
+  });
+});

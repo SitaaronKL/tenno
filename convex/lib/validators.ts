@@ -60,6 +60,12 @@ export const vRuleFilter = v.union(
     level: v.union(v.number(), v.null()),
     missionTypes: v.union(v.array(v.string()), v.null()),
   }),
+  v.object({
+    kind: v.literal("archimedea"),
+    variant: v.union(v.literal("deep"), v.literal("temporal"), v.null()),
+    deviations: v.union(v.array(v.string()), v.null()),
+    risks: v.union(v.array(v.string()), v.null()),
+  }),
   v.object({ kind: v.literal("reset"), period: v.union(v.literal("daily"), v.literal("weekly")) }),
 );
 

@@ -265,4 +265,15 @@ describe("worldstate.get", () => {
     });
     expect((await t.query(api.worldstate.get, { platform: "pc" }))!.fissures).toHaveLength(0);
   });
+
+  test("one Archimedea row per weekly rotation, and a second pull adds nothing", async () => {
+    const t = convexTest(schema, modules);
+    const live = normalizeDe(de as unknown as Record<string, unknown>, Date.parse("2026-08-30T04:21:00.000Z"));
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: live });
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: live });
+
+    const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    const archimedea = events.filter((e) => e.kind === "archimedea");
+    expect(archimedea.map((e) => e.key).sort()).toEqual(["deep:1788134400000", "temporal:1788134400000"]);
+  });
 });

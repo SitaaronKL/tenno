@@ -30,6 +30,16 @@ export const SUGGESTIONS: Suggestion[] = [
     },
   },
   {
+    label: "Archimedea has a deviation you hate",
+    description: "Either weekly set drew Glyph Inflation or Parasitic Towers",
+    filter: {
+      kind: "archimedea",
+      variant: null,
+      deviations: ["Glyph Inflation", "Parasitic Towers"],
+      risks: null,
+    },
+  },
+  {
     label: "Daily reset",
     description: "Sorties, dailies and the Steel Path honours roll at 00:00 UTC",
     filter: { kind: "reset", period: "daily" },

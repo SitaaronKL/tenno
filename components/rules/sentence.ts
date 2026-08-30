@@ -10,6 +10,7 @@ export const KIND_LABELS: Record<RuleFilter["kind"], string> = {
   cycle: "World cycle",
   nightwave: "Nightwave",
   bounty: "Bounty",
+  archimedea: "Archimedea",
   reset: "Reset",
 };
 
@@ -82,6 +83,18 @@ export function ruleSentence(filter: RuleFilter): string {
       const board = filter.level === null ? "Any bounty" : `Tier ${filter.level} bounty`;
       const parts = [syndicates ? `${board} from ${joinOr(syndicates)}` : board];
       if (missions) parts.push(joinOr(missions));
+      return parts.join(", ");
+    }
+    case "archimedea": {
+      const deviations = some(filter.deviations);
+      const risks = some(filter.risks);
+      const set =
+        filter.variant === null
+          ? "Any Archimedea"
+          : `${filter.variant === "deep" ? "Deep" : "Temporal"} Archimedea`;
+      const parts = [set];
+      if (deviations) parts.push(`deviation ${joinOr(deviations)}`);
+      if (risks) parts.push(`risk ${joinOr(risks)}`);
       return parts.join(", ");
     }
     case "reset":

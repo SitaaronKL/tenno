@@ -7,6 +7,7 @@ import { useNow } from "./use-now";
 import { Empty } from "./panel";
 import { FissuresPanel } from "./fissures";
 import { MissionSetPanel } from "./missions";
+import { ArchimedeaPanel } from "./archimedea";
 import { BaroPanel } from "./baro";
 import { NightwavePanel } from "./nightwave";
 import { EventsPanel } from "./events";
@@ -83,6 +84,7 @@ export function Panels({ state }: { state: WorldState }) {
         <BountiesPanel bounties={bountiesOf(state)} />
         <EventsPanel invasions={state.invasions} alerts={state.alerts} />
         <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
+        <ArchimedeaPanel archimedea={state.archimedea ?? []} />
         {state.baro?.active ? <BaroPanel baro={state.baro} /> : null}
         <NightwavePanel nightwave={state.nightwave} />
       </div>

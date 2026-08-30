@@ -69,4 +69,18 @@ describe("rule sentence", () => {
   it("names what Baro has to bring", () => {
     expect(ruleSentence({ kind: "baro", items: ["Primed Chamber"] })).toBe("Baro brings Primed Chamber");
   });
+
+  it("names the Archimedea set, the deviations and the risks", () => {
+    expect(
+      ruleSentence({
+        kind: "archimedea",
+        variant: "deep",
+        deviations: ["Glyph Inflation"],
+        risks: ["Entanglement"],
+      }),
+    ).toBe("Deep Archimedea, deviation Glyph Inflation, risk Entanglement");
+    expect(
+      ruleSentence({ kind: "archimedea", variant: null, deviations: null, risks: null }),
+    ).toBe("Any Archimedea");
+  });
 });
