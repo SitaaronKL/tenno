@@ -94,3 +94,22 @@ References: ToDesktop https://mobbin.com/sites/sections/03ac58c4-657f-4005-a4c7-
 ## Accessibility
 
 Contrast at least 4.5 to 1 for text, 3 to 1 for chips. Every interactive element has a focus ring in accent. Countdown text also has a visible label for screen readers ("expires in 4 minutes").
+
+## Relic icons
+
+The tier pill in the Fissures table carries the relic icon at 16px, saved at 64px under `public/relics/<tier>.png`. These are Digital Extremes artwork, used under the Warframe fan content policy (https://www.warframe.com/fan-kit), not ours and not for sale. Sources on the Warframe wiki:
+
+```
+lith     https://wiki.warframe.com/w/File:LithRelicIntact.png
+meso     https://wiki.warframe.com/w/File:MesoRelicIntact.png
+neo      https://wiki.warframe.com/w/File:NeoRelicIntact.png
+axi      https://wiki.warframe.com/w/File:AxiRelicIntact.png
+requiem  https://wiki.warframe.com/w/File:RequiemRelicIntact.png
+omnia    https://wiki.warframe.com/w/File:Relic.png
+```
+
+Omnia has no relic of its own, it takes every relic, so it uses the generic relic icon and the pill cycles its gradient through the spectrum over 4 seconds. Every other tier keeps one hue, on the text and the ring only: Lith bronze `#b87333`, Meso silver `#a8b0b8`, Neo gold `#d4a017`, Axi platinum `#e8e8ec`, Requiem crimson `#c03a3a`. Everything else in the app stays black and white.
+
+## Panel collapse
+
+Every world state panel has a chevron at the right of its header. It condenses the card to that header row and expands it back, animating the height over 150ms ease out, still with no motion under `prefers-reduced-motion`. The count pill stays readable while collapsed, so a shut panel still says how much is behind it. The choice is remembered per panel in `localStorage` under `voidwatch.panels.<name>`, read after mount so the server markup and the first paint always agree.

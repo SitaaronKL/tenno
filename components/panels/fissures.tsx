@@ -79,8 +79,9 @@ const columns = helper.columns([
 ]);
 
 // Node is the only column that needs room, the rest hug their text.
+// Tier is wider than its pill on purpose, that slack is the gap before the mission name.
 const WIDTHS = {
-  tier: "w-16",
+  tier: "w-32",
   mission: "w-28",
   mode: "w-24",
   expires: "w-20 text-right",
