@@ -1,5 +1,9 @@
 # `@convex-dev/agent` (0.7.1)
 
+> Corrected against the installed 0.7.1 while merging the slices. Some examples below still use the 0.6 API.
+> `createTool` takes `inputSchema` and `execute`, not `args` and `handler`. The Agent config key is `languageModel`,
+> not `model`. `listUIMessages` takes `{ threadId, paginationOpts }` only, `syncStreams` handles `streamArgs`.
+
 AI agents on Convex: persistent threads/messages, streaming deltas over Convex's reactive queries, tool calling,
 hybrid vector/text context search, file handling, usage tracking. Built on the Vercel AI SDK (`ai` v5 APIs:
 `languageModel`, `stopWhen`, `stepCountIs`). Docs: https://docs.convex.dev/agents

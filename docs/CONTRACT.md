@@ -2,7 +2,8 @@
 
 One contract, many parallel slices. Every slice reads this file first. If you must deviate, append to your `<slice>.questions.md`, state your assumption, and continue. Never edit files another slice owns.
 
-Product name: **Tenno**. Repo: github.com/SitaaronKL/tenno. PC platform only in v1.
+Product name: **Voidwatch**. Repo: github.com/SitaaronKL/tenno, package name stays `tenno`. PC platform only in v1.
+Merged state: see `contract-errata.md` at the repo root for every place the code differs from this file.
 
 ## Stack (installed, do not add frameworks)
 
@@ -15,7 +16,8 @@ Docs for every piece live in `docs/`. Read the relevant folder before writing co
 - `lib/contracts/rule.ts`: zod `RuleFilter`, `RuleInput`, `Channel`, `DeliveryMode`, `EVENT_KINDS`
 - `lib/contracts/worldstate.ts`: normalized `WorldState` and every panel type
 
-Convex validators in `convex/schema.ts` mirror these. If you change one, change both and log it in `questions.md`.
+Convex validators mirror these in `convex/lib/validators.ts` (`vRuleFilter`, `vRuleInput`, `vPlatform`, `vChannel`,
+`vDeliveryMode`), re-exported by `convex/schema.ts`. If you change one, change both and log it in `questions.md`.
 
 ## Convex schema (`convex/schema.ts`, owned by slice 1)
 
@@ -24,7 +26,7 @@ authTables                      from @convex-dev/auth (users, sessions, ...)
 profiles      { userId, email, phone?, photonUserId?, phoneVerifiedAt?, timezone, digestHour, platform: "pc" }
                 index by_user [userId]
 worldState    { platform, fetchedAt, data: WorldState }            index by_platform [platform]
-worldEvents   { platform, kind, key, startsAt, expiresAt, payload } index by_platform_kind_key [platform, kind, key], by_seen [seenAt]
+worldEvents   { platform, kind, key, startsAt, expiresAt?, payload: any } index by_platform_kind_key [platform, kind, key], by_seen [seenAt]
               seenAt = first time we saw it. One row per upstream entity, never updated.
 rules         { userId, name, filter: RuleFilter, mode, channels, enabled, source: "manual"|"ai", createdAt }
                 index by_user [userId], by_kind [filter.kind, enabled]
@@ -56,25 +58,32 @@ convex/matcher.ts            pure fn  matches(filter, event) => boolean    unit 
 
 convex/notify.ts             internal action send({notificationId})       dispatch by channel, mark sent/failed
                              internal action digest()                     group pending digest notifications per user, one message per channel
-convex/email.ts              internal action sendEmail({to, subject, react}) via resend component
+convex/email.ts              internal action sendEmail({to, subject, react}) via resend component, "use node"
+                             react is a serializable descriptor { template, props }, exported as vReact,
+                             templates RuleMatch, Digest, MagicLink
 convex/emails/*.tsx          React Email templates: RuleMatch, Digest, MagicLink
-convex/photon.ts             internal action registerUser({phone})        Photon Users API, store photonUserId
+convex/photon.ts             internal action registerUser({phone})        Photon Users API, returns photonUserId
                              internal action sendText({photonUserId|phone, text})
-                             http action     POST /photon/webhook           inbound iMessage -> agent thread -> reply
+                             internal action reply({phone, text})         agent answer, sent back over iMessage
+convex/photonHttp.ts         http action     POST /photon/webhook         verifies the signature, schedules photon.reply
+                             photon.ts is "use node" for spectrum-ts, http actions run in the default runtime
 
-convex/profiles.ts           query    me()                                 profile + auth user
-                             mutation update({timezone?, digestHour?, phone?})  phone change calls photon.registerUser
+convex/profiles.ts           query    me()                                 { user, profile }, profile carries phoneVerified
+                             mutation update({timezone?, digestHour?, phone?})  phone change schedules profiles.linkPhoton
+                             internal action linkPhoton, internal mutation storePhotonUserId
 
 convex/agent/index.ts        Agent definition (name "tenno", model gpt-5.6-luna via @ai-sdk/openai)
 convex/agent/tools.ts        tools: getWorldState, createRule, listRules, searchItems
 convex/agent/chat.ts         mutation startThread(), action sendMessage({threadId, text}), query listMessages({threadId})
+                             internal action replyToInbound({phone, text}) => string, the iMessage entry point
 convex/agent/ruleBuilder.ts  action  draft({text}) => RuleInput           structured output, never saves
-convex/wiki.ts               action  searchItems({q})                     MediaWiki api.php, cached in table wikiCache
+convex/wiki.ts               action  searchItems({q})                     MediaWiki api.php, cached in memory for an hour
 
-convex/auth.ts, convex/auth.config.ts, convex/http.ts   Convex Auth: Discord + Resend magic link. http.ts also mounts photon webhook.
+convex/auth.ts, convex/auth.config.ts, convex/http.ts   Convex Auth: Discord, Resend magic link through convex/email.ts,
+plus the Anonymous provider as a dev only way in until the Discord and Resend keys exist. http.ts mounts the photon webhook.
 ```
 
-All public queries/mutations call `requireUser(ctx)` from `convex/lib/auth.ts` and scope by userId. Never take userId as an argument.
+All public queries/mutations call `requireUser(ctx)` from `convex/lib/auth.ts`, which returns `{ userId }`, and scope by userId. Never take userId as an argument.
 
 ## Next.js routes
 
@@ -88,7 +97,9 @@ app/(app)/chat/page.tsx           agent chat (slice 7)
 app/(app)/settings/page.tsx       email, phone opt in, digest hour, timezone (slice 6)
 ```
 
-Providers: `app/ConvexClientProvider.tsx` wraps `ConvexAuthNextjsProvider`. `proxy.ts` protects `(app)` routes with `convexAuthNextjsMiddleware`.
+Providers: `app/ConvexClientProvider.tsx` wraps `ConvexAuthNextjsProvider`, mounted in `app/layout.tsx` together with the
+single `<Toaster />`. `proxy.ts` protects `(app)` routes with `convexAuthNextjsMiddleware`. `app/logo/page.tsx` is a
+temporary logo board and is not part of the product.
 
 ## Env vars
 
@@ -117,6 +128,8 @@ Next.js: `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT`. See `.env.example`.
 - Branch `dhruv/slice-<n>-<name>` from `main`. Commit small. No dashes in commit messages or PR titles, use commas or a colon. PR title `Area: plain sentence`.
 - Keep the slice near 300 added lines of real code. Tests do not count.
 - Tests assert what a user perceives. Convex functions use `convex-test`. Pure functions use vitest.
+  One `vitest.config.ts` with two projects: `ui` runs `**/*.test.tsx` under jsdom, `convex` runs `convex/**/*.test.ts`
+  under the edge runtime. One `vitest.setup.ts`, one `test` script.
 - Write `<slice>.questions.md` at repo root, append every question and the assumption you continued with.
 - Do not install new packages without logging it in questions.md.
 - Comments say why, one line, no history.

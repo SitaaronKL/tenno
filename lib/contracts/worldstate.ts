@@ -36,7 +36,7 @@ export interface Sortie {
   startsAt: number; expiresAt: number;
 }
 
-export interface ArchonHunt extends Sortie {}
+export type ArchonHunt = Sortie;
 
 export interface Baro {
   key: string; location: string; active: boolean;
@@ -55,9 +55,16 @@ export interface Cycle {
   expiresAt: number;
 }
 
+// Which upstream answered. Optional so rows written before the DE fallback still read back.
+export type Source = "warframestat" | "de";
+
 export interface WorldState {
   platform: Platform;
   fetchedAt: number;
+  source?: Source;
+  upstreamTimestamp: number; // when upstream says the snapshot was built
+  stale: boolean; // upstream is more than ten minutes behind
+
   fissures: Fissure[];
   alerts: Alert[];
   invasions: Invasion[];
