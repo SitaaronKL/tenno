@@ -173,6 +173,5 @@ export default defineSchema({
     sentAt: v.optional(v.number()),
   })
     .index("by_rule_event", ["ruleId", "eventId"])
-    .index("by_user_status", ["userId", "status"])
-    .index("by_status", ["status"]),
+    .index("by_user_status", ["userId", "status"]),
 });

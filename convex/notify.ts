@@ -65,38 +65,108 @@ export const loadDelivery = internalQuery({
   },
 });
 
-export const pendingDigest = internalQuery({
-  args: {},
+// The hour the user is living in, so a digest lands when they asked for it.
+export function localHour(timezone: string, at: number): number {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: timezone, hour: "numeric", hour12: false }).format(
+      new Date(at),
+    );
+    return Number(parts) % 24;
+  } catch {
+    return new Date(at).getUTCHours();
+  }
+}
+
+// One key per local hour, so a rerun of the cron cannot send the same digest twice.
+export function localHourKey(timezone: string, at: number): string {
+  try {
+    return new Intl.DateTimeFormat("en-CA", {
+      timeZone: timezone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      hour12: false,
+    }).format(new Date(at));
+  } catch {
+    return new Date(at).toISOString().slice(0, 13);
+  }
+}
+
+// One page of profiles, so the digest never depends on a single unbounded read.
+export const dueUsers = internalQuery({
+  args: { now: v.number(), cursor: v.union(v.string(), v.null()) },
+  returns: v.object({
+    userIds: v.array(v.id("users")),
+    cursor: v.union(v.string(), v.null()),
+    isDone: v.boolean(),
+  }),
+  handler: async (ctx, { now, cursor }) => {
+    const page = await ctx.db.query("profiles").paginate({ cursor, numItems: 100 });
+    const userIds = page.page
+      .filter((profile) => localHour(profile.timezone, now) === profile.digestHour)
+      .filter(
+        (profile) =>
+          profile.lastDigestAt === undefined ||
+          localHourKey(profile.timezone, profile.lastDigestAt) !== localHourKey(profile.timezone, now),
+      )
+      .map((profile) => profile.userId);
+    return { userIds, cursor: page.continueCursor, isDone: page.isDone };
+  },
+});
+
+// Digest rows for one user, found through by_user_status so a busy neighbour cannot starve them.
+export const pendingDigestFor = internalQuery({
+  args: { userId: v.id("users") },
   returns: v.any(),
-  handler: async (ctx): Promise<Delivery[]> => {
-    const pending = await ctx.db
-      .query("notifications")
-      .withIndex("by_status", (q) => q.eq("status", "pending"))
-      .take(1000);
+  handler: async (ctx, { userId }): Promise<Delivery[]> => {
     const out: Delivery[] = [];
-    for (const notification of pending) {
-      const rule = await ctx.db.get("rules", notification.ruleId);
-      if (!rule || rule.mode !== "digest") continue;
-      const event = await ctx.db.get("worldEvents", notification.eventId);
-      const profile = await ctx.db
-        .query("profiles")
-        .withIndex("by_user", (q) => q.eq("userId", notification.userId))
-        .first();
-      const user = await ctx.db.get(notification.userId);
-      out.push({
-        notificationId: notification._id,
-        userId: notification.userId,
-        channel: notification.channel,
-        ruleName: rule.name,
-        kind: event?.kind ?? "event",
-        line: describe(rule, event),
-        email: profile?.email || user?.email || "",
-        phone: profile?.phone ?? null,
-        photonUserId: profile?.photonUserId ?? null,
-        phoneVerified: profile?.phoneVerifiedAt !== undefined,
-      });
+    let cursor: string | null = null;
+    let isDone = false;
+    while (!isDone && out.length < 200) {
+      const page = await ctx.db
+        .query("notifications")
+        .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "pending"))
+        .paginate({ cursor, numItems: 100 });
+      cursor = page.continueCursor;
+      isDone = page.isDone;
+      for (const notification of page.page) {
+        if (notification.mode !== "digest") continue;
+        const rule = await ctx.db.get("rules", notification.ruleId);
+        const event = await ctx.db.get("worldEvents", notification.eventId);
+        const profile = await ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .first();
+        const user = await ctx.db.get(userId);
+        out.push({
+          notificationId: notification._id,
+          userId,
+          channel: notification.channel,
+          ruleName: rule?.name ?? "Rule",
+          kind: event?.kind ?? "event",
+          line: describe(rule, event),
+          email: profile?.email || user?.email || "",
+          phone: profile?.phone ?? null,
+          photonUserId: profile?.photonUserId ?? null,
+          phoneVerified: profile?.phoneVerifiedAt !== undefined,
+        });
+      }
     }
     return out;
+  },
+});
+
+export const recordDigest = internalMutation({
+  args: { userId: v.id("users"), at: v.number() },
+  returns: v.null(),
+  handler: async (ctx, { userId, at }) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (profile) await ctx.db.patch(profile._id, { lastDigestAt: at });
+    return null;
   },
 });
 
@@ -190,41 +260,59 @@ export const send = internalAction({
 });
 
 export const digest = internalAction({
-  args: {},
+  // now is injectable so the hour the digest picks is testable.
+  args: { now: v.optional(v.number()) },
   returns: v.null(),
-  handler: async (ctx) => {
-    const pending = (await ctx.runQuery(internal.notify.pendingDigest, {})) as Delivery[];
-    const groups = new Map<string, Delivery[]>();
-    for (const delivery of pending) {
-      const key = `${delivery.userId}:${delivery.channel}`;
-      const group = groups.get(key) ?? [];
-      group.push(delivery);
-      groups.set(key, group);
-    }
+  handler: async (ctx, args) => {
+    const now = args.now ?? Date.now();
+    let cursor: string | null = null;
+    let isDone = false;
 
-    for (const group of groups.values()) {
-      const ids = group.map((d) => d.notificationId);
-      const reason = undeliverable(group[0]);
-      if (reason) {
-        await ctx.runMutation(internal.notify.mark, { notificationIds: ids, status: "skipped", error: reason });
-        continue;
-      }
-      const body = group.map((d) => d.line).join("\n");
-      try {
-        await dispatch(ctx, group[0], `Voidwatch digest: ${group.length} matches`, body, {
-          template: "Digest",
-          props: {
-            items: group.map((d) => ({ ruleName: d.ruleName, title: d.line })),
-            url: siteUrl(),
-          },
-        });
-        await ctx.runMutation(internal.notify.mark, { notificationIds: ids, status: "sent" });
-      } catch (e) {
-        await ctx.runMutation(internal.notify.mark, {
-          notificationIds: ids,
-          status: "failed",
-          error: e instanceof Error ? e.message : String(e),
-        });
+    while (!isDone) {
+      const page: { userIds: Id<"users">[]; cursor: string | null; isDone: boolean } = await ctx.runQuery(
+        internal.notify.dueUsers,
+        { now, cursor },
+      );
+      cursor = page.cursor;
+      isDone = page.isDone;
+
+      for (const userId of page.userIds) {
+        const pending = (await ctx.runQuery(internal.notify.pendingDigestFor, { userId })) as Delivery[];
+        if (pending.length === 0) continue;
+
+        const groups = new Map<string, Delivery[]>();
+        for (const delivery of pending) {
+          const group = groups.get(delivery.channel) ?? [];
+          group.push(delivery);
+          groups.set(delivery.channel, group);
+        }
+
+        for (const group of groups.values()) {
+          const ids = group.map((d) => d.notificationId);
+          const reason = undeliverable(group[0]);
+          if (reason) {
+            await ctx.runMutation(internal.notify.mark, { notificationIds: ids, status: "skipped", error: reason });
+            continue;
+          }
+          const body = group.map((d) => d.line).join("\n");
+          try {
+            await dispatch(ctx, group[0], `Voidwatch digest: ${group.length} matches`, body, {
+              template: "Digest",
+              props: {
+                items: group.map((d) => ({ ruleName: d.ruleName, title: d.line })),
+                url: siteUrl(),
+              },
+            });
+            await ctx.runMutation(internal.notify.mark, { notificationIds: ids, status: "sent" });
+          } catch (e) {
+            await ctx.runMutation(internal.notify.mark, {
+              notificationIds: ids,
+              status: "failed",
+              error: e instanceof Error ? e.message : String(e),
+            });
+          }
+        }
+        await ctx.runMutation(internal.notify.recordDigest, { userId, at: now });
       }
     }
     return null;

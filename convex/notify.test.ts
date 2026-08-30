@@ -103,6 +103,77 @@ async function seed(t: ReturnType<typeof setup>, options: SeedOptions = {}) {
   });
 }
 
+// 2026-08-30T13:00:00Z is 09:00 in New York.
+const NINE_IN_NEW_YORK = Date.parse("2026-08-30T13:00:00.000Z");
+
+async function seedDigest(t: ReturnType<typeof setup>, timezone: string, digestHour: number) {
+  return await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+    await ctx.db.insert("profiles", {
+      userId,
+      email: "tenno@example.com",
+      timezone,
+      digestHour,
+      platform: "pc" as const,
+    });
+    const ruleId = await ctx.db.insert("rules", {
+      userId,
+      name: "Axi survival",
+      filter: { kind: "fissure", tiers: ["Axi"], missionTypes: ["Survival"], steelPath: null, storm: null },
+      mode: "digest" as const,
+      channels: ["email"],
+      enabled: true,
+      source: "manual" as const,
+      createdAt: Date.now(),
+    });
+    const eventId = await ctx.db.insert("worldEvents", {
+      platform: "pc" as const,
+      kind: "fissure",
+      key: "f1",
+      startsAt: Date.now(),
+      seenAt: Date.now(),
+      payload: { tier: "Axi", missionType: "Survival", node: "Ani (Void)", steelPath: false, storm: false },
+    });
+    await ctx.db.insert("notifications", {
+      userId,
+      ruleId,
+      eventId,
+      channel: "email" as const,
+      mode: "digest" as const,
+      status: "pending" as const,
+      createdAt: Date.now(),
+    });
+    return { userId };
+  });
+}
+
+describe("notify.digest", () => {
+  test("the digest waits for the hour the user picked, in their timezone", async () => {
+    const t = setup();
+    await seedDigest(t, "America/New_York", 9);
+
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK - 3 * 3_600_000 });
+    let rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("pending");
+    expect(sent.emails).toHaveLength(0);
+
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+    rows = await t.run((ctx) => ctx.db.query("notifications").collect());
+    expect(rows[0].status).toBe("sent");
+    expect(sent.emails).toHaveLength(1);
+  });
+
+  test("one local hour sends one digest, even if the cron runs again", async () => {
+    const t = setup();
+    await seedDigest(t, "America/New_York", 9);
+
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK });
+    await t.action(internal.notify.digest, { now: NINE_IN_NEW_YORK + 60_000 });
+
+    expect(sent.emails).toHaveLength(1);
+  });
+});
+
 describe("notify.send", () => {
   test("an unverified phone is never texted, the user sees why", async () => {
     const t = setup();
