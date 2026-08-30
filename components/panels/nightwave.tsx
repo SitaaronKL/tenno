@@ -37,10 +37,11 @@ export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
           <AccordionItem key={a.key} value={a.key}>
             <AccordionTrigger className="gap-2">
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <Chip className="no-underline">{a.daily ? "Daily" : "Weekly"}</Chip>
-                <TruncatedCell text={a.title} className="min-w-0 flex-1" />
-                {/* The row underlines on hover, the pill and the number are not the link text. */}
-                <span className="ml-auto shrink-0 font-mono text-xs font-normal text-muted-foreground no-underline tabular-nums">
+                <Chip>{a.daily ? "Daily" : "Weekly"}</Chip>
+                <span data-primary className="min-w-0 flex-1">
+                  <TruncatedCell text={a.title} />
+                </span>
+                <span className="ml-auto shrink-0 font-mono text-xs font-normal text-muted-foreground tabular-nums">
                   {a.reputation} rep
                 </span>
               </span>

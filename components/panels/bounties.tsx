@@ -41,7 +41,7 @@ export function BountiesPanel({ bounties }: { bounties: Bounty[] }) {
             <AccordionItem key={`${b.syndicate}-${b.node}`} value={`${b.syndicate}-${b.node}`}>
               <AccordionTrigger className="gap-2">
                 <span className="flex min-w-0 flex-1 items-center gap-2">
-                  <span className="truncate">{b.syndicate}</span>
+                  <span data-primary className="truncate">{b.syndicate}</span>
                   <span className="truncate text-xs font-normal text-muted-foreground">
                     {b.node}
                   </span>
