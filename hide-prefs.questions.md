@@ -3,8 +3,8 @@
 Slice: bounty rows and hide preferences. Branch `dhruv/hide-prefs`.
 
 - Hidden keys carry their group: `box.*`, `board.*`, `tile.*`. A flat list would collide, Baro is a box
-  and a tile, Cetus is a board and a tile. The extras slice keys are `box.incursions`, `box.weekly` and
-  `tile.arbitration`, their switches already draw and take effect the moment those pieces land.
+  and a tile, Cetus is a board and a tile. The extras slice landed during this one, so `box.incursions`,
+  `box.weekly` and `tile.arbitration` are wired to its real boxes and tile, not just reserved.
 - The one list lives in `lib/contracts/preferences.ts`. `convex/profiles.ts` imports it, so a key the UI
   never draws is refused on the way in.
 - A bounty row prints the derived level band, "5 to 15", not upstream's raw "5 - 15" string, so it reads
