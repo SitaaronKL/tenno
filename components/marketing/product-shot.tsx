@@ -46,7 +46,7 @@ export function ProductShot() {
             <ul className="divide-y divide-border">
               {ROWS.map((r) => (
                 <li key={r.node} className="flex items-center gap-3 px-4 py-2.5 text-sm">
-                  <span className="w-14 shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-center text-xs text-primary ring-1 ring-primary/25">
+                  <span className="w-14 shrink-0 rounded-full bg-accent-soft px-2 py-0.5 text-center text-xs text-accent-strong ring-1 ring-primary/25">
                     {r.tier}
                   </span>
                   <span className="font-medium">{r.mission}</span>

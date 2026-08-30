@@ -21,7 +21,7 @@ export function Countdown({
   return (
     <span
       className={cn(
-        "font-mono text-xs tabular-nums",
+        "shrink-0 whitespace-nowrap font-mono text-xs tabular-nums",
         soon ? "text-warning" : "text-muted-foreground",
         className,
       )}

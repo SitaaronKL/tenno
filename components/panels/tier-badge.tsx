@@ -6,11 +6,11 @@ export type Tier = (typeof TIERS)[number];
 // Relic colors are the ones players already read in game.
 const TONE: Record<string, string> = {
   Lith: "bg-surface-2 text-muted-foreground ring-border",
-  Meso: "bg-sky-400/10 text-sky-300 ring-sky-400/25",
-  Neo: "bg-violet-400/10 text-violet-300 ring-violet-400/25",
-  Axi: "bg-accent-soft text-primary ring-primary/25",
-  Requiem: "bg-red-400/10 text-red-300 ring-red-400/25",
-  Omnia: "bg-white/10 text-foreground ring-white/20",
+  Meso: "bg-sky-500/10 text-sky-700 ring-sky-500/25 dark:text-sky-300",
+  Neo: "bg-violet-500/10 text-violet-700 ring-violet-500/25 dark:text-violet-300",
+  Axi: "bg-accent-soft text-accent-strong ring-primary/25",
+  Requiem: "bg-red-500/10 text-red-700 ring-red-500/25 dark:text-red-300",
+  Omnia: "bg-foreground/8 text-foreground ring-foreground/20",
 };
 
 export function TierBadge({ tier }: { tier: string }) {

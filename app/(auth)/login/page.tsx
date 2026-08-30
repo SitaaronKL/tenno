@@ -72,7 +72,7 @@ export default function LoginPage() {
       <Card className="relative w-full max-w-sm">
         {sentTo ? (
           <>
-            <CardHeader className="items-center text-center">
+            <CardHeader className="justify-items-center text-center">
               <LogoMark size={32} className="mb-2" />
               <CardTitle>Check your email</CardTitle>
               <CardDescription>
@@ -87,7 +87,7 @@ export default function LoginPage() {
           </>
         ) : (
           <>
-            <CardHeader className="items-center text-center">
+            <CardHeader className="justify-items-center text-center">
               <LogoMark size={32} className="mb-2" />
               <CardTitle>Sign in to Voidwatch</CardTitle>
               <CardDescription>Warframe world state, watched your way.</CardDescription>

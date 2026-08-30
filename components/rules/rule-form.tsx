@@ -36,7 +36,7 @@ function Chip({
     <Popover>
       <PopoverTrigger
         aria-label={`${label}: ${value}`}
-        className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 align-middle text-sm font-medium text-foreground ring-1 ring-border transition-colors duration-150 ease-out hover:bg-accent-soft hover:text-primary"
+        className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-0.5 align-middle text-sm font-medium text-foreground ring-1 ring-border transition-colors duration-150 ease-out hover:bg-accent-soft hover:text-accent-strong"
       >
         {value}
         <ChevronDownIcon size={12} className="text-muted-foreground" aria-hidden="true" />

@@ -49,6 +49,7 @@
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-accent-soft: var(--accent-soft);
+  --color-accent-strong: var(--accent-strong);
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-danger: var(--danger);
@@ -70,6 +71,8 @@
   /* Void gold is the one accent, so shadcn primary is gold and every hover surface stays neutral. */
   --primary: #d99a1e;
   --primary-foreground: #0a0a0a;
+  /* Gold as a fill passes on light, gold as text does not, so text uses a darker gold. */
+  --accent-strong: #8a6100;
   --accent-soft: rgb(217 154 30 / 0.08);
   --secondary: #f4f4f5;
   --secondary-foreground: #0a0a0a;
@@ -113,6 +116,7 @@
   --popover-foreground: #f5f5f5;
   --primary: #f5b942;
   --primary-foreground: #0a0a0a;
+  --accent-strong: #f5b942;
   --accent-soft: rgb(245 185 66 / 0.08);
   --secondary: #181818;
   --secondary-foreground: #f5f5f5;

@@ -19,7 +19,7 @@ export function HowItWorks() {
             const Icon = s.icon;
             return (
               <li key={s.title} className="flex gap-4">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-primary ring-1 ring-primary/25">
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-strong ring-1 ring-primary/25">
                   {Icon ? <Icon size={16} aria-hidden="true" /> : <LogoMark size={16} />}
                 </span>
                 <div>

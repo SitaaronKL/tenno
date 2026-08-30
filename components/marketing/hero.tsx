@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRightIcon } from "@/components/icons/arrow-right";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export const PITCH =
   "Live Warframe world state, alerts by email or iMessage the moment something you care about opens, and an agent you can text.";
@@ -17,7 +18,7 @@ export function Hero() {
           width={900}
           height={900}
           priority
-          className="max-w-none -translate-y-24 opacity-[0.04]"
+          className="max-w-none -translate-y-12 opacity-[0.07]"
         />
       </div>
       <div
@@ -25,7 +26,7 @@ export function Hero() {
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[560px] bg-[radial-gradient(ellipse_at_top,var(--accent-soft),transparent_65%)]"
       />
       <div className="mx-auto max-w-3xl">
-        <span className="inline-flex items-center rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-primary ring-1 ring-primary/25">
+        <span className="inline-flex items-center rounded-full bg-accent-soft px-3 py-1 text-xs font-medium text-accent-strong ring-1 ring-primary/25">
           Warframe companion
         </span>
         <h1 className="mt-6 text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
@@ -33,12 +34,16 @@ export function Hero() {
         </h1>
         <p className="mt-6 text-lg leading-8 text-balance text-muted-foreground">{PITCH}</p>
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button size="lg" className="px-6" render={<Link href="/login" />}>
+          {/* Links, not buttons, so they keep link semantics and open in a new tab. */}
+          <Link href="/login" className={cn(buttonVariants({ size: "lg" }), "px-6")}>
             Get started <ArrowRightIcon size={16} />
-          </Button>
-          <Button size="lg" variant="outline" className="px-6" render={<Link href="/dashboard" />}>
+          </Link>
+          <Link
+            href="/dashboard"
+            className={cn(buttonVariants({ size: "lg", variant: "outline" }), "px-6")}
+          >
             See the dashboard
-          </Button>
+          </Link>
         </div>
       </div>
     </section>

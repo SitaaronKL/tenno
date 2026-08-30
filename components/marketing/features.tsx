@@ -28,7 +28,7 @@ export function Features() {
           const Icon = f.icon;
           return (
             <li key={f.title}>
-              <span className="mb-4 inline-flex size-9 items-center justify-center rounded-lg bg-accent-soft text-primary ring-1 ring-primary/25">
+              <span className="mb-4 inline-flex size-9 items-center justify-center rounded-lg bg-accent-soft text-accent-strong ring-1 ring-primary/25">
                 <Icon size={18} aria-hidden="true" />
               </span>
               <h3 className="font-medium">{f.title}</h3>

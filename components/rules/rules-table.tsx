@@ -31,7 +31,7 @@ function RuleRow({ rule }: { rule: Rule }) {
   const [editing, setEditing] = useState(false);
 
   return (
-    <li className="flex items-center gap-4 px-4 py-3">
+    <li className="flex items-center gap-4 px-4 py-3 transition-colors duration-150 ease-out hover:bg-surface-2">
       <Switch
         aria-label={`Enable ${rule.name}`}
         checked={rule.enabled}
