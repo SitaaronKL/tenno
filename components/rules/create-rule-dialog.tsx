@@ -50,7 +50,7 @@ export function CreateRuleDialog() {
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>New rule</DialogTitle>
-          <DialogDescription>Tell Tenno what to watch for and how to reach you.</DialogDescription>
+          <DialogDescription>Tell Voidwatch what to watch for and how to reach you.</DialogDescription>
         </DialogHeader>
         <Tabs defaultValue="build">
           <TabsList>

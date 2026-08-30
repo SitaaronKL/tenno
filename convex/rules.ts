@@ -6,6 +6,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import { requireUser } from "./lib/auth";
 import { matches } from "./matcher";
 import { RuleInput, type RuleFilter } from "../lib/contracts/rule";
+import { vRuleFilter } from "./lib/validators";
 
 // Cap the noise a single rule storm can cause per user.
 // Cast because codegen without a deployment types components loosely.
@@ -16,7 +17,7 @@ const rateLimiter = new RateLimiter(rateLimiterComponent, {
 
 const ruleInputArgs = {
   name: v.string(),
-  filter: v.any(),
+  filter: vRuleFilter,
   mode: v.union(v.literal("instant"), v.literal("digest")),
   channels: v.array(v.union(v.literal("email"), v.literal("imessage"))),
 };
@@ -25,7 +26,7 @@ export const list = query({
   args: {},
   returns: v.array(v.any()),
   handler: async (ctx) => {
-    const userId = await requireUser(ctx);
+    const { userId } = await requireUser(ctx);
     return await ctx.db
       .query("rules")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -37,7 +38,7 @@ export const create = mutation({
   args: ruleInputArgs,
   returns: v.id("rules"),
   handler: async (ctx, args) => {
-    const userId = await requireUser(ctx);
+    const { userId } = await requireUser(ctx);
     const input = RuleInput.parse(args);
     return await ctx.db.insert("rules", {
       userId,
@@ -56,14 +57,14 @@ export const update = mutation({
   args: {
     id: v.id("rules"),
     name: v.optional(v.string()),
-    filter: v.optional(v.any()),
+    filter: v.optional(vRuleFilter),
     mode: v.optional(v.union(v.literal("instant"), v.literal("digest"))),
     channels: v.optional(v.array(v.union(v.literal("email"), v.literal("imessage")))),
     enabled: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, { id, ...patch }) => {
-    const userId = await requireUser(ctx);
+    const { userId } = await requireUser(ctx);
     const rule = await ctx.db.get("rules", id);
     if (!rule || rule.userId !== userId) throw new Error("Rule not found");
     // Validate the merged rule so a partial edit can never store an invalid filter.
@@ -85,7 +86,7 @@ export const remove = mutation({
   args: { id: v.id("rules") },
   returns: v.null(),
   handler: async (ctx, { id }) => {
-    const userId = await requireUser(ctx);
+    const { userId } = await requireUser(ctx);
     const rule = await ctx.db.get("rules", id);
     if (!rule || rule.userId !== userId) throw new Error("Rule not found");
     await ctx.db.delete("rules", id);
@@ -102,7 +103,7 @@ export const evaluate = internalMutation({
       if (!event) continue;
       const rules = await ctx.db
         .query("rules")
-        .withIndex("by_kind", (q) => q.eq("filter.kind", event.kind).eq("enabled", true))
+        .withIndex("by_kind", (q) => q.eq("filter.kind", event.kind as RuleFilter["kind"]).eq("enabled", true))
         .collect();
 
       for (const rule of rules as Doc<"rules">[]) {

@@ -23,8 +23,8 @@ describe("apply", () => {
     const t = convexTest(schema, modules);
     await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
 
-    const stored = await t.query(api.worldstate.get, { platform: "pc" });
-    expect(stored.sortie.boss).toBe("Tyl Regor");
+    const stored = (await t.query(api.worldstate.get, { platform: "pc" }))!;
+    expect(stored.sortie!.boss).toBe("Tyl Regor");
     expect(stored.fissures.length).toBeGreaterThan(0);
   });
 
@@ -34,7 +34,7 @@ describe("apply", () => {
     const later = FETCHED_AT + 5 * 60_000;
     await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state(later) });
 
-    const stored = await t.query(api.worldstate.get, { platform: "pc" });
+    const stored = (await t.query(api.worldstate.get, { platform: "pc" }))!;
     expect(stored.fetchedAt).toBe(later);
     const rows = await t.run(async (ctx) => await ctx.db.query("worldState").collect());
     expect(rows).toHaveLength(1);

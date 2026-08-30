@@ -1,10 +1,10 @@
 "use node";
 
-import { makeFunctionReference } from "convex/server";
 import { v } from "convex/values";
 import { Spectrum } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 import { internalAction } from "./_generated/server";
+import { internal } from "./_generated/api";
 
 const API = "https://spectrum.photon.codes";
 
@@ -84,18 +84,11 @@ export const sendText = internalAction({
   },
 });
 
-// Slice 7 owns the agent, so the inbound reply is called by contract name.
-const agentChat = makeFunctionReference<
-  "action",
-  { phone: string; text: string },
-  string
->("agent/chat:replyToInbound");
-
 export const reply = internalAction({
   args: { phone: v.string(), text: v.string() },
   returns: v.null(),
   handler: async (ctx, { phone, text }) => {
-    const answer = await ctx.runAction(agentChat, { phone, text });
+    const answer = await ctx.runAction(internal.agent.chat.replyToInbound, { phone, text });
     const app = await client();
     const im = imessage(app);
     const space = await im.space.create(phone);

@@ -8,6 +8,7 @@ type Delivery = {
   userId: string;
   channel: "email" | "imessage";
   ruleName: string;
+  kind: string;
   line: string;
   email: string;
   phone: string | null;
@@ -40,6 +41,7 @@ export const loadDelivery = internalQuery({
       userId: notification.userId,
       channel: notification.channel,
       ruleName: rule?.name ?? "Rule",
+      kind: event?.kind ?? "event",
       line: describe(rule, event),
       email: profile.email,
       phone: profile.phone ?? null,
@@ -71,6 +73,7 @@ export const pendingDigest = internalQuery({
         userId: notification.userId,
         channel: notification.channel,
         ruleName: rule.name,
+        kind: event?.kind ?? "event",
         line: describe(rule, event),
         email: profile.email,
         phone: profile.phone ?? null,
@@ -100,19 +103,21 @@ export const mark = internalMutation({
   },
 });
 
+// Where an email links back to, the deployment sets SITE_URL.
+function siteUrl(): string {
+  return process.env.SITE_URL ?? "https://voidwatch.app";
+}
+
 async function dispatch(
   ctx: { runAction: (ref: any, args: any) => Promise<unknown> },
   delivery: Delivery,
   subject: string,
   body: string,
+  react: unknown,
 ): Promise<void> {
   if (delivery.channel === "email") {
-    // A React element cannot cross a Convex function boundary, so slice 9 renders from this descriptor.
-    await ctx.runAction(internal.email.sendEmail, {
-      to: delivery.email,
-      subject,
-      react: { template: "RuleMatch", props: { title: subject, lines: body.split("\n") } },
-    });
+    // A React element cannot cross a Convex function boundary, so the caller names the template.
+    await ctx.runAction(internal.email.sendEmail, { to: delivery.email, subject, react });
     return;
   }
   if (!delivery.photonUserId && !delivery.phone) throw new Error("No phone on file");
@@ -130,7 +135,15 @@ export const send = internalAction({
     const delivery = (await ctx.runQuery(internal.notify.loadDelivery, { notificationId })) as Delivery | null;
     if (!delivery) return null;
     try {
-      await dispatch(ctx, delivery, `Tenno: ${delivery.ruleName}`, delivery.line);
+      await dispatch(ctx, delivery, `Voidwatch: ${delivery.ruleName}`, delivery.line, {
+        template: "RuleMatch",
+        props: {
+          ruleName: delivery.ruleName,
+          kind: delivery.kind,
+          title: delivery.line,
+          url: siteUrl(),
+        },
+      });
       await ctx.runMutation(internal.notify.mark, { notificationIds: [notificationId], status: "sent" });
     } catch (e) {
       await ctx.runMutation(internal.notify.mark, {
@@ -160,7 +173,13 @@ export const digest = internalAction({
       const ids = group.map((d) => d.notificationId);
       const body = group.map((d) => d.line).join("\n");
       try {
-        await dispatch(ctx, group[0], `Tenno digest: ${group.length} matches`, body);
+        await dispatch(ctx, group[0], `Voidwatch digest: ${group.length} matches`, body, {
+          template: "Digest",
+          props: {
+            items: group.map((d) => ({ ruleName: d.ruleName, title: d.line })),
+            url: siteUrl(),
+          },
+        });
         await ctx.runMutation(internal.notify.mark, { notificationIds: ids, status: "sent" });
       } catch (e) {
         await ctx.runMutation(internal.notify.mark, {

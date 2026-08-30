@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "@/components/shell/auth-actions";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,10 +13,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Toaster } from "@/components/ui/sonner";
 
 export default function LoginPage() {
-  const { signIn } = useAuth();
+  const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -27,6 +26,17 @@ export default function LoginPage() {
       await signIn("discord", { redirectTo: "/dashboard" });
     } catch {
       toast.error("Discord sign in failed, try again.");
+      setBusy(false);
+    }
+  }
+
+  // Dev only: drops the Discord and Resend keys out of the loop so the app can be clicked through.
+  async function onGuest() {
+    setBusy(true);
+    try {
+      await signIn("anonymous", { redirectTo: "/dashboard" });
+    } catch {
+      toast.error("Guest sign in failed, try again.");
       setBusy(false);
     }
   }
@@ -65,7 +75,7 @@ export default function LoginPage() {
         ) : (
           <>
             <CardHeader>
-              <CardTitle>Sign in to Tenno</CardTitle>
+              <CardTitle>Sign in to Voidwatch</CardTitle>
               <CardDescription>Warframe world state, watched your way.</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
@@ -81,7 +91,7 @@ export default function LoginPage() {
                   type="email"
                   required
                   autoComplete="email"
-                  placeholder="tenno@example.com"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -89,11 +99,13 @@ export default function LoginPage() {
                   Email me a magic link
                 </Button>
               </form>
+              <Button onClick={onGuest} variant="ghost" size="sm" disabled={busy}>
+                Continue as guest
+              </Button>
             </CardContent>
           </>
         )}
       </Card>
-      <Toaster />
     </div>
   );
 }

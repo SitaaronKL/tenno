@@ -37,7 +37,7 @@ function SettingsBody() {
   if (profile === null) return <p className="p-6 text-sm">Sign in to see your settings.</p>;
 
   const optedIn = Boolean(profile.phone);
-  const verified = Boolean(profile.phoneVerifiedAt);
+  const verified = Boolean(profile.phoneVerified);
 
   async function save() {
     await update({ phone: phone || undefined, timezone, digestHour });

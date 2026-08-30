@@ -55,7 +55,7 @@ export default function Chat() {
   return (
     <div className="mx-auto flex h-full w-full max-w-2xl flex-col gap-4 p-6">
       <header>
-        <h1 className="text-xl font-semibold">Ask Tenno</h1>
+        <h1 className="text-xl font-semibold">Ask Voidwatch</h1>
         <p className="text-muted-foreground text-sm">
           Live world state, wiki lookups, and your notification rules.
         </p>
@@ -73,14 +73,14 @@ export default function Chat() {
         {messages?.map((m) => (
           <article key={m.key} className={m.role === "user" ? "text-right" : "text-left"}>
             <span className="text-muted-foreground text-xs">
-              {m.role === "user" ? "You" : "Tenno"}
+              {m.role === "user" ? "You" : "Voidwatch"}
             </span>
             <p className="bg-muted inline-block max-w-full rounded-lg px-3 py-2 text-left text-sm whitespace-pre-wrap">
               {m.text}
             </p>
           </article>
         ))}
-        {sending && <p className="text-muted-foreground text-sm">Tenno is thinking</p>}
+        {sending && <p className="text-muted-foreground text-sm">Voidwatch is thinking</p>}
         {error && <p className="text-destructive text-sm">{error}</p>}
         <div ref={bottom} />
       </div>

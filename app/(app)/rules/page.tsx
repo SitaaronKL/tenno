@@ -21,7 +21,7 @@ export default function RulesPage() {
         <div>
           <h1 className="text-2xl font-semibold">Rules</h1>
           <p className="text-sm text-muted-foreground">
-            Tenno watches world state and pings you when a rule matches.
+            Voidwatch watches world state and pings you when a rule matches.
           </p>
         </div>
         <ClientOnly fallback={<Skeleton className="h-9 w-24" />}>

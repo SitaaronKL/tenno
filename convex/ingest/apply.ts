@@ -1,13 +1,9 @@
 import { v } from "convex/values";
-import { makeFunctionReference } from "convex/server";
 import { internalMutation } from "../_generated/server";
+import { internal } from "../_generated/api";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { WorldState } from "../../lib/contracts/worldstate";
-
-// Slice 4 owns convex/rules.ts, reference it by name so this compiles before it lands.
-const evaluate = makeFunctionReference<"mutation", { eventIds: Id<"worldEvents">[] }>(
-  "rules:evaluate",
-);
+import { vPlatform } from "../lib/validators";
 
 type NewEvent = Pick<Doc<"worldEvents">, "kind" | "key" | "startsAt" | "expiresAt" | "payload">;
 
@@ -37,7 +33,7 @@ function eventsOf(state: WorldState): NewEvent[] {
 }
 
 export const apply = internalMutation({
-  args: { platform: v.string(), state: v.any() },
+  args: { platform: vPlatform, state: v.any() },
   returns: v.number(),
   handler: async (ctx, args) => {
     const state = args.state as WorldState;
@@ -74,7 +70,7 @@ export const apply = internalMutation({
       );
     }
 
-    if (eventIds.length > 0) await ctx.scheduler.runAfter(0, evaluate, { eventIds });
+    if (eventIds.length > 0) await ctx.scheduler.runAfter(0, internal.rules.evaluate, { eventIds });
     return eventIds.length;
   },
 });

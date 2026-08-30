@@ -109,7 +109,7 @@ export function Features() {
         body="Ask what is up, search the wiki, or create a rule in plain English. The agent lives in iMessage and on the web, same memory in both."
       >
         <div className="mx-auto w-full max-w-sm rounded-[2rem] border border-border bg-black/40 p-4 shadow-2xl">
-          <p className="mb-4 text-center text-xs text-muted-foreground">Tenno</p>
+          <p className="mb-4 text-center text-xs text-muted-foreground">Voidwatch</p>
           <ol className="space-y-2">
             {CHAT.map((m, i) => (
               <li key={i} className={`flex ${m.from === "me" ? "justify-end" : "justify-start"}`}>

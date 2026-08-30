@@ -15,7 +15,7 @@ export const resend: Resend = new Resend(components.resend, {
   testMode: process.env.RESEND_API_KEY === undefined,
 });
 
-export const FROM = `Tenno <alerts@${process.env.EMAIL_DOMAIN ?? "resend.dev"}>`;
+export const FROM = `Voidwatch <alerts@${process.env.EMAIL_DOMAIN ?? "resend.dev"}>`;
 
 const ruleMatchProps = v.object({
   ruleName: v.string(),

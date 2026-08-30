@@ -45,7 +45,7 @@ export function RuleMatch({
               <Text style={{ color: "#a1a1aa" }}>Expires {expiresAt}</Text>
             ) : null}
             <Link href={url} style={{ color: "#7dd3fc" }}>
-              Open Tenno
+              Open Voidwatch
             </Link>
           </Section>
         </Container>

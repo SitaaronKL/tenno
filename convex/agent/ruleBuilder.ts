@@ -4,7 +4,8 @@ import { v } from "convex/values";
 import { action } from "../_generated/server";
 import { api } from "../_generated/api";
 import { requireUser } from "../lib/auth";
-import { RuleInput } from "../../lib/contracts/rule";
+import { RuleInput, type RuleInput as RuleInputType } from "../../lib/contracts/rule";
+import { vRuleInput } from "../lib/validators";
 import { MODEL } from "./index";
 
 export const SYSTEM =
@@ -24,10 +25,10 @@ export function buildPrompt(text: string, world: unknown) {
 
 export const draft = action({
   args: { text: v.string() },
-  returns: v.any(),
-  handler: async (ctx, { text }) => {
+  returns: vRuleInput,
+  handler: async (ctx, { text }): Promise<RuleInputType> => {
     await requireUser(ctx);
-    const world = await ctx.runQuery(api.worldstate.get, { platform: "pc" });
+    const world: unknown = await ctx.runQuery(api.worldstate.get, { platform: "pc" });
     const result = await generateObject({
       model: openai(MODEL),
       schema: RuleInput,

@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalAction, internalMutation, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { requireUser } from "./lib/auth";
@@ -103,9 +104,35 @@ export const update = mutation({
       await ctx.db.replace(id, next);
     }
 
-    /* SLICE 9: when phoneChanged is true, schedule photon.registerUser({ phone }) here. */
+    // registerUser is an action, so a mutation has to schedule it and write the id back.
+    if (phoneChanged && next.phone) {
+      await ctx.scheduler.runAfter(0, internal.profiles.linkPhoton, {
+        profileId: id,
+        phone: next.phone,
+      });
+    }
 
     const saved = await ctx.db.get(id);
     return shape(userId, user.email ?? "", saved);
+  },
+});
+
+export const storePhotonUserId = internalMutation({
+  args: { profileId: v.id("profiles"), photonUserId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { profileId, photonUserId }) => {
+    await ctx.db.patch(profileId, { photonUserId });
+    return null;
+  },
+});
+
+// A new phone needs a Photon user before we can text it.
+export const linkPhoton = internalAction({
+  args: { profileId: v.id("profiles"), phone: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { profileId, phone }) => {
+    const photonUserId = await ctx.runAction(internal.photon.registerUser, { phone });
+    await ctx.runMutation(internal.profiles.storePhotonUserId, { profileId, photonUserId });
+    return null;
   },
 });

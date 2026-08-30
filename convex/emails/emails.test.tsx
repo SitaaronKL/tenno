@@ -13,7 +13,7 @@ describe("email templates", () => {
         title="Axi Survival on Sedna"
         detail="Steel Path"
         expiresAt="in 40 minutes"
-        url="https://tenno.app/dashboard"
+        url="https://voidwatch.app/dashboard"
       />,
       { plainText: true },
     );
@@ -22,7 +22,7 @@ describe("email templates", () => {
     expect(html).toContain("Your rule Axi survival matched a fissure");
     expect(html).toContain("Steel Path");
     expect(html).toContain("in 40 minutes");
-    expect(html).toContain("Open Tenno");
+    expect(html).toContain("Open Voidwatch");
   });
 
   it("lists every alert in the digest with its count", async () => {
@@ -32,7 +32,7 @@ describe("email templates", () => {
           { ruleName: "Baro", title: "Baro arrives", detail: "Primed Chamber" },
           { ruleName: "Invasions", title: "Catalyst invasion" },
         ]}
-        url="https://tenno.app/dashboard"
+        url="https://voidwatch.app/dashboard"
       />,
       { plainText: true },
     );
@@ -43,11 +43,11 @@ describe("email templates", () => {
   });
 
   it("gives the sign in link and says it expires", async () => {
-    const html = await render(<MagicLink url="https://tenno.app/magic?t=abc" />, {
+    const html = await render(<MagicLink url="https://voidwatch.app/magic?t=abc" />, {
       plainText: false,
     });
-    expect(html).toContain("Sign in to Tenno");
-    expect(html).toContain("https://tenno.app/magic?t=abc");
+    expect(html).toContain("Sign in to Voidwatch");
+    expect(html).toContain("https://voidwatch.app/magic?t=abc");
     expect(html).toContain("expires in 15 minutes");
   });
 });

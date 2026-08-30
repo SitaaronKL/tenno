@@ -1,6 +1,6 @@
 "use client";
 
-import { useAuth } from "./auth-actions";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { LogOut } from "lucide-react";
@@ -17,10 +17,10 @@ import {
 import { useMe } from "./useMe";
 
 export function UserMenu() {
-  const { signOut } = useAuth();
+  const { signOut } = useAuthActions();
   const router = useRouter();
   const me = useMe();
-  const label = me?.name ?? me?.email ?? "Tenno";
+  const label = me?.name ?? me?.email ?? "Voidwatch";
 
   return (
     <DropdownMenu>

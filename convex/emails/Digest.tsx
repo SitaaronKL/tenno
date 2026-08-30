@@ -38,7 +38,7 @@ export function Digest({ items, url }: DigestProps) {
             </Row>
           ))}
           <Link href={url} style={{ color: "#7dd3fc" }}>
-            Open Tenno
+            Open Voidwatch
           </Link>
         </Container>
       </Body>

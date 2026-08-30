@@ -6,6 +6,7 @@ const crons = cronJobs();
 // Upstream is CDN cached for 2 minutes, 5 is a good citizen and still fresh enough.
 crons.interval("ingest", { minutes: 5 }, internal.ingest.pull.pull, { platform: "pc" });
 
-// Slice 4 adds the hourly digest cron here.
+// Digest mode rules batch into one message per user per hour.
+crons.hourly("digest", { minuteUTC: 0 }, internal.notify.digest, {});
 
 export default crons;

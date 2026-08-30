@@ -1,49 +1,18 @@
 import { defineSchema, defineTable } from "convex/server";
 import { authTables } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import {
+  vChannel as channel,
+  vCycleWorld as cycleWorld,
+  vDeliveryMode as deliveryMode,
+  vFissureTier as fissureTier,
+  vPlatform as platform,
+  vRuleFilter as ruleFilter,
+} from "./lib/validators";
 
-// Validators mirror lib/contracts. Change one, change both.
-
-export const platform = v.literal("pc");
-export const channel = v.union(v.literal("email"), v.literal("imessage"));
-export const deliveryMode = v.union(v.literal("instant"), v.literal("digest"));
-export const fissureTier = v.union(
-  v.literal("Lith"),
-  v.literal("Meso"),
-  v.literal("Neo"),
-  v.literal("Axi"),
-  v.literal("Requiem"),
-  v.literal("Omnia"),
-);
-export const cycleWorld = v.union(
-  v.literal("cetus"),
-  v.literal("vallis"),
-  v.literal("cambion"),
-  v.literal("earth"),
-  v.literal("duviri"),
-  v.literal("zariman"),
-);
-
-export const ruleFilter = v.union(
-  v.object({
-    kind: v.literal("fissure"),
-    tiers: v.union(v.array(fissureTier), v.null()),
-    missionTypes: v.union(v.array(v.string()), v.null()),
-    steelPath: v.union(v.boolean(), v.null()),
-    storm: v.union(v.boolean(), v.null()),
-  }),
-  v.object({ kind: v.literal("invasion"), rewards: v.union(v.array(v.string()), v.null()) }),
-  v.object({ kind: v.literal("alert"), rewards: v.union(v.array(v.string()), v.null()) }),
-  v.object({ kind: v.literal("baro"), items: v.union(v.array(v.string()), v.null()) }),
-  v.object({
-    kind: v.literal("sortie"),
-    boss: v.union(v.array(v.string()), v.null()),
-    missionTypes: v.union(v.array(v.string()), v.null()),
-  }),
-  v.object({ kind: v.literal("archonHunt"), boss: v.union(v.array(v.string()), v.null()) }),
-  v.object({ kind: v.literal("cycle"), world: cycleWorld, state: v.string() }),
-  v.object({ kind: v.literal("nightwave") }),
-);
+// Validators mirror lib/contracts. The rule ones live in lib/validators.ts.
+export { vRuleFilter, vRuleInput } from "./lib/validators";
+export { platform, channel, deliveryMode, fissureTier, cycleWorld, ruleFilter };
 
 const reward = v.object({ item: v.string(), count: v.number(), credits: v.number() });
 

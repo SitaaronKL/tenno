@@ -8,6 +8,11 @@ vi.mock("next/navigation", () => ({
 vi.mock("@convex-dev/auth/react", () => ({
   useAuthActions: () => ({ signIn: vi.fn(), signOut: vi.fn() }),
 }));
+// The shell reads the signed in user, the shape of the chrome is what this test is about.
+vi.mock("convex/react", () => ({
+  useConvexAuth: () => ({ isAuthenticated: false, isLoading: false }),
+  useQuery: () => undefined,
+}));
 
 import { AppShell } from "@/components/shell/app-shell";
 

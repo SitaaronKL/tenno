@@ -2,11 +2,12 @@ import { v } from "convex/values";
 import { internalAction } from "../_generated/server";
 import { internal } from "../_generated/api";
 import { normalize } from "./normalize";
+import { vPlatform } from "../lib/validators";
 
 const UPSTREAM = "https://api.warframestat.us";
 
 export const pull = internalAction({
-  args: { platform: v.string() },
+  args: { platform: vPlatform },
   returns: v.null(),
   handler: async (ctx, args) => {
     const response = await fetch(`${UPSTREAM}/${args.platform}?language=en`);

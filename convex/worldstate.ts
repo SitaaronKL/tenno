@@ -1,9 +1,10 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
+import { vPlatform } from "./lib/validators";
 
 // Public and unauthenticated: world state is the same for everyone, the landing page reads it too.
 export const get = query({
-  args: { platform: v.string() },
+  args: { platform: vPlatform },
   returns: v.any(),
   handler: async (ctx, args) => {
     const row = await ctx.db

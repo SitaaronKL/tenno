@@ -1,8 +1,20 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { convexTest } from "convex-test";
 import rateLimiter from "@convex-dev/rate-limiter/test";
 import schema from "./schema";
 import { internal } from "./_generated/api";
+// This suite is about the rules engine, real delivery is covered by the email and photon tests.
+vi.mock("./email", async () => {
+  const { internalAction } = await import("./_generated/server");
+  const { v } = await import("convex/values");
+  return {
+    sendEmail: internalAction({
+      args: { to: v.string(), subject: v.string(), react: v.any() },
+      returns: v.string(),
+      handler: async () => "test-email-id",
+    }),
+  };
+});
 
 const modules = import.meta.glob("./**/*.ts");
 
@@ -14,15 +26,16 @@ function setup() {
 
 async function seed(t: ReturnType<typeof setup>, mode: "instant" | "digest") {
   return await t.run(async (ctx) => {
+    const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
     await ctx.db.insert("profiles", {
-      userId: "user1",
+      userId,
       email: "tenno@example.com",
       timezone: "UTC",
       digestHour: 9,
       platform: "pc" as const,
     });
     const ruleId = await ctx.db.insert("rules", {
-      userId: "user1",
+      userId,
       name: "Axi survival",
       filter: { kind: "fissure", tiers: ["Axi"], missionTypes: ["Survival"], steelPath: null, storm: null },
       mode,
@@ -39,7 +52,7 @@ async function seed(t: ReturnType<typeof setup>, mode: "instant" | "digest") {
       seenAt: Date.now(),
       payload: { tier: "Axi", missionType: "Survival", node: "Ani (Void)", steelPath: false, storm: false },
     });
-    return { ruleId, eventId };
+    return { userId, ruleId, eventId };
   });
 }
 

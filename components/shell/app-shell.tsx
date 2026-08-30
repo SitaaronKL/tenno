@@ -15,7 +15,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-svh flex-1">
       <aside className="hidden w-56 shrink-0 border-r md:flex md:flex-col">
-        <div className="px-5 py-4 text-base font-semibold">Tenno</div>
+        <div className="px-5 py-4 text-base font-semibold">Voidwatch</div>
         <SidebarNav />
       </aside>
 
@@ -30,12 +30,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Menu className="size-4" aria-hidden="true" />
               </SheetTrigger>
               <SheetContent side="left" className="p-0">
-                <SheetTitle className="px-5 py-4 text-base font-semibold">Tenno</SheetTitle>
+                <SheetTitle className="px-5 py-4 text-base font-semibold">Voidwatch</SheetTitle>
                 <SidebarNav onNavigate={() => setOpen(false)} />
               </SheetContent>
             </Sheet>
             <Link href="/dashboard" className="text-base font-semibold md:hidden">
-              Tenno
+              Voidwatch
             </Link>
           </div>
           <UserMenu />
