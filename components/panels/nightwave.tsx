@@ -18,7 +18,7 @@ export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
   const now = useNow();
   if (!nightwave || nightwave.acts.length === 0) {
     return (
-      <Panel title="Nightwave" icon={MoonIcon} className="md:col-span-2 lg:col-span-6">
+      <Panel title="Nightwave" icon={MoonIcon} className="md:col-span-2 lg:col-span-3">
         <Empty>No acts available.</Empty>
       </Panel>
     );
@@ -30,25 +30,27 @@ export function NightwavePanel({ nightwave }: { nightwave: Nightwave | null }) {
       icon={MoonIcon}
       count={nightwave.acts.length}
       action={<Countdown target={nightwave.expiresAt} now={now} />}
-      className="md:col-span-2 lg:col-span-6"
+      className="md:col-span-2 lg:col-span-3"
     >
       <Accordion multiple className="text-sm">
         {nightwave.acts.map((a) => (
           <AccordionItem key={a.key} value={a.key}>
             <AccordionTrigger className="gap-2">
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <Chip>{a.daily ? "Daily" : "Weekly"}</Chip>
+                <Chip className="no-underline">{a.daily ? "Daily" : "Weekly"}</Chip>
                 <TruncatedCell text={a.title} className="min-w-0 flex-1" />
-                <span className="ml-auto shrink-0 font-mono text-xs font-normal text-muted-foreground tabular-nums">
+                {/* The row underlines on hover, the pill and the number are not the link text. */}
+                <span className="ml-auto shrink-0 font-mono text-xs font-normal text-muted-foreground no-underline tabular-nums">
                   {a.reputation} rep
                 </span>
               </span>
             </AccordionTrigger>
             <AccordionContent>
-              <p className="text-muted-foreground">{a.description}</p>
-              <p className="mt-2">
-                <Countdown target={a.expiresAt} now={now} />
-              </p>
+              {/* The countdown sits under the rep it belongs to, on the right. */}
+              <div className="flex items-start justify-between gap-3">
+                <p className="min-w-0 flex-1 text-muted-foreground">{a.description}</p>
+                <Countdown target={a.expiresAt} now={now} className="shrink-0" />
+              </div>
             </AccordionContent>
           </AccordionItem>
         ))}

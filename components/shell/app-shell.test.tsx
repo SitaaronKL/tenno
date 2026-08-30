@@ -32,9 +32,10 @@ describe("app shell", () => {
     expect(screen.getByText("page body")).toBeInTheDocument();
   });
 
-  it("puts the account card and a breadcrumb for the route in the chrome", () => {
+  it("offers a signed out visitor a way in, the dashboard being public", () => {
     render(<AppShell>body</AppShell>);
-    expect(screen.getByRole("button", { name: /account menu/i })).toBeInTheDocument();
+    expect(within(sidebar()).getByRole("link", { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /account menu/i })).not.toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: /breadcrumb/i })).toHaveTextContent("Dashboard");
   });
 

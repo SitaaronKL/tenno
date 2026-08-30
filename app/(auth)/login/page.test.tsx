@@ -11,6 +11,12 @@ vi.mock("@convex-dev/auth/react", () => ({
 const enabled = { discord: true, magicLink: true, password: true, guest: false };
 vi.mock("convex/react", () => ({ useQuery: () => enabled }));
 
+// The proxy sends a signed out visitor here with where they were going.
+const search = { next: null as string | null };
+vi.mock("next/navigation", () => ({
+  useSearchParams: () => new URLSearchParams(search.next ? { next: search.next } : {}),
+}));
+
 import LoginPage from "@/app/(auth)/login/page";
 
 describe("login page", () => {
@@ -20,6 +26,7 @@ describe("login page", () => {
     enabled.magicLink = true;
     enabled.password = true;
     enabled.guest = false;
+    search.next = null;
   });
   afterEach(() => vi.unstubAllEnvs());
 
@@ -112,5 +119,40 @@ describe("email and password sign in", () => {
     enabled.password = false;
     render(<LoginPage />);
     expect(screen.queryByLabelText("Password")).not.toBeInTheDocument();
+  });
+});
+
+describe("arriving from a page that needs an account", () => {
+  beforeEach(() => {
+    signIn.mockClear();
+    enabled.discord = true;
+    search.next = null;
+  });
+
+  it("says which page it is asking about", () => {
+    search.next = "/rules";
+    render(<LoginPage />);
+    expect(
+      screen.getByText("Sign in to use Rules. The dashboard is open to everyone."),
+    ).toBeInTheDocument();
+  });
+
+  it("sends them back to that page once they are in", async () => {
+    const user = userEvent.setup();
+    search.next = "/mastery";
+    render(<LoginPage />);
+
+    await user.click(screen.getByRole("button", { name: /continue with discord/i }));
+
+    expect(signIn).toHaveBeenCalledWith("discord", { redirectTo: "/mastery" });
+  });
+
+  it("lands on the dashboard when they just came to sign in", async () => {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    await user.click(screen.getByRole("button", { name: /continue with discord/i }));
+
+    expect(signIn).toHaveBeenCalledWith("discord", { redirectTo: "/dashboard" });
   });
 });

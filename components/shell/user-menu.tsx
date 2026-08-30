@@ -4,6 +4,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ChevronsUpDownIcon } from "lucide-react";
+import { LogInIcon } from "@/components/icons/login";
 import { LogoutIcon } from "@/components/icons/logout";
 import { MoonIcon } from "@/components/icons/moon";
 import { SettingsIcon } from "@/components/icons/settings";
@@ -30,6 +31,31 @@ export function UserCard() {
   const me = useMe();
   const name = me?.name ?? me?.email ?? "Voidwatch";
   const dark = resolvedTheme === "dark";
+
+  // The dashboard is public, so a signed out visitor gets a way in, not an account menu.
+  if (me === null) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            size="lg"
+            tooltip="Sign in"
+            render={<Link href="/login" />}
+          >
+            <Avatar className="size-8 rounded-md">
+              <AvatarFallback className="rounded-md">
+                <LogInIcon size={16} />
+              </AvatarFallback>
+            </Avatar>
+            <span className="grid flex-1 text-left leading-tight">
+              <span className="truncate font-medium">Sign in</span>
+              <span className="truncate text-xs text-muted-foreground">to set up alerts</span>
+            </span>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
 
   return (
     <SidebarMenu>

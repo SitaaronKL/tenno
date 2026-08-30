@@ -31,16 +31,14 @@ function CycleTile({ cycle, now }: { cycle: Cycle; now: number }) {
       onMouseEnter={() => icon.current?.startAnimation()}
       onMouseLeave={() => icon.current?.stopAnimation()}
       className={cn(
-        "rounded-xl bg-card p-3 ring-1 transition-shadow duration-150 ease-out hover:ring-foreground",
+        "flex items-center gap-2 rounded-lg bg-card px-2.5 py-1.5 ring-1 transition-shadow duration-150 ease-out hover:ring-foreground",
         soon ? "ring-foreground/40" : "ring-foreground/10",
       )}
     >
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Icon ref={icon} size={14} />
-        <span className="truncate text-xs">{label}</span>
-      </div>
-      <p className="mt-2 text-sm font-medium capitalize">{cycle.state}</p>
-      <Countdown target={cycle.expiresAt} now={now} verb="changes" className="mt-0.5 block" />
+      <Icon ref={icon} size={14} className="shrink-0 text-muted-foreground" />
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-sm font-medium capitalize">{cycle.state}</span>
+      <Countdown target={cycle.expiresAt} now={now} verb="changes" />
     </li>
   );
 }
@@ -55,7 +53,7 @@ export function CycleTiles({ cycles }: { cycles: Cycle[] }) {
   if (rows.length === 0) return null;
 
   return (
-    <ul aria-label="World cycles" className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+    <ul aria-label="World cycles" className="mb-4 flex flex-wrap gap-2">
       {rows.map((c) => (
         <CycleTile key={c.world} cycle={c} now={now} />
       ))}

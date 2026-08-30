@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { ConvexError } from "convex/values";
@@ -17,6 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LogoMark } from "@/components/shell/logo-mark";
+import { NAV_ITEMS } from "@/components/shell/nav";
 
 type Flow = "signIn" | "signUp";
 
@@ -28,8 +30,19 @@ function messageFor(error: unknown, flow: Flow) {
     : "Wrong email or password.";
 }
 
+// The proxy sends a signed out visitor here with where they were going, so we can say why.
+function askedFor(next: string | null): string | null {
+  if (!next) return null;
+  const item = NAV_ITEMS.find((n) => next === n.href || next.startsWith(`${n.href}/`));
+  return item ? item.label : null;
+}
+
 export default function LoginPage() {
   const { signIn } = useAuthActions();
+  const params = useSearchParams();
+  const next = params.get("next");
+  const wanted = askedFor(next);
+  const redirectTo = next && next.startsWith("/") ? next : "/dashboard";
   // One source of truth: the server registers a provider only where its secret exists, and says so.
   const enabled = useQuery(api.auth.providers, {});
   const discord = enabled?.discord ?? false;
@@ -46,7 +59,7 @@ export default function LoginPage() {
   async function onDiscord() {
     setBusy(true);
     try {
-      await signIn("discord", { redirectTo: "/dashboard" });
+      await signIn("discord", { redirectTo });
     } catch {
       toast.error("Discord sign in failed, try again.");
       setBusy(false);
@@ -57,7 +70,7 @@ export default function LoginPage() {
   async function onGuest() {
     setBusy(true);
     try {
-      await signIn("anonymous", { redirectTo: "/dashboard" });
+      await signIn("anonymous", { redirectTo });
     } catch {
       toast.error("Guest sign in failed, try again.");
       setBusy(false);
@@ -68,7 +81,7 @@ export default function LoginPage() {
     setError(null);
     setBusy(true);
     try {
-      await signIn("password", { email, password: secret, flow, redirectTo: "/dashboard" });
+      await signIn("password", { email, password: secret, flow, redirectTo });
     } catch (caught) {
       setError(messageFor(caught, flow));
     } finally {
@@ -84,7 +97,7 @@ export default function LoginPage() {
     setError(null);
     setBusy(true);
     try {
-      await signIn("resend", { email, redirectTo: "/dashboard" });
+      await signIn("resend", { email, redirectTo });
       setSentTo(email);
       toast.success("Magic link sent.");
     } catch {
@@ -126,7 +139,11 @@ export default function LoginPage() {
               <CardTitle>
                 {password && flow === "signUp" ? "Create your account" : "Sign in to Voidwatch"}
               </CardTitle>
-              <CardDescription>Warframe world state, watched your way.</CardDescription>
+              <CardDescription>
+                {wanted
+                  ? `Sign in to use ${wanted}. The dashboard is open to everyone.`
+                  : "Warframe world state, watched your way."}
+              </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
               {discord && (
