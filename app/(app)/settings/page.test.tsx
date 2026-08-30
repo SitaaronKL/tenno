@@ -6,6 +6,7 @@ const update = vi.fn().mockResolvedValue(null);
 const profile = {
   email: "tenno@example.com",
   phone: "+15550001234",
+  phoneVerified: false,
   timezone: "UTC",
   digestHour: 9,
 };
@@ -14,6 +15,10 @@ vi.mock("@/components/rules/api", () => ({
   useProfile: () => profile,
   useUpdateProfile: () => update,
 }));
+vi.mock("@convex-dev/auth/react", () => ({
+  useAuthActions: () => ({ signIn: vi.fn(), signOut: vi.fn() }),
+}));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import SettingsPage from "@/app/(app)/settings/page";
 
@@ -29,10 +34,20 @@ describe("settings", () => {
     expect(update).toHaveBeenCalledWith({ phone: null, timezone: "UTC", digestHour: 9 });
   });
 
-  it("shows the email and the opt in instructions once a phone is saved", () => {
+  it("the danger zone removes the number in one click", async () => {
+    const user = userEvent.setup();
+    update.mockClear();
+    render(<SettingsPage />);
+
+    await user.click(screen.getByRole("button", { name: /remove phone/i }));
+
+    expect(update).toHaveBeenCalledWith({ phone: null, timezone: "UTC", digestHour: 9 });
+  });
+
+  it("shows the email, the opt in instructions and the phone state", () => {
     render(<SettingsPage />);
     expect(screen.getByLabelText("Email")).toHaveValue("tenno@example.com");
-    expect(screen.getByText("Text START to +1 (415) 603-5536 from this phone")).toBeInTheDocument();
-    expect(screen.getByText("Waiting for your first text.")).toBeInTheDocument();
+    expect(screen.getByText(/Text START to \+1 \(415\) 603-5536 from this phone/)).toBeInTheDocument();
+    expect(screen.getByText("Unverified")).toBeInTheDocument();
   });
 });
