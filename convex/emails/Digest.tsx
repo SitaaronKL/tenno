@@ -25,7 +25,7 @@ export function Digest({ items, url }: DigestProps) {
             Your Warframe digest
           </Heading>
           <Text style={{ color: "#a1a1aa" }}>
-            {items.length} alerts matched your rules this hour.
+            {items.length} alerts matched your rules since your last digest.
           </Text>
           {items.map((item, i) => (
             <Row key={i}>
@@ -37,7 +37,7 @@ export function Digest({ items, url }: DigestProps) {
               ) : null}
             </Row>
           ))}
-          <Link href={url} style={{ color: "#7dd3fc" }}>
+          <Link href={url} style={{ color: "#fafafa", textDecoration: "underline" }}>
             Open Voidwatch
           </Link>
         </Container>

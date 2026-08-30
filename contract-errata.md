@@ -139,7 +139,7 @@ internal `name: "tenno"` are unchanged.
 - **No gold anywhere.** Every token in `app/globals.css` is the inverse of the background, charts included.
   `success`, `warning` and `danger` keep their hues, the brief exempts semantic states. The one remaining
   colour in the product is the blue in the landing page's iMessage mock, which reads as a screenshot of
-  Messages, not as an accent.
+  Messages, not as an accent. The email templates carried a blue link and button, they are neutral now too.
 - **Seeding.** `/mastery` is empty until `node scripts/import-public-export.mjs` and
   `npx convex run gamedata/import:importGameData '{}'` are run once against the deployment. Both are step 4 of
   README's Run it yourself. Neither was run against the deployment by this seam.
