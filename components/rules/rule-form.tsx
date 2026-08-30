@@ -78,7 +78,11 @@ export function RuleForm({
   const [missionTypes, setMissionTypes] = useState<string[]>(
     f && (f.kind === "fissure" || f.kind === "sortie") ? (f.missionTypes ?? []) : [],
   );
-  const [steelPath, setSteelPath] = useState(f?.kind === "fissure" ? (f.steelPath ?? false) : false);
+  // Three states, because "I do not care" is not the same as "not Steel Path".
+  const [steelPath, setSteelPath] = useState<"any" | "only" | "exclude">(() => {
+    if (f?.kind !== "fissure" || f.steelPath === null) return "any";
+    return f.steelPath ? "only" : "exclude";
+  });
   // rewards, items or bosses, one list because only one is shown per kind
   const [names, setNames] = useState<string[]>(() => {
     if (!f) return [];
@@ -104,7 +108,7 @@ export function RuleForm({
           kind,
           tiers: some(tiers) as Tier[] | null,
           missionTypes: some(missionTypes),
-          steelPath,
+          steelPath: steelPath === "any" ? null : steelPath === "only",
           storm: null,
         };
       case "invasion":
@@ -171,10 +175,19 @@ export function RuleForm({
             values={missionTypes}
             onChange={setMissionTypes}
           />
-          <label className="flex items-center gap-1.5 text-sm">
-            <input type="checkbox" checked={steelPath} onChange={(e) => setSteelPath(e.target.checked)} />
-            Steel Path only
-          </label>
+          <div className="grid gap-2">
+            <Label htmlFor="steel-path">Steel Path</Label>
+            <select
+              id="steel-path"
+              className={selectClass}
+              value={steelPath}
+              onChange={(e) => setSteelPath(e.target.value as "any" | "only" | "exclude")}
+            >
+              <option value="any">Any</option>
+              <option value="only">Steel Path only</option>
+              <option value="exclude">Exclude Steel Path</option>
+            </select>
+          </div>
         </>
       )}
 

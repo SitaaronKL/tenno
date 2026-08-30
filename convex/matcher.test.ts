@@ -16,6 +16,24 @@ const cases: { name: string; filter: RuleFilter; event: { kind: string; payload:
     want: false,
   },
   {
+    name: "fissure of the right tier but the wrong mission type",
+    filter: { kind: "fissure", tiers: ["Axi"], missionTypes: ["Survival"], steelPath: null, storm: null },
+    event: { kind: "fissure", payload: { tier: "Axi", missionType: "Capture", steelPath: false, storm: false } },
+    want: false,
+  },
+  {
+    name: "fissure rule that excludes Steel Path rejects a Steel Path fissure",
+    filter: { kind: "fissure", tiers: null, missionTypes: null, steelPath: false, storm: null },
+    event: { kind: "fissure", payload: { tier: "Axi", missionType: "Survival", steelPath: true } },
+    want: false,
+  },
+  {
+    name: "fissure rule that does not care takes a Steel Path fissure",
+    filter: { kind: "fissure", tiers: null, missionTypes: null, steelPath: null, storm: null },
+    event: { kind: "fissure", payload: { tier: "Axi", missionType: "Survival", steelPath: true } },
+    want: true,
+  },
+  {
     name: "fissure steel path required but event is normal",
     filter: { kind: "fissure", tiers: null, missionTypes: null, steelPath: true, storm: null },
     event: { kind: "fissure", payload: { tier: "Axi", missionType: "Defense", steelPath: false } },

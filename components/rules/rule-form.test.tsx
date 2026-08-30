@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { RuleInput } from "@/lib/contracts/rule";
@@ -13,6 +13,43 @@ vi.mock("@/components/rules/api", () => ({
 import { CreateRuleDialog } from "@/components/rules/create-rule-dialog";
 
 describe("create rule", () => {
+  beforeEach(() => create.mockClear());
+
+  it("leaves Steel Path unconstrained unless the user picks a side", async () => {
+    const user = userEvent.setup();
+    render(<CreateRuleDialog />);
+
+    await user.click(screen.getByRole("button", { name: "New rule" }));
+    await user.type(await screen.findByLabelText("Name"), "Any Axi");
+    await user.click(screen.getByRole("button", { name: "Create rule" }));
+
+    expect(create.mock.calls[0][0].filter.steelPath).toBe(null);
+  });
+
+  it("can ask for Steel Path only", async () => {
+    const user = userEvent.setup();
+    render(<CreateRuleDialog />);
+
+    await user.click(screen.getByRole("button", { name: "New rule" }));
+    await user.type(await screen.findByLabelText("Name"), "Steel only");
+    await user.selectOptions(await screen.findByLabelText("Steel Path"), "only");
+    await user.click(screen.getByRole("button", { name: "Create rule" }));
+
+    expect(create.mock.calls[0][0].filter.steelPath).toBe(true);
+  });
+
+  it("can ask for everything but Steel Path", async () => {
+    const user = userEvent.setup();
+    render(<CreateRuleDialog />);
+
+    await user.click(screen.getByRole("button", { name: "New rule" }));
+    await user.type(await screen.findByLabelText("Name"), "No steel");
+    await user.selectOptions(await screen.findByLabelText("Steel Path"), "exclude");
+    await user.click(screen.getByRole("button", { name: "Create rule" }));
+
+    expect(create.mock.calls[0][0].filter.steelPath).toBe(false);
+  });
+
   it("shows the tier picker for fissures and saves a valid rule", async () => {
     const user = userEvent.setup();
     render(<CreateRuleDialog />);

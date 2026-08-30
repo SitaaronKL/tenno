@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 
 const update = vi.fn().mockResolvedValue(null);
 const profile = {
@@ -17,6 +18,17 @@ vi.mock("@/components/rules/api", () => ({
 import SettingsPage from "@/app/(app)/settings/page";
 
 describe("settings", () => {
+  it("clearing the phone removes the saved number", async () => {
+    const user = userEvent.setup();
+    update.mockClear();
+    render(<SettingsPage />);
+
+    await user.clear(screen.getByLabelText("Phone"));
+    await user.click(screen.getByRole("button", { name: "Save settings" }));
+
+    expect(update).toHaveBeenCalledWith({ phone: null, timezone: "UTC", digestHour: 9 });
+  });
+
   it("shows the email and the opt in instructions once a phone is saved", () => {
     render(<SettingsPage />);
     expect(screen.getByLabelText("Email")).toHaveValue("tenno@example.com");
