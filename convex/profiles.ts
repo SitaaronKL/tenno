@@ -117,6 +117,25 @@ export const update = mutation({
   },
 });
 
+// Convex Auth calls this the moment a user row exists, so delivery never waits on a settings save.
+export const ensure = internalMutation({
+  args: { userId: v.id("users") },
+  returns: v.null(),
+  handler: async (ctx, { userId }) => {
+    const existing = await load(ctx, userId);
+    if (existing) return null;
+    const user = await ctx.db.get(userId);
+    await ctx.db.insert("profiles", {
+      userId,
+      email: user?.email ?? "",
+      timezone: DEFAULT_TIMEZONE,
+      digestHour: DEFAULT_DIGEST_HOUR,
+      platform: "pc" as const,
+    });
+    return null;
+  },
+});
+
 export const storePhotonUserId = internalMutation({
   args: { profileId: v.id("profiles"), photonUserId: v.string() },
   returns: v.null(),

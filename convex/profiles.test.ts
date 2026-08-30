@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import schema from "./schema";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -12,6 +12,17 @@ async function signedIn() {
 }
 
 describe("profiles", () => {
+  test("signing up gives the user a profile row with their email", async () => {
+    const t = convexTest(schema, modules);
+    const userId = await t.run(async (ctx) => ctx.db.insert("users", { email: "tenno@example.com" }));
+    await t.mutation(internal.profiles.ensure, { userId });
+    await t.mutation(internal.profiles.ensure, { userId });
+
+    const rows = await t.run(async (ctx) => ctx.db.query("profiles").collect());
+    expect(rows).toHaveLength(1);
+    expect(rows[0].email).toBe("tenno@example.com");
+  });
+
   test("a signed out visitor cannot read a profile", async () => {
     const t = convexTest(schema, modules);
     await expect(t.query(api.profiles.me, {})).rejects.toThrow();

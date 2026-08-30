@@ -25,6 +25,7 @@ type Delivery = {
   email: string;
   phone: string | null;
   photonUserId: string | null;
+  phoneVerified: boolean;
 };
 
 // One line per match, used by both the instant message and the digest.
@@ -47,7 +48,8 @@ export const loadDelivery = internalQuery({
       .query("profiles")
       .withIndex("by_user", (q) => q.eq("userId", notification.userId))
       .first();
-    if (!profile) return null;
+    // A user who never opened settings has no profile row, the account email still works.
+    const user = await ctx.db.get(notification.userId);
     return {
       notificationId,
       userId: notification.userId,
@@ -55,9 +57,10 @@ export const loadDelivery = internalQuery({
       ruleName: rule?.name ?? "Rule",
       kind: event?.kind ?? "event",
       line: describe(rule, event),
-      email: profile.email,
-      phone: profile.phone ?? null,
-      photonUserId: profile.photonUserId ?? null,
+      email: profile?.email || user?.email || "",
+      phone: profile?.phone ?? null,
+      photonUserId: profile?.photonUserId ?? null,
+      phoneVerified: profile?.phoneVerifiedAt !== undefined,
     };
   },
 });
@@ -79,7 +82,7 @@ export const pendingDigest = internalQuery({
         .query("profiles")
         .withIndex("by_user", (q) => q.eq("userId", notification.userId))
         .first();
-      if (!profile) continue;
+      const user = await ctx.db.get(notification.userId);
       out.push({
         notificationId: notification._id,
         userId: notification.userId,
@@ -87,9 +90,10 @@ export const pendingDigest = internalQuery({
         ruleName: rule.name,
         kind: event?.kind ?? "event",
         line: describe(rule, event),
-        email: profile.email,
-        phone: profile.phone ?? null,
-        photonUserId: profile.photonUserId ?? null,
+        email: profile?.email || user?.email || "",
+        phone: profile?.phone ?? null,
+        photonUserId: profile?.photonUserId ?? null,
+        phoneVerified: profile?.phoneVerifiedAt !== undefined,
       });
     }
     return out;
@@ -120,6 +124,13 @@ function siteUrl(): string {
   return process.env.SITE_URL ?? "https://voidwatch.app";
 }
 
+// Why a notification cannot go out, null when it can. Never leave one pending.
+function undeliverable(delivery: Delivery): string | null {
+  if (delivery.channel === "email") return delivery.email ? null : "no email on file";
+  if (!delivery.phone && !delivery.photonUserId) return "no phone on file";
+  return null;
+}
+
 async function dispatch(
   ctx: ActionCtx,
   delivery: Delivery,
@@ -132,7 +143,6 @@ async function dispatch(
     await ctx.runAction(internal.email.sendEmail, { to: delivery.email, subject, react });
     return;
   }
-  if (!delivery.photonUserId && !delivery.phone) throw new Error("No phone on file");
   await ctx.runAction(internal.photon.sendText, {
     photonUserId: delivery.photonUserId ?? undefined,
     phone: delivery.phone ?? undefined,
@@ -146,6 +156,15 @@ export const send = internalAction({
   handler: async (ctx, { notificationId }) => {
     const delivery = (await ctx.runQuery(internal.notify.loadDelivery, { notificationId })) as Delivery | null;
     if (!delivery) return null;
+    const reason = undeliverable(delivery);
+    if (reason) {
+      await ctx.runMutation(internal.notify.mark, {
+        notificationIds: [notificationId],
+        status: "skipped",
+        error: reason,
+      });
+      return null;
+    }
     try {
       await dispatch(ctx, delivery, `Voidwatch: ${delivery.ruleName}`, delivery.line, {
         template: "RuleMatch",
@@ -183,6 +202,11 @@ export const digest = internalAction({
 
     for (const group of groups.values()) {
       const ids = group.map((d) => d.notificationId);
+      const reason = undeliverable(group[0]);
+      if (reason) {
+        await ctx.runMutation(internal.notify.mark, { notificationIds: ids, status: "skipped", error: reason });
+        continue;
+      }
       const body = group.map((d) => d.line).join("\n");
       try {
         await dispatch(ctx, group[0], `Voidwatch digest: ${group.length} matches`, body, {
