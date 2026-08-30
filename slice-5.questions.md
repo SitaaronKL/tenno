@@ -7,3 +7,4 @@
 - Arbitration is a known placeholder upstream, per docs/ARCHITECTURE.md, so no arbitration panel.
 - Cycles: the contract lists six worlds. Assumption: render only worlds present in the snapshot, in a fixed order, so a partial ingest does not show blanks.
 - Baro: when inactive we count down to `startsAt` and hide inventory, when active we count down to `expiresAt` and list items with ducats and credits.
+- Size: real code lands near 440 lines, above the 300 guideline. Eight panels plus the shared grid and hook were all named in the slice, so I kept every panel small rather than dropping one.
