@@ -435,3 +435,13 @@ Related WFCD packages worth knowing: `warframe-worldstate-parser` (the parser be
 - **Items**: one-off ingest script (Node) over `warframe-items` JSON, trimmed to the fields you render, stored in Convex tables keyed by `uniqueName`. Re-run on game updates (watch `buildLabel` in world state).
 - **Prices**: on-demand action calling `/v2/orders/item/{slug}/top`, cached in Convex for 5 to 10 minutes per slug, with a 3 req/s throttle. Refresh `/v2/items` only when `/v2/versions` `collections.items` changes.
 - **Official endpoint**: keep as a fallback if WarframeStat.us is down; parse with `warframe-worldstate-parser` if you ever need to.
+
+## Freshness measured on 2026-08-30 04:22 UTC
+
+| source | age | notes |
+|---|---|---|
+| `https://api.warframe.com/cdn/worldState.php` (DE) | 0 min | raw internal ids, the ground truth |
+| `https://api.tenno.tools/worldstate/pc` | 2 min | tenno.tools' own parser over DE, CORS open, also `wshistory/pc`, `items`, arbitrations, kuva siphons, void storms, acolytes, bounties |
+| `https://api.warframestat.us/pc` | 174 min | the hub's source, lags for hours at times |
+
+Decision: DE is the primary feed, WarframeStat is the fallback. tenno.tools is a useful cross check for friendly names and for data DE does not publish directly (arbitration schedule).
