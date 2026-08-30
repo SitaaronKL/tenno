@@ -11,7 +11,6 @@ import { FissuresPanel } from "./fissures";
 import { MissionSetPanel } from "./missions";
 import { BaroPanel } from "./baro";
 import { NightwavePanel } from "./nightwave";
-import { CycleTiles } from "./cycles";
 import { InvasionsPanel } from "./invasions";
 import { AlertsPanel } from "./alerts";
 import { BountiesPanel, bountiesOf } from "./bounties";
@@ -23,7 +22,10 @@ const GRID = "grid grid-cols-1 items-start gap-4 md:grid-cols-2 lg:grid-cols-6";
 // Upstream can lag by hours, so a stale feed reads as stale rather than as a quiet game.
 function StaleNotice({ state }: { state: WorldState }) {
   const now = useNow();
-  const minutes = Math.max(1, Math.round((now - state.upstreamTimestamp) / 60_000));
+  const minutes = Math.max(
+    1,
+    Math.round((now - state.upstreamTimestamp) / 60_000),
+  );
   return (
     <p
       role="status"
@@ -59,7 +61,11 @@ export function DashboardGrid() {
   }
 
   if (state === null) {
-    return <Empty>World state has not been fetched yet. Check back in a few minutes.</Empty>;
+    return (
+      <Empty>
+        World state has not been fetched yet. Check back in a few minutes.
+      </Empty>
+    );
   }
 
   return <Panels state={state} />;
@@ -68,15 +74,22 @@ export function DashboardGrid() {
 export function Panels({ state }: { state: WorldState }) {
   return (
     <div>
-      <CycleTiles cycles={state.cycles} />
       {state.stale && <StaleNotice state={state} />}
       <div className={GRID}>
         <FissuresPanel fissures={state.fissures} />
         <BountiesPanel bounties={bountiesOf(state)} />
         <InvasionsPanel invasions={state.invasions} />
         <AlertsPanel alerts={state.alerts} />
-        <MissionSetPanel title="Sortie" icon={LayoutGridIcon} data={state.sortie} />
-        <MissionSetPanel title="Archon Hunt" icon={BoneIcon} data={state.archonHunt} />
+        <MissionSetPanel
+          title="Sortie"
+          icon={LayoutGridIcon}
+          data={state.sortie}
+        />
+        <MissionSetPanel
+          title="Archon Hunt"
+          icon={BoneIcon}
+          data={state.archonHunt}
+        />
         <BaroPanel baro={state.baro} />
         <NightwavePanel nightwave={state.nightwave} />
       </div>

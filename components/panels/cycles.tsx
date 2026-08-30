@@ -11,6 +11,8 @@ import type { Cycle } from "@/lib/contracts/worldstate";
 import { cn } from "@/lib/utils";
 import { Countdown, SOON_MS } from "./countdown";
 import type { IconHandle, PanelIcon } from "./panel";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { useNow } from "./use-now";
 
 const WORLDS: Record<Cycle["world"], { label: string; icon: PanelIcon }> = {
@@ -53,10 +55,17 @@ export function CycleTiles({ cycles }: { cycles: Cycle[] }) {
   if (rows.length === 0) return null;
 
   return (
-    <ul aria-label="World cycles" className="mb-4 flex flex-wrap gap-2">
+    <ul aria-label="World cycles" className="grid grid-cols-3 gap-2">
       {rows.map((c) => (
         <CycleTile key={c.world} cycle={c} now={now} />
       ))}
     </ul>
   );
+}
+
+// The tiles sit beside the page title, so they fetch on their own instead of through the grid.
+export function CycleTilesLive() {
+  const state = useQuery(api.worldstate.get, { platform: "pc" });
+  if (!state) return null;
+  return <CycleTiles cycles={state.cycles} />;
 }

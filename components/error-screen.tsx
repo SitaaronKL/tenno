@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { AsciiText } from "@/components/ascii-text";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 
 export function ErrorScreen({
   code,
@@ -23,9 +23,9 @@ export function ErrorScreen({
       </div>
       <div className="flex gap-3">
         {action}
-        <Button variant="outline" render={<Link href="/" />}>
+        <Link href="/" className={buttonVariants({ variant: "outline" })}>
           Back to Voidwatch
-        </Button>
+        </Link>
       </div>
     </main>
   );

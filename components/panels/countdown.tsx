@@ -1,6 +1,5 @@
 "use client";
 
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { absolute, countdown, spoken } from "./format";
 
@@ -20,24 +19,18 @@ export function Countdown({
 }) {
   const soon = target - now <= SOON_MS;
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span
-            className={cn(
-              "shrink-0 whitespace-nowrap font-mono text-xs tabular-nums",
-              soon ? "text-warning" : "text-muted-foreground",
-              className,
-            )}
-          />
-        }
-      >
-        <span aria-hidden="true">{countdown(target, now)}</span>
-        <span className="sr-only">
-          {verb} in {spoken(target, now)}
-        </span>
-      </TooltipTrigger>
-      <TooltipContent>{absolute(target)}</TooltipContent>
-    </Tooltip>
+    <span
+      title={absolute(target)}
+      className={cn(
+        "shrink-0 whitespace-nowrap font-mono text-xs tabular-nums",
+        soon ? "text-warning" : "text-muted-foreground",
+        className,
+      )}
+    >
+      <span aria-hidden="true">{countdown(target, now)}</span>
+      <span className="sr-only">
+        {verb} in {spoken(target, now)}
+      </span>
+    </span>
   );
 }

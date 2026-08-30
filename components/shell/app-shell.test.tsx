@@ -25,11 +25,11 @@ describe("app shell", () => {
   it("shows every section link and marks the current one", () => {
     render(<AppShell>page body</AppShell>);
     const nav = within(sidebar());
-    for (const label of ["Dashboard", "Rules", "Chat", "Mastery"]) {
+    for (const label of ["World state", "Rules", "Chat", "Mastery"]) {
       expect(nav.getByRole("link", { name: label })).toBeInTheDocument();
     }
     expect(nav.queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();
-    expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
+    expect(nav.getByRole("link", { name: "World state" })).toHaveAttribute("aria-current", "page");
     expect(screen.getByText("page body")).toBeInTheDocument();
   });
 
@@ -37,7 +37,7 @@ describe("app shell", () => {
     render(<AppShell>body</AppShell>);
     expect(within(sidebar()).getByRole("link", { name: /sign in/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /account menu/i })).not.toBeInTheDocument();
-    expect(screen.getByRole("navigation", { name: /breadcrumb/i })).toHaveTextContent("Dashboard");
+    expect(screen.getByRole("navigation", { name: /breadcrumb/i })).toHaveTextContent("World state");
   });
 
   it("collapses the sidebar on cmd+b and opens it again", async () => {
