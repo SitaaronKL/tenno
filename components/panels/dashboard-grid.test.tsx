@@ -69,7 +69,7 @@ describe("hidden boxes", () => {
         <Panels state={state({ incursions: ["Tyana Pass (Mars)"] })} />
       </HiddenSet>,
     );
-    expect(screen.queryByText("Incursions")).not.toBeInTheDocument();
+    expect(screen.queryByText("Steel Path Incursions")).not.toBeInTheDocument();
     expect(screen.queryByText("Weekly")).not.toBeInTheDocument();
   });
 });
@@ -84,8 +84,8 @@ describe("daily and weekly extras", () => {
         })}
       />,
     );
-    expect(screen.getByText("Incursions")).toBeInTheDocument();
+    expect(screen.getByText("Steel Path Incursions")).toBeInTheDocument();
     expect(screen.getByText("Weekly")).toBeInTheDocument();
-    expect(screen.getByText(/Tactical Alert: Dog Days/)).toBeInTheDocument();
+    expect(screen.queryByText(/Tactical Alert: Dog Days/)).not.toBeInTheDocument();
   });
 });

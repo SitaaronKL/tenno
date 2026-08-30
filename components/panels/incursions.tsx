@@ -20,7 +20,7 @@ export function IncursionsPanel({ incursions }: { incursions: string[] }) {
 
   return (
     <Panel
-      title="Incursions"
+      title="Steel Path Incursions"
       icon={GripHorizontalIcon}
       className={CLASS}
       count={incursions.length ? `${keys.length - remaining(keys, done)} / ${keys.length}` : undefined}

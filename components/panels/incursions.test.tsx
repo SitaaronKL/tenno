@@ -37,7 +37,7 @@ function Harness({ nodes = NODES }: { nodes?: string[] }) {
 describe("Steel Path incursions", () => {
   it("lists the six nodes of the day with a check off each", () => {
     render(<Harness />);
-    expect(screen.getByText("Incursions")).toBeInTheDocument();
+    expect(screen.getByText("Steel Path Incursions")).toBeInTheDocument();
     for (const node of NODES) expect(screen.getByText(node)).toBeInTheDocument();
     expect(screen.getAllByRole("checkbox")).toHaveLength(6);
   });
