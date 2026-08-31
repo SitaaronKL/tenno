@@ -13,9 +13,39 @@ async function account(t: ReturnType<typeof setup>) {
   return await t.run(async (ctx) => await ctx.db.insert("users", { email: "tenno@example.com" }));
 }
 
+// The parts a recipe names come from the parts table now, not from a bundled file.
+const ASH_PARTS = [
+  {
+    uniqueName: "/Lotus/Types/Recipes/WarframeRecipes/AshHelmetComponent",
+    name: "Ash Neuroptics",
+    components: [{ itemType: "/Lotus/Types/Items/MiscItems/Rubedo", count: 300 }],
+  },
+  {
+    uniqueName: "/Lotus/Types/Recipes/WarframeRecipes/AshChassisComponent",
+    name: "Ash Chassis",
+    components: [{ itemType: "/Lotus/Types/Items/MiscItems/Rubedo", count: 300 }],
+  },
+  {
+    uniqueName: "/Lotus/Types/Recipes/WarframeRecipes/AshSystemsComponent",
+    name: "Ash Systems",
+    components: [{ itemType: "/Lotus/Types/Items/MiscItems/Rubedo", count: 300 }],
+  },
+  {
+    uniqueName: "/Lotus/Types/Items/MiscItems/Rubedo",
+    name: "Rubedo",
+    components: [],
+  },
+  {
+    uniqueName: "/Lotus/Types/Items/MiscItems/OrokinCell",
+    name: "Orokin Cell",
+    components: [],
+  },
+];
+
 // Ash, three parts and an Orokin Cell, the shape every warframe recipe has.
 async function seedAsh(t: ReturnType<typeof setup>) {
   await t.run(async (ctx) => {
+    for (const part of ASH_PARTS) await ctx.db.insert("parts", part);
     await ctx.db.insert("items", {
       uniqueName: "/Lotus/Powersuits/Ninja/Ninja",
       name: "Ash",
@@ -67,6 +97,18 @@ describe("goals", () => {
     const before = first.find((goal) => goal.itemName === "Ash Neuroptics")?.wantedCount;
     const after = second.find((goal) => goal.itemName === "Ash Neuroptics")?.wantedCount;
     expect(after).toBe((before ?? 0) * 2);
+  });
+
+  test("the names to pick from come from the parts table, not from a bundled file", async () => {
+    const t = setup();
+    const as = t.withIdentity({ subject: await account(t) });
+    expect(await as.query(api.goals.itemNames, {})).toEqual([]);
+
+    await seedAsh(t);
+    const names = (await as.query(api.goals.itemNames, {})).map((row) => row.name);
+    expect(names).toContain("Ash");
+    expect(names).toContain("Ash Chassis");
+    expect(names).toContain("Rubedo");
   });
 
   test("a goal carries the places it drops from, best chance first", async () => {

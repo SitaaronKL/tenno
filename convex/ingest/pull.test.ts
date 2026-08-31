@@ -1,7 +1,9 @@
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import cycle from "./__fixtures__/bounty-cycle.json";
+import cycleRaw from "./__fixtures__/bounty-cycle.json";
 import de from "./__fixtures__/de.json";
+
+const cycle = cycleRaw as { expiry: number };
 import warframestat from "./__fixtures__/pc.json";
 import schema from "../schema";
 import { internal } from "../_generated/api";

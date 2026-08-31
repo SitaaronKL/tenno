@@ -30,6 +30,15 @@ export default defineConfig({
           server: { deps: { inline: ["convex-test"] } },
         },
       },
+      {
+        test: {
+          name: "scripts",
+          environment: "node",
+          globals: true,
+          include: ["scripts/**/*.test.mjs"],
+          exclude,
+        },
+      },
     ],
   },
 });

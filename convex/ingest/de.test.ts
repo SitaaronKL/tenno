@@ -1,11 +1,26 @@
 import { describe, expect, test } from "vitest";
 import raw from "./__fixtures__/de.json";
-import { bountyMissionType, normalizeDe } from "./de";
+import namePaths from "./__fixtures__/de-names.json";
+import { bountyMissionType, deNamePaths, normalizeDe, type NameLookup } from "./de";
 import { currentArbitration, todaysIncursions } from "./schedules";
+
+// The /Lotus item names live in the deNames table now, so ingest reads the paths its snapshot
+// mentions and hands them to the parser. This does the same from a checked in cut of that table,
+// convex/gamedata/deNames.json trimmed to the paths this fixture names, so the test needs no
+// deployment and no network. scripts/build-de-names.mjs rewrites the cut with the table. It lives
+// here rather than in a helper module because everything under convex/ that is not a test is
+// bundled into the deploy, which is the whole point of this slice.
+const PATHS = (namePaths as { paths: Record<string, string | { value: string; desc?: string }> })
+  .paths;
+const names: NameLookup = {};
+for (const path of deNamePaths(raw)) {
+  const entry = PATHS[path];
+  if (entry !== undefined) names[path] = entry;
+}
 
 // Fixture was captured live from api.warframe.com/cdn/worldState.php on 2026-08-30.
 const FETCHED_AT = Date.parse("2026-08-30T04:21:00.000Z");
-const state = normalizeDe(raw as unknown as Record<string, unknown>, FETCHED_AT);
+const state = normalizeDe(raw as unknown as Record<string, unknown>, FETCHED_AT, names);
 
 describe("normalizeDe", () => {
   test("reads DE's own timestamp and says the feed came from DE", () => {
@@ -16,7 +31,11 @@ describe("normalizeDe", () => {
   });
 
   test("an hour later the same snapshot reads as stale", () => {
-    const late = normalizeDe(raw as unknown as Record<string, unknown>, FETCHED_AT + 60 * 60 * 1000);
+    const late = normalizeDe(
+      raw as unknown as Record<string, unknown>,
+      FETCHED_AT + 60 * 60 * 1000,
+      names,
+    );
     expect(late.stale).toBe(true);
     expect(late.fissures.length).toBe(state.fissures.length);
   });

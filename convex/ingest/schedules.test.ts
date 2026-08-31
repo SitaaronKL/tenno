@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import arbitrations from "./arbitrations.json";
-import incursions from "./spIncursions.json";
+import { ARBITRATIONS as arbitrations, INCURSIONS as incursions } from "./scheduleData";
 import { currentArbitration, todaysIncursions } from "./schedules";
 
 // The shipped tables are re-trimmed by scripts/refresh-schedules.mjs, so the tests ask them

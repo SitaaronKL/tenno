@@ -1,7 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
 import { modSlot, polarity, statKey } from "../schema";
-import modsData from "./mods.json";
 
 const modArg = v.object({
   uniqueName: v.string(),
@@ -17,19 +16,18 @@ const modArg = v.object({
   effects: v.array(v.object({ stat: statKey, percent: v.number() })),
 });
 
-type Mod = typeof modArg.type;
-
-// Upserts the trimmed mods and arcanes. Run after scripts/import-public-export.mjs.
-// Paged because the file holds about 1700 rows and one mutation should stay small.
+// Upserts mods and arcanes handed in by the caller. The full seed is
+// `node scripts/seed-tables.mjs mods`, this is the partial refresh after a game update: the
+// 540 KB file used to be imported here and every deploy bundled it.
 export const importMods = internalMutation({
   args: {
-    batch: v.optional(v.array(modArg)),
+    batch: v.array(modArg),
     from: v.optional(v.number()),
     count: v.optional(v.number()),
   },
   returns: v.object({ imported: v.number(), next: v.union(v.number(), v.null()) }),
   handler: async (ctx, { batch, from = 0, count = 500 }) => {
-    const all = (batch ?? (modsData as Mod[])) as Mod[];
+    const all = batch;
     const page = all.slice(from, from + count);
     for (const mod of page) {
       const existing = await ctx.db

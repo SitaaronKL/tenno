@@ -1,6 +1,6 @@
 // Regenerates convex/ingest/de-names.json from WFCD warframe-worldstate-data.
 // Run it after a game update: node scripts/build-de-names.mjs
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 
 const BASE = "https://raw.githubusercontent.com/WFCD/warframe-worldstate-data/master/data";
 
@@ -101,12 +101,47 @@ const out = {
   sortieModifiers: sortie.modifierTypes,
   syndicates: Object.fromEntries(Object.entries(syndicates).map(([key, s]) => [key, s.name])),
   bountyRewards,
-  names,
+  // Bare ids, the sortie and Archimedea modifiers. Small and hot, so they stay in the bundle.
+  modifiers: Object.fromEntries(Object.entries(names).filter(([key]) => !key.startsWith("/"))),
 };
 
-writeFileSync("convex/ingest/de-names.json", JSON.stringify(out));
+// The /Lotus paths are 550 KB of the table and a snapshot resolves a few hundred of them, so they
+// go to the deNames table instead of the function bundle. scripts/seed-tables.mjs loads them.
+const paths = Object.fromEntries(Object.entries(names).filter(([key]) => key.startsWith("/")));
+
+writeFileSync("convex/ingest/de-names.json", JSON.stringify(out) + "\n");
+writeFileSync(
+  "convex/gamedata/deNames.json",
+  JSON.stringify({ source: "scripts/build-de-names.mjs", paths }) + "\n",
+);
+// The de.test.ts fixture reads a cut of the same table, so it is rewritten here rather than left
+// to drift into naming items by the tail of their path.
+const fixture = JSON.parse(readFileSync("convex/ingest/__fixtures__/de.json", "utf8"));
+const wanted = new Set();
+const walk = (value) => {
+  if (typeof value === "string") {
+    const path = value.toLowerCase();
+    if (path.startsWith("/lotus/")) wanted.add(path);
+    return;
+  }
+  if (Array.isArray(value)) return value.forEach(walk);
+  if (value && typeof value === "object") Object.values(value).forEach(walk);
+};
+walk(fixture);
+const fixturePaths = Object.fromEntries(
+  [...wanted].sort().flatMap((path) => (path in paths ? [[path, paths[path]]] : [])),
+);
+writeFileSync(
+  "convex/ingest/__fixtures__/de-names.json",
+  JSON.stringify({
+    source: "convex/gamedata/deNames.json, trimmed to the paths __fixtures__/de.json names",
+    paths: fixturePaths,
+  }) + "\n",
+);
+
 console.log(
   "nodes", Object.keys(out.nodes).length,
-  "names", Object.keys(out.names).length,
+  "modifiers", Object.keys(out.modifiers).length,
+  "paths", Object.keys(paths).length,
   "bountyRewards", Object.keys(out.bountyRewards).length,
 );

@@ -1,8 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
 import { masteryKind } from "../schema";
-import itemsData from "./items.json";
-import nodesData from "./nodes.json";
 
 const itemArg = v.object({
   uniqueName: v.string(),
@@ -15,14 +13,20 @@ const itemArg = v.object({
   components: v.array(v.object({ itemType: v.string(), count: v.number() })),
 });
 
-type Item = typeof itemsData extends readonly (infer T)[] ? T : never;
+const nodeArg = v.object({
+  uniqueName: v.string(),
+  name: v.string(),
+  planet: v.string(),
+  masteryReq: v.number(),
+});
 
-// Upserts the trimmed Public Export. Run after scripts/import-public-export.mjs.
+// Upserts items and star chart nodes handed in by the caller. The full seed is
+// `node scripts/seed-tables.mjs items starNodes`, this is the partial refresh after a game update:
+// items.json and nodes.json used to be imported here and every deploy bundled them.
 export const importGameData = internalMutation({
-  args: { batch: v.optional(v.array(itemArg)) },
+  args: { items: v.array(itemArg), nodes: v.optional(v.array(nodeArg)) },
   returns: v.object({ items: v.number(), nodes: v.number() }),
-  handler: async (ctx, { batch }) => {
-    const items = (batch ?? (itemsData as Item[])) as Array<typeof itemArg.type>;
+  handler: async (ctx, { items, nodes = [] }) => {
     for (const item of items) {
       const existing = await ctx.db
         .query("items")
@@ -34,7 +38,7 @@ export const importGameData = internalMutation({
         await ctx.db.insert("items", item);
       }
     }
-    for (const node of nodesData) {
+    for (const node of nodes) {
       const existing = await ctx.db
         .query("starNodes")
         .withIndex("by_unique_name", (q) => q.eq("uniqueName", node.uniqueName))
@@ -45,6 +49,6 @@ export const importGameData = internalMutation({
         await ctx.db.insert("starNodes", node);
       }
     }
-    return { items: items.length, nodes: nodesData.length };
+    return { items: items.length, nodes: nodes.length };
   },
 });

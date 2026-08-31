@@ -12,10 +12,12 @@ const TIERS = "https://browse.wf/supplemental-data/arbyTiers.js";
 const DAY = 86_400;
 const HOUR = 3_600;
 
-// The whole incursion file is only 100 KB, but past days are dead weight, and a month of hourly
-// arbitrations is 10 KB against the 940 KB the full file weighs.
+// The whole incursion file is only 100 KB, but past days are dead weight, and sixty days of hourly
+// arbitrations is 19 KB against the 940 KB the full file weighs. Both files ship in the ingest
+// function bundle, so the window is a cap, not a target. The `schedule horizon` cron warns a week
+// before whichever one runs out, that is the signal to run this script again.
 const INCURSION_DAYS = 800;
-const ARBITRATION_DAYS = 31;
+const ARBITRATION_DAYS = 60;
 
 async function text(url) {
   const response = await fetch(url);

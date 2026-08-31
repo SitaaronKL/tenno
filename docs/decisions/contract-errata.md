@@ -143,3 +143,26 @@ internal `name: "tenno"` are unchanged.
 - **Seeding.** `/mastery` is empty until `node scripts/import-public-export.mjs` and
   `npx convex run gamedata/import:importGameData '{}'` are run once against the deployment. Both are step 4 of
   README's Run it yourself. Neither was run against the deployment by this seam.
+
+## Bundle diet
+
+- **No gamedata JSON is imported by a Convex module.** `mods.json`, `items.json`, `nodes.json`,
+  `dropSources.json`, `components.json` and the `/Lotus` half of `de-names.json` are loaded by
+  `node scripts/seed-tables.mjs`, which shapes each file into JSON Lines and shells out to
+  `npx convex import --table <t> --format jsonLines --replace`. `importGameData`, `importMods` and
+  `importDropSources` still exist but take their rows from args only, they are the partial refresh
+  after a game update. README step 4 is the seed.
+- **Two new tables.** `parts` holds what `convex/goals.ts` used to read from `components.json`,
+  1095 rows. `deNames` holds the 6354 `/Lotus` item paths DE writes into world state, keyed by
+  lowercase path. Both are reference data, seeded the same way.
+- **`normalizeDe` takes a third argument.** `normalizeDe(raw, fetchedAt, names)`, where `names` is
+  the lookup `ingest/pull.ts` reads from the `deNames` table for the paths `deNamePaths(raw)` finds
+  in that snapshot. Left off, item names fall back to the tail of their path, which is what an
+  unknown path already did.
+- **A new cron, `schedule horizon`.** `convex/ingest/horizon.ts` `check` runs daily at 05:00 UTC and
+  warns seven days before the checked in incursion or arbitration schedule runs out.
+  `scripts/refresh-schedules.mjs` caps arbitrations at 60 days.
+- **A third vitest project, `scripts`.** It runs `scripts/**/*.test.mjs`, which is where
+  `seed-tables.test.mjs` lives, beside the script it tests.
+
+See `docs/decisions/bundle-diet.md` for the numbers and the reasoning.
