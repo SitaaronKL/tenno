@@ -70,21 +70,20 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
        redirect URL: https://<deployment>.convex.site/api/auth/callback/discord
 
   4. node scripts/import-public-export.mjs   refreshes convex/gamedata from DE's Public Export
-     npx convex run gamedata/import:importGameData '{}'
-                                            seeds items and star chart nodes, /mastery is
-                                            empty until this runs once
-     npx convex run gamedata/importMods:importMods '{}'
-                                            seeds mods and arcanes, 500 a call, repeat with
-                                            '{"from":500}' until it answers "next": null,
-                                            /builds has an empty mod picker until this runs
-
      node scripts/build-components.mjs      names every part a recipe asks for, and what that
                                             part is built from, into convex/gamedata/components.json
      node scripts/build-drop-sources.mjs    trims the WFCD drop table mirror to the best eight
                                             places an item drops, convex/gamedata/dropSources.json
-     npx convex run gamedata/dropSources:importDropSources '{}'
-                                            seeds drop sources, /resources shows no farms
-                                            until this runs once
+     node scripts/build-de-names.mjs        the DE id to name tables, and the /Lotus item paths
+
+     node scripts/seed-tables.mjs           loads all six reference tables with convex import,
+                                            about 12,000 rows. None of this JSON is bundled into
+                                            a function, so this is the only way the tables fill.
+                                            /mastery, /builds and /resources are empty until it
+                                            runs once, and DE names items by the tail of their
+                                            path until deNames is seeded.
+                                            One table at a time: node scripts/seed-tables.mjs mods
+                                            Shape it without importing: --dry-run --out ./out
 
   5. npm run dev                            second terminal
      open http://localhost:3000

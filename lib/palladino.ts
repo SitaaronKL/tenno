@@ -8,9 +8,12 @@ export interface PalladinoWare {
   slivers: number;
 }
 
-export const PALLADINO_WARES: PalladinoWare[] = data.wares;
+// Cast once here, so tsc sees a small shape instead of a literal type per row.
+const FILE = data as { wares: PalladinoWare[]; source: string; api: string; fetchedAt: string };
 
-export const PALLADINO_SOURCE = { url: data.source, api: data.api, fetchedAt: data.fetchedAt };
+export const PALLADINO_WARES: PalladinoWare[] = FILE.wares;
+
+export const PALLADINO_SOURCE = { url: FILE.source, api: FILE.api, fetchedAt: FILE.fetchedAt };
 
 export function wareLabel(ware: PalladinoWare): string {
   return `${ware.item} for ${ware.slivers} Riven Sliver${ware.slivers === 1 ? "" : "s"}`;

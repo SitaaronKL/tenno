@@ -3,7 +3,7 @@ import { internalAction, internalQuery } from "../_generated/server";
 import { internal } from "../_generated/api";
 import type { BountyCycle, WorldState } from "../../lib/contracts/worldstate";
 import { normalize } from "./normalize";
-import { DE_ENDPOINT, normalizeDe } from "./de";
+import { DE_ENDPOINT, deNamePaths, normalizeDe, type NameLookup } from "./de";
 import { BOUNTY_CYCLE_ENDPOINT, parseCycle, withBountyCycle } from "./bountyCycle";
 import { vPlatform } from "../lib/validators";
 import { bountyCycleValidator, worldStateValidator } from "../schema";
@@ -88,7 +88,15 @@ export const pull = internalAction({
   returns: v.null(),
   handler: async (ctx, args) => {
     const now = Date.now();
-    const de = await candidate("DE", async () => normalizeDe(await json(DE_ENDPOINT, "de"), now));
+    const de = await candidate("DE", async () => {
+      const raw = await json(DE_ENDPOINT, "de");
+      // The item name table is a Convex table, not a bundled file, so the paths this snapshot
+      // names are read first and handed to the parser.
+      const rows = await ctx.runQuery(internal.ingest.names.lookup, { paths: deNamePaths(raw) });
+      const names: NameLookup = {};
+      for (const row of rows) names[row.path] = { value: row.value, desc: row.desc };
+      return normalizeDe(raw, now, names);
+    });
     // A snapshot hours behind is worse than the other upstream, `stale` is the ten minute mark.
     let state = de && !de.stale ? de : null;
     if (!state) {

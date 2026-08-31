@@ -88,8 +88,14 @@ convex/wiki.ts               action  searchItems({q})                     MediaW
 convex/mastery.ts            query    progress({playerId?})                every mastery item plus the player's xp
 convex/profileSync.ts        action   fetchProfile({playerId})             DE profile, 6 an hour per user, 6 hour cache
                              internal query cached, internal mutation store
-convex/gamedata/import.ts    internal mutation importGameData()            seeds items and starNodes from the
-                                                                            checked in convex/gamedata/*.json
+convex/gamedata/import.ts    internal mutation importGameData({items, nodes?})   partial refresh, args only
+convex/gamedata/importMods.ts     internal mutation importMods({batch, from?, count?})
+convex/gamedata/dropSources.ts    internal mutation importDropSources({batch})
+                             the full seed of items, starNodes, mods, parts, dropSources and deNames is
+                             node scripts/seed-tables.mjs, which shells out to npx convex import.
+                             No gamedata JSON is imported by a Convex module, see docs/decisions/bundle-diet.md
+convex/ingest/names.ts       internal query lookup({paths})                the /Lotus names a snapshot mentions
+convex/ingest/horizon.ts     internal mutation check({now?})               warns a week before a schedule runs out
 
 convex/auth.ts, convex/auth.config.ts, convex/http.ts   Convex Auth: Discord, Resend magic link through convex/email.ts,
 plus the Anonymous provider as a dev only way in until the Discord and Resend keys exist. http.ts mounts the photon webhook.

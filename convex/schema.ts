@@ -457,6 +457,22 @@ export default defineSchema({
     ),
   }).index("by_item_name", ["itemName"]),
 
+  // Every part a built item asks for, and what that part is built from. Seeded from
+  // convex/gamedata/components.json by scripts/seed-tables.mjs, too big to bundle.
+  parts: defineTable({
+    uniqueName: v.string(),
+    name: v.string(),
+    components: v.array(v.object({ itemType: v.string(), count: v.number() })),
+  }).index("by_unique_name", ["uniqueName"]),
+
+  // The /Lotus item paths DE writes into world state, by lowercase path. Seeded from
+  // convex/gamedata/deNames.json by scripts/seed-tables.mjs, 550 KB the ingest bundle skips.
+  deNames: defineTable({
+    path: v.string(),
+    value: v.string(),
+    desc: v.optional(v.string()),
+  }).index("by_path", ["path"]),
+
   // One row per thing a user is farming. Counts are per user, never shared.
   goals: defineTable({
     userId: v.id("users"),

@@ -2,12 +2,20 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import componentsData from "./gamedata/components.json";
 import { requireUser } from "./lib/auth";
 import { explodeRecipe, type Part } from "./lib/resources";
 
-// Every part a built item asks for, by uniqueName. Checked in, see scripts/build-components.mjs.
-const PARTS = new Map<string, Part>((componentsData as Part[]).map((part) => [part.uniqueName, part]));
+// Every part a built item asks for, by uniqueName. A table, not a bundled file: it is 260 KB and
+// every deploy paid for it. Seeded by scripts/seed-tables.mjs, see scripts/build-components.mjs.
+async function partsByUniqueName(ctx: QueryCtx): Promise<Map<string, Part>> {
+  const rows = await ctx.db.query("parts").collect();
+  return new Map(
+    rows.map((row) => [
+      row.uniqueName,
+      { uniqueName: row.uniqueName, name: row.name, components: row.components },
+    ]),
+  );
+}
 
 const source = v.object({ place: v.string(), rotation: v.string(), chance: v.number() });
 
@@ -98,7 +106,7 @@ export const itemNames = query({
     await requireUser(ctx);
     const items = await ctx.db.query("items").collect();
     const names = new Map<string, { name: string; uniqueName: string; buildable: boolean }>();
-    for (const part of PARTS.values()) {
+    for (const part of (await partsByUniqueName(ctx)).values()) {
       names.set(part.name, { name: part.name, uniqueName: part.uniqueName, buildable: false });
     }
     for (const item of items) {
@@ -157,7 +165,7 @@ export const addFromItem = mutation({
       .unique();
     if (!item) throw new ConvexError("We have no recipe for that item");
 
-    const lines = explodeRecipe(item.components, PARTS);
+    const lines = explodeRecipe(item.components, await partsByUniqueName(ctx));
     for (const line of lines) {
       await mergeGoal(ctx, userId, line.itemName, line.count, args.fromBuildId);
     }

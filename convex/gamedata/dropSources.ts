@@ -1,23 +1,18 @@
 import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
-import dropSourcesData from "./dropSources.json";
 
 const source = v.object({ place: v.string(), rotation: v.string(), chance: v.number() });
 
 const row = v.object({ itemName: v.string(), sources: v.array(source) });
 
-type Row = typeof row.type;
-
-const FILE = dropSourcesData as { items: Record<string, Row["sources"]> };
-
-// Upserts the trimmed drop table mirror. Run after scripts/build-drop-sources.mjs.
-// The file is about 320 KB, so one call seeds it all, batch is there for a partial reseed.
+// Upserts drop sources handed in by the caller. The full seed is
+// `node scripts/seed-tables.mjs dropSources`, this is the partial refresh after a drop table
+// change: the 320 KB file used to be imported here and every deploy bundled it.
 export const importDropSources = internalMutation({
-  args: { batch: v.optional(v.array(row)) },
+  args: { batch: v.array(row) },
   returns: v.object({ items: v.number() }),
   handler: async (ctx, { batch }) => {
-    const rows: Row[] =
-      batch ?? Object.entries(FILE.items).map(([itemName, sources]) => ({ itemName, sources }));
+    const rows = batch;
     for (const item of rows) {
       const existing = await ctx.db
         .query("dropSources")
