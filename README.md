@@ -34,6 +34,7 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
   /builds/[id]
   /chat
   /dashboard
+  /guide
   /login
   /mastery
   /resources
