@@ -368,7 +368,7 @@ export const onEmailEvent = internalMutation({
 
 // Where an email links back to, the deployment sets SITE_URL.
 function siteUrl(): string {
-  return process.env.SITE_URL ?? "https://voidwatch.app";
+  return process.env.SITE_URL ?? "https://tenno.watch";
 }
 
 // Why a notification cannot go out, null when it can. Never leave one pending.
@@ -406,6 +406,72 @@ const NOT_CONFIGURED = "email not configured";
 function notConfigured(e: unknown): boolean {
   return e instanceof Error && e.message === NOT_CONFIGURED;
 }
+
+// The agent offers a test right after making a rule, so the user sees one land for real.
+export const testProfile = internalQuery({
+  args: { userId: v.id("users") },
+  returns: v.union(
+    v.object({
+      email: v.string(),
+      phone: v.union(v.string(), v.null()),
+      photonUserId: v.union(v.string(), v.null()),
+      phoneVerified: v.boolean(),
+    }),
+    v.null(),
+  ),
+  handler: async (ctx, { userId }) => {
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .unique();
+    if (!profile) return null;
+    return {
+      email: profile.email,
+      phone: profile.phone ?? null,
+      photonUserId: profile.photonUserId ?? null,
+      phoneVerified: profile.phoneVerifiedAt !== undefined,
+    };
+  },
+});
+
+export const sendTest = internalAction({
+  args: { userId: v.id("users"), channel: v.union(v.literal("email"), v.literal("imessage")) },
+  returns: v.string(),
+  handler: async (ctx, { userId, channel }): Promise<string> => {
+    const profile = await ctx.runQuery(internal.notify.testProfile, { userId });
+    if (!profile) return "no profile yet, sign in on the site first";
+    if (channel === "email") {
+      if (!profile.email) return "no email on file";
+      try {
+        await ctx.runAction(internal.email.sendEmail, {
+          to: profile.email,
+          subject: "Voidwatch test notification",
+          react: {
+            template: "RuleMatch" as const,
+            props: {
+              ruleName: "Test notification",
+              kind: "test",
+              title: "This is what an alert looks like",
+              url: siteUrl(),
+            },
+          },
+        });
+      } catch (caught) {
+        if (notConfigured(caught)) return "email is not set up on this deployment";
+        throw caught;
+      }
+      return "sent, check your inbox";
+    }
+    if (!profile.phone && !profile.photonUserId) return "no phone on file, add it under Settings";
+    if (!profile.phoneVerified) return "phone not verified, text the Voidwatch line once first";
+    await ctx.runAction(internal.photon.sendText, {
+      photonUserId: profile.photonUserId ?? undefined,
+      phone: profile.phone ?? undefined,
+      text: "voidwatch test, alerts will land here like this",
+    });
+    return "sent, check your messages";
+  },
+});
 
 export const send = internalAction({
   args: { notificationId: v.id("notifications") },

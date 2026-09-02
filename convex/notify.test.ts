@@ -65,6 +65,73 @@ function setup() {
   return t;
 }
 
+describe("the test notification", () => {
+  test("a verified phone gets a test text", async () => {
+    const t = setup();
+    const userId = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+      await ctx.db.insert("profiles", {
+        userId,
+        email: "tenno@example.com",
+        phone: "+15550001234",
+        phoneVerifiedAt: Date.now(),
+        timezone: "UTC",
+        digestHour: 9,
+        platform: "pc" as const,
+      });
+      return userId;
+    });
+
+    const answer = await t.action(internal.notify.sendTest, { userId, channel: "imessage" });
+
+    expect(answer).toContain("sent");
+    expect(sent.texts).toHaveLength(1);
+    expect(sent.texts[0].to).toBe("+15550001234");
+  });
+
+  test("an unverified phone is told why nothing arrived", async () => {
+    const t = setup();
+    const userId = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+      await ctx.db.insert("profiles", {
+        userId,
+        email: "tenno@example.com",
+        phone: "+15550001234",
+        timezone: "UTC",
+        digestHour: 9,
+        platform: "pc" as const,
+      });
+      return userId;
+    });
+
+    const answer = await t.action(internal.notify.sendTest, { userId, channel: "imessage" });
+
+    expect(answer).toContain("not verified");
+    expect(sent.texts).toHaveLength(0);
+  });
+
+  test("email gets a test mail with the rule match shape", async () => {
+    const t = setup();
+    const userId = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+      await ctx.db.insert("profiles", {
+        userId,
+        email: "tenno@example.com",
+        timezone: "UTC",
+        digestHour: 9,
+        platform: "pc" as const,
+      });
+      return userId;
+    });
+
+    const answer = await t.action(internal.notify.sendTest, { userId, channel: "email" });
+
+    expect(answer).toContain("sent");
+    expect(sent.emails).toHaveLength(1);
+    expect(sent.emails[0].to).toBe("tenno@example.com");
+  });
+});
+
 type SeedOptions = {
   email?: string;
   channels?: ("email" | "imessage")[];

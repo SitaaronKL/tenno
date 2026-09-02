@@ -2,7 +2,14 @@ import { Agent, type AgentComponent } from "@convex-dev/agent";
 import { openai } from "@ai-sdk/openai";
 import { stepCountIs } from "ai";
 import { components } from "../_generated/api";
-import { createRule, draftBuild, getWorldState, listRules, searchItems } from "./tools";
+import {
+  createRule,
+  draftBuild,
+  getWorldState,
+  listRules,
+  searchItems,
+  sendTestNotification,
+} from "./tools";
 
 export const MODEL = "gpt-5.6-luna";
 
@@ -28,7 +35,9 @@ export const tenno = new Agent(agentComponent, {
     "and if they already said the channel, create it right away and confirm in one line. " +
     "Rules are instant by default. Never ask about instant versus digest or timing, digest only exists " +
     "when someone asks for a daily roundup. Never ask about options they did not bring up. " +
+    "Right after creating a rule, offer a test in the same message, like 'want a test noti to make sure " +
+    "it lands?', and send it with sendTestNotification when they say yes. " +
     "Example of the register: 'axi survival on Mot, 34 min left, steel path' or 'nothing great rn, cetus night in 20 if you want eidolons'.",
-  tools: { getWorldState, listRules, createRule, searchItems, draftBuild },
+  tools: { getWorldState, listRules, createRule, searchItems, draftBuild, sendTestNotification },
   stopWhen: stepCountIs(5),
 });

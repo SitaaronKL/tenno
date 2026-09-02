@@ -13,9 +13,10 @@ export type ChatMessage = {
 };
 
 // A tool step comes back as an assistant turn with no prose, so it reads as one quiet row.
+// min-h matches the avatar, so the line centers on the mark instead of hanging above it.
 function ToolRow() {
   return (
-    <p className="flex items-center gap-2 text-xs text-muted-foreground">
+    <p className="flex min-h-7 items-center gap-2 text-xs text-muted-foreground">
       <CheckIcon size={12} className="text-success" aria-hidden="true" />
       Checked world state
     </p>
@@ -33,9 +34,10 @@ export function Message({ message }: { message: ChatMessage }) {
     );
   }
   return (
-    <article className="flex gap-3">
-      {/* The ASCII mark from the landing page is the agent's face, no avatar image and no initials. */}
-      <AsciiLogo size={24} cell={3} animated={false} className="mt-0.5 shrink-0" />
+    <article className="flex items-start gap-3">
+      {/* The ASCII mark from the landing page is the agent's face, no avatar image and no initials.
+          A finer cell keeps it readable this small, and it breathes like the hero does. */}
+      <AsciiLogo size={28} cell={2} className="-mt-0.5 shrink-0" />
       <div className="min-w-0 flex-1 text-sm leading-6 whitespace-pre-wrap">
         {message.text.trim() === "" ? <ToolRow /> : message.text}
       </div>

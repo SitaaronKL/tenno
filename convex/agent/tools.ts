@@ -44,6 +44,16 @@ export const createRule = createTool({
   },
 });
 
+export const sendTestNotification = createTool({
+  description:
+    "Send the user a test notification so they can see one arrive. Offer it right after creating " +
+    "a rule. Returns what happened, relay that in your own words.",
+  inputSchema: z.object({ channel: z.enum(["email", "imessage"]) }),
+  execute: async (ctx, { channel }): Promise<string> => {
+    return await ctx.runAction(internal.notify.sendTest, { userId: owner(ctx), channel });
+  },
+});
+
 export const draftBuild = createTool({
   description:
     "Propose a mod loadout for a warframe or weapon that serves a goal in plain English. Returns a build " +
