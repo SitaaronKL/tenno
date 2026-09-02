@@ -10,7 +10,7 @@ describe("the guide", () => {
       "World state",
       "Notifications",
       "iMessage",
-      "Chat",
+      "Personal Cephalon",
       "Builds, Mastery and Resources",
       "Free, forever",
     ]);

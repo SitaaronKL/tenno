@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export const PITCH =
-  "Live Warframe world state, alerts the moment something you care about opens, and an agent you can text.";
+  "Live Warframe world state, alerts the moment something you care about opens, and a personal Cephalon you can text.";
 
 export function Hero() {
   return (

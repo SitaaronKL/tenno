@@ -27,7 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "World state", icon: LayoutGridIcon },
   { href: "/rules", label: "Notifications", icon: WorkflowIcon },
   { href: "/builds", label: "Builds", icon: HammerIcon },
-  { href: "/chat", label: "Chat", icon: MessageCircleIcon },
+  { href: "/chat", label: "Cephalon", icon: MessageCircleIcon },
   { href: "/resources", label: "Resources", icon: PackageIcon },
   { href: "/mastery", label: "Mastery", icon: AtomIcon },
   { href: "/guide", label: "Guide", icon: EarthIcon },

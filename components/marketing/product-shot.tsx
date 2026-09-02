@@ -16,7 +16,7 @@ const FISSURES = [
   { tier: "Neo", mission: "Exterminate", node: "Ukko, Void", left: "6m 12s" },
 ];
 
-const NAV = ["World state", "Rules", "Chat", "Mastery"];
+const NAV = ["World state", "Notifications", "Cephalon", "Mastery"];
 
 const SIDE_CARDS = [
   {

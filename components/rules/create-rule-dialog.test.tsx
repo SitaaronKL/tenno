@@ -39,7 +39,7 @@ describe("the new rule dialog", () => {
       await screen.findByLabelText("Describe the rule"),
       "omnia void cascade on steel path",
     );
-    await user.click(screen.getByRole("button", { name: "Continue in chat" }));
+    await user.click(screen.getByRole("button", { name: "Ask your Cephalon" }));
 
     expect(push).toHaveBeenCalledWith("/chat?describe=omnia%20void%20cascade%20on%20steel%20path");
   });

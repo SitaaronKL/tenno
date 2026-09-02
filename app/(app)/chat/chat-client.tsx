@@ -162,7 +162,7 @@ export default function Chat() {
               </button>
             )}
             {messages.map((m) => <Message key={m.key} message={m} />)}
-            {sending && <p className="text-sm text-muted-foreground">Voidwatch is thinking</p>}
+            {sending && <p className="text-sm text-muted-foreground">Your Cephalon is thinking</p>}
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div ref={bottom} />
           </>

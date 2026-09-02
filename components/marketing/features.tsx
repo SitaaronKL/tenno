@@ -10,7 +10,7 @@ const FEATURES = [
     body: "Say exactly what you care about. Get an instant ping or an hourly digest by email or iMessage, and nothing else.",
   },
   {
-    title: "An agent you can text",
+    title: "A Cephalon you can text",
     body: "Ask what is worth running, search the wiki, or make a rule in plain English. Same memory on the web and in Messages.",
   },
 ];

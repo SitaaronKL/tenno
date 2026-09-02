@@ -106,7 +106,7 @@ export function CreateRuleDialog({
               }}
             />
             <Button type="button" onClick={continueInChat} disabled={text.trim() === ""}>
-              Continue in chat
+              Ask your Cephalon
             </Button>
             <Button
               type="button"

@@ -5,7 +5,7 @@ import { Logo } from "@/components/shell/logo";
 // The mark stands in for the agent, no sparkle icons anywhere.
 const STEPS = [
   { icon: LogInIcon, title: "Sign in", body: "Discord or a magic link. No password to remember." },
-  { icon: null, title: "Say what you want", body: "Build a rule in the sentence builder, or just tell the agent." },
+  { icon: null, title: "Say what you want", body: "Build a rule in the sentence builder, or just tell your Cephalon." },
   { icon: SendIcon, title: "Get pinged", body: "Email or iMessage the moment it shows up in the world state." },
 ];
 

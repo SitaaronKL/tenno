@@ -51,13 +51,13 @@ export default function GuidePage() {
               Settings
             </Link>{" "}
             and text START to the number shown there. The first text links your phone, everything
-            after that is a conversation with the same agent as the web chat, same memory included.
+            after that is a conversation with the same Cephalon as the web chat, same memory included.
           </p>
         </Section>
 
-        <Section title="Chat">
+        <Section title="Personal Cephalon">
           <p>
-            The chat knows the live world state, the wiki, and your rules. Ask what is worth running,
+            Your Cephalon knows the live world state, the wiki, and your rules. Ask what is worth running,
             have it make or list rules, or ask it to draft a build. Every conversation lives in the
             history, and archiving one tucks it away at the bottom of Settings.
           </p>

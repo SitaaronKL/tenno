@@ -46,7 +46,7 @@ export function Composer({
         </Button>
       </form>
       <p className="mt-2 text-center text-xs text-muted-foreground">
-        Text this agent from iMessage, link your phone in Settings
+        Text your Cephalon from iMessage, link your phone in Settings
       </p>
     </>
   );
