@@ -133,6 +133,8 @@ function SettingsForm({
   const adopted = useRef(false);
 
   const optedIn = Boolean(profile.phone);
+  // An unsaved edit swaps the opt in box for a save prompt, so the change cannot look applied.
+  const dirtyPhone = phone.trim() !== (profile.phone ?? "");
 
   // The digest cron needs a real zone, so the first load fills one in and saves it once.
   useEffect(() => {
@@ -171,6 +173,23 @@ function SettingsForm({
         void save();
       }}
     >
+      <PageHeader
+        title="Settings"
+        helper="Where Voidwatch reaches you, and when."
+        action={
+          <div className="flex items-center gap-3">
+            {saved && !error && <span className="text-sm text-muted-foreground">Saved</span>}
+            {error && (
+              <span role="alert" className="text-sm text-destructive">
+                {error}
+              </span>
+            )}
+            <Button type="submit" disabled={busy}>
+              {busy ? "Saving" : "Save settings"}
+            </Button>
+          </div>
+        }
+      />
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -200,17 +219,31 @@ function SettingsForm({
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
-            {optedIn && PHOTON_NUMBER !== "" && (
-              <div className="flex items-center gap-3 rounded-lg bg-surface-2 p-3 ring-1 ring-border">
-                <SmsQr />
-                <div className="min-w-0">
-                  <p className="flex items-center gap-1 text-sm">
-                    {START_TEXT}
-                    <CopyButton value={PHOTON_NUMBER} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">Scan the code to open the text.</p>
-                </div>
+            {dirtyPhone ? (
+              <div className="flex items-center justify-between gap-3 rounded-lg bg-surface-2 p-3 ring-1 ring-border">
+                <p className="text-sm text-muted-foreground">
+                  {phone.trim() === ""
+                    ? "Save settings to remove this number."
+                    : "Save settings to confirm this number."}
+                </p>
+                <Button type="submit" size="sm" disabled={busy}>
+                  {busy ? "Saving" : "Save settings"}
+                </Button>
               </div>
+            ) : (
+              optedIn &&
+              PHOTON_NUMBER !== "" && (
+                <div className="flex items-center gap-3 rounded-lg bg-surface-2 p-3 ring-1 ring-border">
+                  <SmsQr />
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-1 text-sm">
+                      {START_TEXT}
+                      <CopyButton value={PHOTON_NUMBER} />
+                    </p>
+                    <p className="text-xs text-muted-foreground">Scan the code to open the text.</p>
+                  </div>
+                </div>
+              )
             )}
           </CardContent>
         </Card>
@@ -261,18 +294,6 @@ function SettingsForm({
 
       <ThemeCard />
 
-      <div className="flex items-center gap-3">
-        <Button type="submit" disabled={busy}>
-          {busy ? "Saving" : "Save settings"}
-        </Button>
-        {saved && !error && <span className="text-sm text-muted-foreground">Saved</span>}
-        {error && (
-          <span role="alert" className="text-sm text-destructive">
-            {error}
-          </span>
-        )}
-      </div>
-
       <Card className="ring-destructive/25">
         <CardHeader>
           <CardTitle className="text-destructive">Danger zone</CardTitle>
@@ -301,13 +322,22 @@ function SettingsBody() {
   const profile = useProfile();
   const update = useUpdateProfile();
 
-  if (profile === undefined) return <Skeleton className="h-64 w-full rounded-xl" />;
+  if (profile === undefined)
+    return (
+      <>
+        <PageHeader title="Settings" helper="Where Voidwatch reaches you, and when." />
+        <Skeleton className="h-64 w-full rounded-xl" />
+      </>
+    );
 
   // The world state switches sit outside the form: a guest keeps them in the browser.
   return (
     <div className="grid gap-4">
       {profile === null ? (
-        <p className="text-sm">Sign in to see your settings.</p>
+        <>
+          <PageHeader title="Settings" helper="Where Voidwatch reaches you, and when." />
+          <p className="text-sm">Sign in to see your settings.</p>
+        </>
       ) : (
         // Keyed on the saved values, so a save mid typing cannot clobber the fields.
         <SettingsForm
@@ -323,11 +353,15 @@ function SettingsBody() {
 
 export default function SettingsPage() {
   return (
-    <>
-      <PageHeader title="Settings" helper="Where Voidwatch reaches you, and when." />
-      <ClientOnly fallback={<Skeleton className="h-64 w-full rounded-xl" />}>
-        <SettingsBody />
-      </ClientOnly>
-    </>
+    <ClientOnly
+      fallback={
+        <>
+          <PageHeader title="Settings" helper="Where Voidwatch reaches you, and when." />
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </>
+      }
+    >
+      <SettingsBody />
+    </ClientOnly>
   );
 }

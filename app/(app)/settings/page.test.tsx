@@ -48,13 +48,34 @@ describe("settings", () => {
     update.mockClear();
   });
 
+  it("puts the save button in the page header", () => {
+    renderPage();
+    const banner = screen.getByRole("banner");
+    expect(within(banner).getByRole("button", { name: "Save settings" })).toBeInTheDocument();
+  });
+
+  it("typing a new number asks to save it in the box underneath", async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    const phone = screen.getByLabelText("Phone");
+    await user.clear(phone);
+    await user.type(phone, "+15550009999");
+
+    const box = screen.getByText("Save settings to confirm this number.").closest("div")!;
+    expect(within(box).getByRole("button", { name: "Save settings" })).toBeInTheDocument();
+    expect(screen.queryByText(/Text START to/)).not.toBeInTheDocument();
+  });
+
   it("clearing the phone removes the saved number", async () => {
     const user = userEvent.setup();
     update.mockClear();
     renderPage();
 
     await user.clear(screen.getByLabelText("Phone"));
-    await user.click(screen.getByRole("button", { name: "Save settings" }));
+    await user.click(
+      within(screen.getByRole("banner")).getByRole("button", { name: "Save settings" }),
+    );
 
     expect(update).toHaveBeenCalledWith({ phone: null, timezone: "America/Los_Angeles", digestHour: 9 });
   });
