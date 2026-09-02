@@ -29,21 +29,52 @@ export const newThread = mutation({
   },
 });
 
-export const listThreads = query({
-  args: {},
-  returns: v.array(v.object({ id: v.string(), title: v.string(), createdAt: v.number() })),
-  handler: async (ctx) => {
-    const { userId } = await requireUser(ctx);
-    const result = await ctx.runQuery(agentComponent.threads.listThreadsByUserId, {
-      userId,
-      order: "desc",
-      paginationOpts: { cursor: null, numItems: 30 },
-    });
-    return result.page.map((thread) => ({
+const vThreadList = v.array(v.object({ id: v.string(), title: v.string(), createdAt: v.number() }));
+
+async function threadsByStatus(ctx: Ctx, userId: string, status: "active" | "archived") {
+  const result = await ctx.runQuery(agentComponent.threads.listThreadsByUserId, {
+    userId,
+    order: "desc",
+    paginationOpts: { cursor: null, numItems: 30 },
+  });
+  return result.page
+    .filter((thread) => thread.status === status)
+    .map((thread) => ({
       id: thread._id,
       title: thread.title ?? "Voidwatch chat",
       createdAt: thread._creationTime,
     }));
+}
+
+export const listThreads = query({
+  args: {},
+  returns: vThreadList,
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx);
+    return await threadsByStatus(ctx, userId, "active");
+  },
+});
+
+export const listArchivedThreads = query({
+  args: {},
+  returns: vThreadList,
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx);
+    return await threadsByStatus(ctx, userId, "archived");
+  },
+});
+
+export const setThreadArchived = mutation({
+  args: { threadId: v.string(), archived: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, { threadId, archived }) => {
+    const { userId } = await requireUser(ctx);
+    await requireThread(ctx, threadId, userId);
+    await ctx.runMutation(agentComponent.threads.updateThread, {
+      threadId,
+      patch: { status: archived ? "archived" : "active" },
+    });
+    return null;
   },
 });
 

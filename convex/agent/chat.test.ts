@@ -89,6 +89,35 @@ describe("chat threads", () => {
   });
 });
 
+describe("archiving a chat", () => {
+  test("an archived chat leaves the history and waits under archived", async () => {
+    const t = setup();
+    const asAsh = t.withIdentity({ subject: "ash|session" });
+    const threadId = await asAsh.mutation(api.agent.chat.newThread, { title: "steel path only" });
+
+    await asAsh.mutation(api.agent.chat.setThreadArchived, { threadId, archived: true });
+
+    await expect(asAsh.query(api.agent.chat.listThreads, {})).resolves.toEqual([]);
+    const archived = await asAsh.query(api.agent.chat.listArchivedThreads, {});
+    expect(archived.map((thread) => thread.id)).toEqual([threadId]);
+
+    await asAsh.mutation(api.agent.chat.setThreadArchived, { threadId, archived: false });
+    const restored = await asAsh.query(api.agent.chat.listThreads, {});
+    expect(restored.map((thread) => thread.id)).toEqual([threadId]);
+  });
+
+  test("another user cannot archive someone else's chat", async () => {
+    const t = setup();
+    const asAsh = t.withIdentity({ subject: "ash|session" });
+    const asVolt = t.withIdentity({ subject: "volt|session" });
+    const threadId = await asAsh.mutation(api.agent.chat.newThread, {});
+
+    await expect(
+      asVolt.mutation(api.agent.chat.setThreadArchived, { threadId, archived: true }),
+    ).rejects.toThrow();
+  });
+});
+
 describe("the iMessage thread", () => {
   test("inbound texts keep their own thread even after a new web chat", async () => {
     const t = setup();

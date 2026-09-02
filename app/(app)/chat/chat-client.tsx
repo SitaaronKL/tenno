@@ -8,6 +8,7 @@ import { ChatFrame, Composer } from "@/components/chat/composer";
 import { Message, type ChatMessage } from "@/components/chat/message";
 import { Button } from "@/components/ui/button";
 import { MessageSquareIcon } from "@/components/icons/message-square";
+import { XIcon } from "@/components/icons/x";
 import { SquarePenIcon } from "@/components/icons/square-pen";
 import {
   DropdownMenu,
@@ -20,6 +21,7 @@ const PAGE_SIZE = 50;
 
 export default function Chat() {
   const newThread = useMutation(api.agent.chat.newThread);
+  const setArchived = useMutation(api.agent.chat.setThreadArchived);
   const sendMessage = useAction(api.agent.chat.sendMessage);
   const threads = useQuery(api.agent.chat.listThreads) ?? [];
   // Null is a fresh chat: the thread only exists once something was said.
@@ -111,8 +113,25 @@ export default function Chat() {
               <p className="px-2 py-1.5 text-sm text-muted-foreground">No chats yet</p>
             )}
             {threads.map((thread) => (
-              <DropdownMenuItem key={thread.id} onClick={() => openThread(thread.id)}>
+              <DropdownMenuItem
+                key={thread.id}
+                className="justify-between gap-2"
+                onClick={() => openThread(thread.id)}
+              >
                 <span className="truncate">{thread.title}</span>
+                <button
+                  type="button"
+                  aria-label={`Archive ${thread.title}`}
+                  className="shrink-0 rounded p-0.5 text-muted-foreground hover:text-foreground"
+                  onClick={(e) => {
+                    // Archiving is not opening, the row click must not fire too.
+                    e.stopPropagation();
+                    if (threadId === thread.id) openThread(null);
+                    void setArchived({ threadId: thread.id, archived: true });
+                  }}
+                >
+                  <XIcon size={12} aria-hidden="true" />
+                </button>
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>

@@ -26,6 +26,13 @@ vi.mock("@/components/rules/api", () => ({
 vi.mock("@convex-dev/auth/react", () => ({
   useAuthActions: () => ({ signIn: vi.fn(), signOut: vi.fn() }),
 }));
+
+const archived: { id: string; title: string; createdAt: number }[] = [];
+const setArchived = vi.fn().mockResolvedValue(null);
+vi.mock("convex/react", () => ({
+  useQuery: () => archived,
+  useMutation: () => setArchived,
+}));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import { ThemeProvider } from "@/components/shell/theme-provider";
@@ -148,6 +155,30 @@ describe("settings", () => {
 
     expect(document.documentElement).toHaveClass("dark");
     expect(await screen.findByRole("radio", { name: "Dark" })).toHaveAttribute("aria-checked", "true");
+  });
+});
+
+describe("archived chats", () => {
+  beforeEach(() => {
+    archived.length = 0;
+    setArchived.mockClear();
+  });
+
+  it("stays invisible while nothing is archived", () => {
+    renderPage();
+    expect(screen.queryByText("Archived chats")).not.toBeInTheDocument();
+  });
+
+  it("sits at the bottom and restores a chat", async () => {
+    const user = userEvent.setup();
+    archived.push({ id: "t1", title: "steel path omnia", createdAt: 1 });
+    renderPage();
+
+    expect(screen.getByText("Archived chats")).toBeInTheDocument();
+    expect(screen.getByText("steel path omnia")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Restore" }));
+
+    expect(setArchived).toHaveBeenCalledWith({ threadId: "t1", archived: false });
   });
 });
 

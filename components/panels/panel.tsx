@@ -118,7 +118,8 @@ export function Panel({
     >
       <CardHeader
         className={cn(
-          "flex flex-row items-center justify-between gap-2 px-4 py-3",
+          // One min height, so a header with a control and a header with text line up when collapsed.
+          "flex min-h-[3.25rem] flex-row items-center justify-between gap-2 px-4 py-3",
           !collapsed && "border-b border-border",
         )}
       >

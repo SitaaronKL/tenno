@@ -33,6 +33,7 @@ import {
 } from "@/components/settings/timezone";
 import { ClientOnly } from "@/components/rules/client-only";
 import { WorldStateCard } from "@/components/settings/world-state-card";
+import { ArchivedChatsCard } from "@/components/settings/archived-chats-card";
 import { cn } from "@/lib/utils";
 
 // The Photon shared pool assigns the line. Unset means there is no line, not a number to invent.
@@ -349,6 +350,8 @@ function SettingsBody() {
         />
       )}
       <WorldStateCard />
+      {/* Bottom of the page, as archives should be. Guests have no chats to archive. */}
+      {profile ? <ArchivedChatsCard /> : null}
     </div>
   );
 }
