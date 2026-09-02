@@ -86,7 +86,12 @@ export function Panels({ state }: { state: WorldState }) {
   return (
     <div>
       {state.stale && <StaleNotice state={state} />}
-      {shown("box.fissures") ? <FissuresPanel fissures={state.fissures} /> : null}
+      {/* The table only needs five columns of text, full bleed left acres of nothing. */}
+      {shown("box.fissures") ? (
+        <div className="lg:max-w-4xl">
+          <FissuresPanel fissures={state.fissures} />
+        </div>
+      ) : null}
       {/* Two independent stacks, so an open box only pushes its own column down. */}
       <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
