@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { Message } from "./message";
 
 function assistant(text: string) {
-  return { key: "a", role: "assistant", text, status: "success" };
+  return { key: "a", role: "assistant", text, status: "success", order: 0, stepOrder: 0 };
 }
 
 describe("the agent's face in chat", () => {
@@ -16,7 +16,7 @@ describe("the agent's face in chat", () => {
 
   it("puts no mark on what the player said", () => {
     const { container } = render(
-      <Message message={{ key: "u", role: "user", text: "any fissures", status: "success" }} />,
+      <Message message={{ key: "u", role: "user", text: "any fissures", status: "success", order: 0, stepOrder: 0 }} />,
     );
 
     expect(screen.getByText("any fissures")).toBeInTheDocument();

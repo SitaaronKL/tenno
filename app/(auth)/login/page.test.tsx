@@ -133,7 +133,7 @@ describe("arriving from a page that needs an account", () => {
     search.next = "/rules";
     render(<LoginPage />);
     expect(
-      screen.getByText("Sign in to use Rules. The dashboard is open to everyone."),
+      screen.getByText("Sign in to use Notifications. The dashboard is open to everyone."),
     ).toBeInTheDocument();
   });
 

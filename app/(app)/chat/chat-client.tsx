@@ -29,14 +29,18 @@ export default function Chat() {
   const [error, setError] = useState<string | null>(null);
   const bottom = useRef<HTMLDivElement>(null);
   const seen = useRef(0);
+  const described = useRef(false);
 
-  // "New rule, describe" lands here with the words carried over, ready to send.
+  // "New rule, describe" lands here with the words carried over and sends them right away.
   useEffect(() => {
-    const described = new URLSearchParams(window.location.search).get("describe");
-    if (described) {
-      setText(described);
+    const prompt = new URLSearchParams(window.location.search).get("describe");
+    if (prompt && !described.current) {
+      described.current = true;
       window.history.replaceState(null, "", window.location.pathname);
+      void send(prompt);
     }
+    // send changes identity per render, this only ever runs for the arrival.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function openThread(id: string | null) {
@@ -51,7 +55,14 @@ export default function Chat() {
     threadId ? { threadId } : "skip",
     { initialNumItems: PAGE_SIZE },
   );
-  const messages = useMemo(() => [...(results as ChatMessage[])].reverse(), [results]);
+  // Sorted by conversation position, so page direction can never flip a reply above its question.
+  const messages = useMemo(
+    () =>
+      [...(results as ChatMessage[])].sort(
+        (a, b) => a.order - b.order || a.stepOrder - b.stepOrder,
+      ),
+    [results],
+  );
 
   const count = messages.length;
   useEffect(() => {

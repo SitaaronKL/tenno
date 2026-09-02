@@ -3,7 +3,14 @@
 import { CheckIcon } from "@/components/icons/check";
 import { AsciiLogo } from "@/components/ascii-logo";
 
-export type ChatMessage = { key: string; role: string; text: string; status: string };
+export type ChatMessage = {
+  key: string;
+  role: string;
+  text: string;
+  status: string;
+  order: number;
+  stepOrder: number;
+};
 
 // A tool step comes back as an assistant turn with no prose, so it reads as one quiet row.
 function ToolRow() {

@@ -90,7 +90,7 @@ export default function RulesPage() {
   return (
     <>
       <PageHeader
-        title="Rules"
+        title="Notifications"
         helper="Voidwatch watches world state and pings you when a rule matches."
         action={
           <ClientOnly fallback={<Skeleton className="h-8 w-24 rounded-lg" />}>

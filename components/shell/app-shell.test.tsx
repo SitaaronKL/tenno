@@ -25,7 +25,7 @@ describe("app shell", () => {
   it("shows every section link and marks the current one", () => {
     render(<AppShell>page body</AppShell>);
     const nav = within(sidebar());
-    for (const label of ["World state", "Rules", "Chat", "Mastery"]) {
+    for (const label of ["World state", "Notifications", "Chat", "Mastery"]) {
       expect(nav.getByRole("link", { name: label })).toBeInTheDocument();
     }
     expect(nav.queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();

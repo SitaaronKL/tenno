@@ -53,9 +53,10 @@ export function Composer({
 }
 
 // The composer never sits on the bottom edge, the log scrolls behind a generous gutter.
+// The height leaves room for the history row above, so the page itself never scrolls.
 export function ChatFrame({ log, composer }: { log: ReactNode; composer: ReactNode }) {
   return (
-    <div className="mx-auto flex h-[calc(100svh-8rem)] w-full max-w-3xl flex-col pb-10">
+    <div className="mx-auto flex h-[calc(100svh-11rem)] w-full max-w-3xl flex-col pb-4">
       <div className="min-h-0 flex-1 space-y-5 overflow-y-auto pb-8" role="log" aria-live="polite">
         {log}
       </div>

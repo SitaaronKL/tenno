@@ -75,7 +75,15 @@ export const listMessages = query({
   args: { threadId: v.string(), paginationOpts: paginationOptsValidator },
   returns: v.object({
     page: v.array(
-      v.object({ key: v.string(), role: v.string(), text: v.string(), status: v.string() }),
+      v.object({
+        key: v.string(),
+        role: v.string(),
+        text: v.string(),
+        status: v.string(),
+        // The conversation position, so the client can sort instead of trusting page direction.
+        order: v.number(),
+        stepOrder: v.number(),
+      }),
     ),
     isDone: v.boolean(),
     continueCursor: v.string(),
@@ -87,7 +95,14 @@ export const listMessages = query({
     return {
       page: result.page
         .filter((m) => m.role === "user" || m.role === "assistant")
-        .map((m) => ({ key: m.key, role: m.role, text: m.text, status: m.status })),
+        .map((m) => ({
+          key: m.key,
+          role: m.role,
+          text: m.text,
+          status: m.status,
+          order: m.order,
+          stepOrder: m.stepOrder ?? 0,
+        })),
       isDone: result.isDone,
       continueCursor: result.continueCursor,
     };
