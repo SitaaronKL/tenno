@@ -20,7 +20,7 @@ export function bountiesOf(state: WorldState): Bounty[] {
 }
 
 export function levelRange(job: BountyJob): string {
-  return job.minLevel === job.maxLevel ? `${job.minLevel}` : `${job.minLevel} to ${job.maxLevel}`;
+  return job.minLevel === job.maxLevel ? `${job.minLevel}` : `${job.minLevel}-${job.maxLevel}`;
 }
 
 // Most people run a board for the mission, so the row names that and hides the rest.

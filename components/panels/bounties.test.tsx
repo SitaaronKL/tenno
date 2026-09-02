@@ -55,7 +55,7 @@ describe("Bounties card", () => {
 describe("a bounty row", () => {
   it("reads as a level band, a mission type and the standing", () => {
     render(<BountiesPanel bounties={fixture} />);
-    expect(screen.getByText("5 to 15")).toBeInTheDocument();
+    expect(screen.getByText("5-15")).toBeInTheDocument();
     expect(screen.getByText("Rescue")).toBeInTheDocument();
     expect(screen.getByText("1000 standing")).toBeInTheDocument();
   });
@@ -89,7 +89,7 @@ describe("a bounty row", () => {
       },
     ];
     render(<BountiesPanel bounties={board} />);
-    expect(screen.getByText("30 to 40")).toBeInTheDocument();
+    expect(screen.getByText("30-40")).toBeInTheDocument();
     expect(screen.getByText("Bounty")).toBeInTheDocument();
   });
 });
@@ -181,7 +181,7 @@ describe("a fixed board", () => {
   it("leaves standing out when the board does not print it", () => {
     render(<BountiesPanel bounties={fixed} />);
     expect(screen.queryByText(/0 standing/)).not.toBeInTheDocument();
-    expect(screen.getByText("50 to 55")).toBeInTheDocument();
+    expect(screen.getByText("50-55")).toBeInTheDocument();
   });
 });
 
