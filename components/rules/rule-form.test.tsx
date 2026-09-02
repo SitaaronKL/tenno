@@ -143,3 +143,33 @@ describe("Void Storm, the one filter the form used to drop", () => {
     expect(onSubmit.mock.calls[0][0].filter.storm).toBe(true);
   });
 });
+
+describe("the bounty syndicate picker", () => {
+  it("offers every board syndicate as a pick, not a text field", async () => {
+    const user = userEvent.setup();
+    render(
+      <RuleForm
+        initial={{
+          name: "Bounties",
+          filter: { kind: "bounty", syndicates: null, level: null, missionTypes: null },
+          mode: "instant",
+          channels: ["email"],
+        }}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Syndicates/ }));
+    for (const name of [
+      "Ostrons",
+      "Solaris United",
+      "Entrati",
+      "The Holdfasts",
+      "Cavia",
+      "Vox Solaris",
+      "The Hex",
+    ]) {
+      expect(await screen.findByRole("checkbox", { name })).toBeInTheDocument();
+    }
+  });
+});

@@ -18,6 +18,17 @@ import {
 
 const TIERS = ["Lith", "Meso", "Neo", "Axi", "Requiem", "Omnia"] as const;
 type Tier = (typeof TIERS)[number];
+// The names upstream prints for each bounty board, the matcher compares against these.
+const SYNDICATES = [
+  "Ostrons",
+  "Solaris United",
+  "Entrati",
+  "The Holdfasts",
+  "Cavia",
+  "Vox Solaris",
+  "The Hex",
+] as const;
+
 const MISSION_TYPES = [
   "Survival",
   "Defense",
@@ -350,7 +361,7 @@ export function RuleForm({
             </Chip>
             <span className="text-muted-foreground">from</span>
             <Chip label="Syndicates" value={names.length ? joinOr(names) : "any syndicate"}>
-              <TagInput label="Syndicates" values={names} onChange={setNames} />
+              <CheckboxList options={SYNDICATES} values={names} onChange={setNames} />
             </Chip>
             <Chip label="Mission types" value={missionTypes.length ? joinOr(missionTypes) : "any mission"}>
               <CheckboxList options={MISSION_TYPES} values={missionTypes} onChange={setMissionTypes} />

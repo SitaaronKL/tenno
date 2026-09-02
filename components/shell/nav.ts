@@ -5,6 +5,7 @@ import { MessageCircleIcon } from "@/components/icons/message-circle";
 import { AtomIcon } from "@/components/icons/atom";
 import { HammerIcon } from "@/components/icons/hammer";
 import { PackageIcon } from "@/components/icons/package";
+import { EarthIcon } from "@/components/icons/earth";
 
 // Every animated icon exposes the same imperative handle, so the nav item can drive it on its own hover.
 export type AnimatedIconHandle = {
@@ -29,6 +30,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/chat", label: "Chat", icon: MessageCircleIcon },
   { href: "/resources", label: "Resources", icon: PackageIcon },
   { href: "/mastery", label: "Mastery", icon: AtomIcon },
+  { href: "/guide", label: "Guide", icon: EarthIcon },
 ];
 
 // The breadcrumb reads the route, so a label lives next to the path that produced it.
