@@ -2,7 +2,7 @@
 
 Never miss a fissure, a Baro visit, or an invasion reward again. Live Warframe world state, custom alerts by email or iMessage, and an agent you can text.
 
-Live app: coming soon. Repo: https://github.com/SitaaronKL/tenno
+Live app: https://tenno.watch. Repo: https://github.com/SitaaronKL/tenno
 
 Fan project, not affiliated with Digital Extremes.
 
