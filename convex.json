@@ -1,0 +1,13 @@
+{
+  "node": {
+    "externalPackages": [
+      "@grpc/grpc-js",
+      "@photon-ai/advanced-imessage",
+      "@spectrum-ts/core",
+      "@spectrum-ts/imessage",
+      "nice-grpc",
+      "nice-grpc-common",
+      "spectrum-ts"
+    ]
+  }
+}
