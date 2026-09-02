@@ -54,6 +54,16 @@ describe("settings", () => {
     expect(within(banner).getByRole("button", { name: "Save settings" })).toBeInTheDocument();
   });
 
+  it("save is greyed out until something changes", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const save = within(screen.getByRole("banner")).getByRole("button", { name: "Save settings" });
+
+    expect(save).toBeDisabled();
+    await user.type(screen.getByLabelText("Phone"), "9");
+    expect(save).toBeEnabled();
+  });
+
   it("typing a new number asks to save it in the box underneath", async () => {
     const user = userEvent.setup();
     renderPage();
@@ -147,7 +157,11 @@ describe("a save that is refused", () => {
     update.mockRejectedValueOnce(new ConvexError("That number is already linked to another account."));
     renderPage();
 
-    await user.click(await screen.findByRole("button", { name: "Save settings" }));
+    // An untouched form cannot be saved, so the refusal needs a change first.
+    await user.type(screen.getByLabelText("Phone"), "9");
+    await user.click(
+      within(screen.getByRole("banner")).getByRole("button", { name: "Save settings" }),
+    );
 
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent(

@@ -135,6 +135,8 @@ function SettingsForm({
   const optedIn = Boolean(profile.phone);
   // An unsaved edit swaps the opt in box for a save prompt, so the change cannot look applied.
   const dirtyPhone = phone.trim() !== (profile.phone ?? "");
+  // Nothing changed, nothing to save, the button says so by being grey.
+  const dirty = dirtyPhone || timezone !== profile.timezone || digestHour !== profile.digestHour;
 
   // The digest cron needs a real zone, so the first load fills one in and saves it once.
   useEffect(() => {
@@ -184,7 +186,7 @@ function SettingsForm({
                 {error}
               </span>
             )}
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy || !dirty}>
               {busy ? "Saving" : "Save settings"}
             </Button>
           </div>
