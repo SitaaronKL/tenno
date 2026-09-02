@@ -45,6 +45,15 @@ describe("Chat", () => {
     expect(state.mutate).not.toHaveBeenCalled();
   });
 
+  it("carries a described rule into the composer", () => {
+    window.history.replaceState(null, "", "/chat?describe=axi%20survival%20fissures");
+    render(<Chat />);
+    expect(screen.getByLabelText("Message")).toHaveValue("axi survival fissures");
+    // The words moved into the box, the address bar is clean again.
+    expect(window.location.search).toBe("");
+    window.history.replaceState(null, "", "/");
+  });
+
   it("offers a new chat and the chat history", () => {
     render(<Chat />);
     expect(screen.getByRole("button", { name: "New chat" })).toBeInTheDocument();

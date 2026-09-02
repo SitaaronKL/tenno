@@ -5,6 +5,7 @@ import { RuleInput } from "@/lib/contracts/rule";
 
 const create = vi.fn().mockResolvedValue("rule-1");
 
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock("@/components/rules/api", () => ({
   useCreateRule: () => create,
   useDraftRule: () => vi.fn(),
@@ -15,6 +16,8 @@ import { RuleForm } from "@/components/rules/rule-form";
 
 async function openDialog(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole("button", { name: "New rule" }));
+  // The dialog opens on describing, these tests are about the manual form.
+  await user.click(await screen.findByRole("button", { name: "I want to build it manually" }));
   return await screen.findByLabelText("Name");
 }
 

@@ -30,6 +30,15 @@ export default function Chat() {
   const bottom = useRef<HTMLDivElement>(null);
   const seen = useRef(0);
 
+  // "New rule, describe" lands here with the words carried over, ready to send.
+  useEffect(() => {
+    const described = new URLSearchParams(window.location.search).get("describe");
+    if (described) {
+      setText(described);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
+
   function openThread(id: string | null) {
     seen.current = 0;
     setError(null);

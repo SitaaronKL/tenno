@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { SquarePenIcon } from "@/components/icons/square-pen";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,11 +12,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { RuleForm } from "@/components/rules/rule-form";
 import { ruleSentence } from "@/components/rules/sentence";
-import { useCreateRule, useDraftRule } from "@/components/rules/api";
+import { useCreateRule } from "@/components/rules/api";
 import { errorMessage } from "@/lib/errors";
 import type { RuleInput } from "@/lib/contracts/rule";
 
@@ -30,12 +29,10 @@ export function CreateRuleDialog({
   preset?: RuleInput;
 }) {
   const create = useCreateRule();
-  const draft = useDraftRule();
+  const router = useRouter();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [text, setText] = useState("");
-  const [drafted, setDrafted] = useState<RuleInput | null>(null);
-  const [editing, setEditing] = useState(false);
-  const [drafting, setDrafting] = useState(false);
+  const [manual, setManual] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +41,11 @@ export function CreateRuleDialog({
   const setOpen = (next: boolean) => {
     if (controlled) onOpenChange?.(next);
     else setUncontrolledOpen(next);
+    if (!next) setManual(false);
   };
+
+  // A suggestion chip already is the rule, so it lands straight in the form.
+  const building = manual || Boolean(preset);
 
   async function save(input: RuleInput) {
     setSaving(true);
@@ -52,8 +53,6 @@ export function CreateRuleDialog({
     try {
       await create(input);
       setOpen(false);
-      setDrafted(null);
-      setEditing(false);
       setText("");
     } catch (caught) {
       const message = errorMessage(caught, "Could not save that rule, try again.");
@@ -64,17 +63,12 @@ export function CreateRuleDialog({
     }
   }
 
-  async function describe() {
-    setDrafting(true);
-    setError(null);
-    try {
-      setDrafted(await draft({ text }));
-      setEditing(false);
-    } catch {
-      setError("Could not turn that into a rule, try rewording it.");
-    } finally {
-      setDrafting(false);
-    }
+  // The agent can ask back, so describing continues as a conversation instead of a one shot draft.
+  function continueInChat() {
+    const described = text.trim();
+    if (!described) return;
+    setOpen(false);
+    router.push(`/chat?describe=${encodeURIComponent(described)}`);
   }
 
   return (
@@ -83,48 +77,47 @@ export function CreateRuleDialog({
       <DialogContent className="grid-rows-[auto_minmax(0,1fr)] overflow-hidden sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>New rule</DialogTitle>
-          <DialogDescription>Tell Voidwatch what to watch for and how to reach you.</DialogDescription>
+          <DialogDescription>
+            {building
+              ? "Tell Voidwatch what to watch for and how to reach you."
+              : "Describe what you want to be notified for."}
+          </DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="build" className="min-h-0">
-          <TabsList>
-            <TabsTrigger value="build">Build</TabsTrigger>
-            <TabsTrigger value="describe">Describe</TabsTrigger>
-          </TabsList>
-          <TabsContent value="build" className="max-h-[60vh] min-h-[24rem] overflow-y-auto pt-2">
+        {building ? (
+          <div className="max-h-[60vh] min-h-[24rem] overflow-y-auto pt-2">
             {/* A prefilled rule reads back as its sentence, so the user sees what they are about to save. */}
             {preset && <p className="pb-3 text-sm text-muted-foreground">{ruleSentence(preset.filter)}</p>}
             <RuleForm key={preset?.name} initial={preset} onSubmit={save} submitLabel="Create rule" pending={saving} />
-          </TabsContent>
-          <TabsContent value="describe" className="grid max-h-[60vh] min-h-[24rem] content-start gap-3 overflow-y-auto pt-2">
+            {error && <p className="pt-3 text-sm text-destructive">{error}</p>}
+          </div>
+        ) : (
+          <div className="grid content-start gap-3 pt-2">
             <Textarea
               aria-label="Describe the rule"
               value={text}
-              placeholder="Text me when an Axi Survival fissure opens"
+              placeholder="Notify me when a Steel Path Void Cascade opens on Omnia"
+              rows={3}
               onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  continueInChat();
+                }
+              }}
             />
-            <Button type="button" onClick={() => void describe()} disabled={drafting || !text.trim()}>
-              {drafting ? "Drafting" : "Draft rule"}
+            <Button type="button" onClick={continueInChat} disabled={text.trim() === ""}>
+              Continue in chat
             </Button>
-            {error && <p className="text-sm text-destructive">{error}</p>}
-            {drafted && !editing && (
-              <div className="grid gap-3 rounded-xl bg-surface-2 p-4 ring-1 ring-border">
-                <p className="font-medium">{drafted.name}</p>
-                <p className="text-sm text-muted-foreground">{ruleSentence(drafted.filter)}</p>
-                <div className="flex gap-2">
-                  <Button type="button" onClick={() => void save(drafted)}>
-                    Save rule
-                  </Button>
-                  <Button type="button" variant="outline" onClick={() => setEditing(true)}>
-                    <SquarePenIcon size={14} aria-hidden="true" /> Edit
-                  </Button>
-                </div>
-              </div>
-            )}
-            {drafted && editing && (
-              <RuleForm key={drafted.name} initial={drafted} onSubmit={save} submitLabel="Create rule" pending={saving} />
-            )}
-          </TabsContent>
-        </Tabs>
+            <Button
+              type="button"
+              variant="ghost"
+              className="justify-self-center text-muted-foreground"
+              onClick={() => setManual(true)}
+            >
+              I want to build it manually
+            </Button>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -15,6 +15,7 @@ vi.mock("@/components/rules/api", () => ({
     digestHour: 9,
   }),
 }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import { RuleSuggestions, SUGGESTIONS } from "@/components/rules/suggestions";
 
