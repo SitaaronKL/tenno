@@ -19,7 +19,8 @@ export function ChatEmptyState({
 }) {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-5 text-center">
-      <AsciiLogo size={72} cell={4} />
+      {/* The landing hero mark, sized down so the suggestions stay above the fold. */}
+      <AsciiLogo size={240} />
       <p className="text-lg font-medium">What do you want to know, Tenno?</p>
       <div className="flex flex-wrap justify-center gap-2">
         {SUGGESTIONS.map((s) => (
