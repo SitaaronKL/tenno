@@ -10,7 +10,7 @@ const LINK_FIRST =
   "I do not know this number yet. Add it under Settings in Voidwatch, then text me again.";
 
 // Photon delivers the whole message lifecycle here. Only a text somebody sent us is news.
-const INBOUND_EVENT = "message.received";
+const INBOUND_EVENT = "messages";
 
 // Photon hands us E.164 for a real person. Anything else is a Photon user id, not an identity.
 const E164 = /^\+\d{8,15}$/;

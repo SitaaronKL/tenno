@@ -42,7 +42,7 @@ function envelope(
   over: { event?: string; direction?: string; sender?: { id: string } | null } = {},
 ) {
   return JSON.stringify({
-    event: over.event ?? "message.received",
+    event: over.event ?? "messages",
     message: {
       id: messageId,
       direction: over.direction ?? "inbound",
