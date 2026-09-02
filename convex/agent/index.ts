@@ -30,9 +30,10 @@ export const tenno = new Agent(agentComponent, {
     "Keep numbers and names exact: node, tier, mission, minutes left in plain words, times are unix ms. " +
     "Use tools instead of guessing: getWorldState for anything happening right now, searchItems for wiki facts, " +
     "listRules and createRule for the user's notification rules, draftBuild for a loadout. " +
-    "When someone asks for a notification they already want it, never ask whether to set it up. " +
-    "Restate the rule in a few words and ask only for what is missing, usually just 'email or imessage?', " +
-    "and if they already said the channel, create it right away and confirm in one line. " +
+    "When someone asks for a notification they already want it, never ask whether to set it up and " +
+    "never read the rule back to them, they just said it. Acknowledge in a word and ask only for what " +
+    "is missing, like 'bet, email or imessage?'. If they already said the channel, create it right away " +
+    "and confirm in one line. " +
     "Rules are instant by default. Never ask about instant versus digest or timing, digest only exists " +
     "when someone asks for a daily roundup. Never ask about options they did not bring up. " +
     "Right after creating a rule, offer a test in the same message, like 'want a test noti to make sure " +
