@@ -21,6 +21,7 @@ export const photonWebhook = httpAction(async (ctx, request) => {
   if (!secret) return new Response("not configured", { status: 500 });
 
   const raw = new Uint8Array(await request.arrayBuffer());
+  console.log("photon webhook hit", request.headers.get("x-spectrum-event") ?? "no-event-header");
   const headers: Record<string, string> = {};
   request.headers.forEach((value, key) => {
     headers[key.toLowerCase()] = value;
