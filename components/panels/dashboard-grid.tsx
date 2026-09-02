@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import type { WorldState } from "@/lib/contracts/worldstate";
 import { useHidden } from "@/components/hidden";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -83,39 +82,26 @@ export function Panels({ state }: { state: WorldState }) {
   // A box the user turned off never renders, so it costs nothing to keep it in the grid.
   const hidden = useHidden();
   const shown = (key: string) => !hidden.has(key);
-  // TEMP: width picker state for the bounties box, remove once a number is chosen.
-  const [bountiesWidth, setBountiesWidth] = useState(1000);
 
   return (
     <div>
       {state.stale && <StaleNotice state={state} />}
-      {/* The table only needs five columns of text, 712px is where they read as one line. */}
-      {shown("box.fissures") ? (
-        <div className="lg:max-w-[712px]">
-          <FissuresPanel fissures={state.fissures} />
-        </div>
-      ) : null}
+      {/* Fissures and bounties share the top row, 712px and 460px are where their text reads best. */}
+      <div className="flex flex-wrap items-start gap-4">
+        {shown("box.fissures") ? (
+          <div className="w-full lg:w-[712px]">
+            <FissuresPanel fissures={state.fissures} />
+          </div>
+        ) : null}
+        {shown("box.bounties") ? (
+          <div className="w-full lg:w-[460px]">
+            <BountiesPanel bounties={bountiesOf(state)} />
+          </div>
+        ) : null}
+      </div>
       {/* Two independent stacks, so an open box only pushes its own column down. */}
       <div className="mt-4 grid items-start gap-4 lg:grid-cols-2">
         <div className="flex flex-col gap-4">
-          {/* TEMP: width picker for the bounties box, remove once a number is chosen. */}
-          {shown("box.bounties") ? (
-            <div style={{ maxWidth: bountiesWidth }}>
-              <label className="mb-2 flex items-center gap-3 text-xs text-muted-foreground">
-                <input
-                  type="range"
-                  min={420}
-                  max={1000}
-                  step={8}
-                  value={bountiesWidth}
-                  onChange={(e) => setBountiesWidth(Number(e.target.value))}
-                  className="w-64"
-                />
-                {bountiesWidth}px
-              </label>
-              <BountiesPanel bounties={bountiesOf(state)} />
-            </div>
-          ) : null}
           {shown("box.missions") ? (
             <MissionSetPanel sortie={state.sortie} archonHunt={state.archonHunt} />
           ) : null}
