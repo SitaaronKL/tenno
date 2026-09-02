@@ -98,8 +98,9 @@ describe("apply", () => {
     const later = FETCHED_AT + 5 * 60_000;
     await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state(later) });
 
-    const stored = (await t.query(api.worldstate.get, { platform: "pc" }))!;
-    expect(stored.fetchedAt).toBe(later);
+    // One row, and a same content pull leaves it alone, the freshness lives in the meta.
+    const meta = (await t.query(api.worldstate.meta, { platform: "pc" }))!;
+    expect(meta.fetchedAt).toBe(later);
     const rows = await t.run(async (ctx) => await ctx.db.query("worldState").collect());
     expect(rows).toHaveLength(1);
   });
@@ -296,5 +297,34 @@ describe("arbitration events", () => {
     await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: later });
     const after = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
     expect(after.filter((e) => e.kind === "arbitration")).toHaveLength(2);
+  });
+});
+
+describe("a quiet pull", () => {
+  test("unchanged content leaves the snapshot untouched, only the meta freshens", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
+    const before = await t.run(async (ctx) => await ctx.db.query("worldState").unique());
+
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state(FETCHED_AT + 300_000) });
+
+    const after = await t.run(async (ctx) => await ctx.db.query("worldState").unique());
+    // The document did not move, so no subscriber gets the 40KB pushed again.
+    expect(after!.data.fetchedAt).toBe(before!.data.fetchedAt);
+    const meta = await t.query(api.worldstate.meta, { platform: "pc" });
+    expect(meta!.fetchedAt).toBe(FETCHED_AT + 300_000);
+  });
+
+  test("changed content still lands", async () => {
+    const t = convexTest(schema, modules);
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: state() });
+    const changed = state(FETCHED_AT + 300_000);
+    changed.fissures = [];
+
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: changed });
+
+    const after = await t.run(async (ctx) => await ctx.db.query("worldState").unique());
+    expect(after!.data.fissures).toEqual([]);
+    expect(after!.data.fetchedAt).toBe(FETCHED_AT + 300_000);
   });
 });

@@ -308,6 +308,15 @@ export default defineSchema({
     data: worldStateValidator,
   }).index("by_platform", ["platform"]),
 
+  // Freshness lives apart from the snapshot, so a pull that changes nothing pushes nothing.
+  worldMeta: defineTable({
+    platform,
+    fetchedAt: v.number(),
+    upstreamTimestamp: v.number(),
+    stale: v.boolean(),
+    source: v.optional(source),
+  }).index("by_platform", ["platform"]),
+
   // One row per upstream entity, never updated. seenAt is the first time we saw it.
   worldEvents: defineTable({
     platform,

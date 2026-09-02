@@ -70,6 +70,12 @@ function eventsOf(state: WorldState): NewEvent[] {
   return out;
 }
 
+// The snapshot minus its clock fields: equal keys mean nothing a viewer sees has changed.
+function contentKey(state: WorldState): string {
+  const { fetchedAt: _f, upstreamTimestamp: _u, stale: _s, source: _src, ...content } = state;
+  return JSON.stringify(content);
+}
+
 export const apply = internalMutation({
   args: { platform: vPlatform, state: worldStateValidator },
   returns: v.number(),
@@ -79,15 +85,31 @@ export const apply = internalMutation({
       .query("worldState")
       .withIndex("by_platform", (q) => q.eq("platform", args.platform))
       .unique();
-    if (existing) {
-      await ctx.db.patch(existing._id, { fetchedAt: state.fetchedAt, data: state });
-    } else {
+    // Every write here pushes the full snapshot to every open dashboard, so a pull that
+    // changed nothing but the clock must not touch the document.
+    if (!existing) {
       await ctx.db.insert("worldState", {
         platform: args.platform,
         fetchedAt: state.fetchedAt,
         data: state,
       });
+    } else if (contentKey(existing.data) !== contentKey(state)) {
+      await ctx.db.patch(existing._id, { fetchedAt: state.fetchedAt, data: state });
     }
+
+    // Freshness always updates, it lives in its own tiny row so it is cheap to push.
+    const meta = {
+      fetchedAt: state.fetchedAt,
+      upstreamTimestamp: state.upstreamTimestamp,
+      stale: state.stale,
+      source: state.source,
+    };
+    const existingMeta = await ctx.db
+      .query("worldMeta")
+      .withIndex("by_platform", (q) => q.eq("platform", args.platform))
+      .unique();
+    if (existingMeta) await ctx.db.patch(existingMeta._id, meta);
+    else await ctx.db.insert("worldMeta", { platform: args.platform, ...meta });
 
     const eventIds: Id<"worldEvents">[] = [];
     for (const event of eventsOf(state)) {
