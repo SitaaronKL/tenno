@@ -86,9 +86,9 @@ export function Panels({ state }: { state: WorldState }) {
   return (
     <div>
       {state.stale && <StaleNotice state={state} />}
-      {/* The table only needs five columns of text, full bleed left acres of nothing. */}
+      {/* The table only needs five columns of text, 712px is where they read as one line. */}
       {shown("box.fissures") ? (
-        <div className="lg:max-w-4xl">
+        <div className="lg:max-w-[712px]">
           <FissuresPanel fissures={state.fissures} />
         </div>
       ) : null}
