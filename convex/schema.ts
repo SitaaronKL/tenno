@@ -278,6 +278,8 @@ export default defineSchema({
     phone: v.optional(v.string()),
     photonUserId: v.optional(v.string()),
     photonSpaceId: v.optional(v.string()),
+    // The agent thread iMessage lives in, so web chats never steal the conversation.
+    photonThreadId: v.optional(v.string()),
     phoneVerifiedAt: v.optional(v.number()),
     // The Warframe account this user synced. Mastery is read through it, never through an argument.
     masteryPlayerId: v.optional(v.string()),

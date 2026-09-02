@@ -247,6 +247,41 @@ export const storePhotonUserId = internalMutation({
 });
 
 // The iMessage surface has no session, a verified phone is the only identity it has.
+// The iMessage conversation is pinned to one thread on the profile, a new web chat never steals it.
+export const photonThread = internalQuery({
+  args: { phone: v.string() },
+  returns: v.union(
+    v.object({ userId: v.id("users"), threadId: v.union(v.string(), v.null()) }),
+    v.null(),
+  ),
+  handler: async (ctx, { phone }) => {
+    const key = toE164(phone);
+    if (!key) return null;
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_phone", (q) => q.eq("phone", key))
+      .first();
+    if (!profile || profile.phoneVerifiedAt === undefined) return null;
+    return { userId: profile.userId, threadId: profile.photonThreadId ?? null };
+  },
+});
+
+export const storePhotonThreadId = internalMutation({
+  args: { phone: v.string(), threadId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, { phone, threadId }) => {
+    const key = toE164(phone);
+    const profile = key
+      ? await ctx.db
+          .query("profiles")
+          .withIndex("by_phone", (q) => q.eq("phone", key))
+          .first()
+      : null;
+    if (profile) await ctx.db.patch(profile._id, { photonThreadId: threadId });
+    return null;
+  },
+});
+
 export const userForVerifiedPhone = internalQuery({
   args: { phone: v.string() },
   returns: v.union(v.id("users"), v.null()),

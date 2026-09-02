@@ -16,19 +16,34 @@ async function requireThread(ctx: Ctx, threadId: string, userId: string) {
   return thread;
 }
 
-export const startThread = mutation({
-  args: {},
+// The page opens on a fresh chat, so a thread only exists once something was said.
+export const newThread = mutation({
+  args: { title: v.optional(v.string()) },
   returns: v.string(),
-  handler: async (ctx): Promise<string> => {
+  handler: async (ctx, { title }): Promise<string> => {
     const { userId } = await requireUser(ctx);
-    // One rolling chat per user, so reloading the page keeps the history.
-    const existing = await ctx.runQuery(agentComponent.threads.listThreadsByUserId, {
+    return await createThread(ctx, agentComponent, {
+      userId,
+      title: title?.trim() || "Voidwatch chat",
+    });
+  },
+});
+
+export const listThreads = query({
+  args: {},
+  returns: v.array(v.object({ id: v.string(), title: v.string(), createdAt: v.number() })),
+  handler: async (ctx) => {
+    const { userId } = await requireUser(ctx);
+    const result = await ctx.runQuery(agentComponent.threads.listThreadsByUserId, {
       userId,
       order: "desc",
-      paginationOpts: { cursor: null, numItems: 1 },
+      paginationOpts: { cursor: null, numItems: 30 },
     });
-    if (existing.page.length > 0) return existing.page[0]._id;
-    return await createThread(ctx, agentComponent, { userId, title: "Voidwatch chat" });
+    return result.page.map((thread) => ({
+      id: thread._id,
+      title: thread.title ?? "Voidwatch chat",
+      createdAt: thread._creationTime,
+    }));
   },
 });
 
@@ -87,18 +102,17 @@ export const replyToInbound = internalAction({
   args: { phone: v.string(), text: v.string() },
   returns: v.string(),
   handler: async (ctx, { phone, text }): Promise<string> => {
-    const userId: string | null = await ctx.runQuery(internal.profiles.userForVerifiedPhone, { phone });
-    if (!userId) return LINK_FIRST;
-    const existing = await ctx.runQuery(agentComponent.threads.listThreadsByUserId, {
-      userId,
-      order: "desc",
-      paginationOpts: { cursor: null, numItems: 1 },
-    });
-    const threadId =
-      existing.page.length > 0
-        ? existing.page[0]._id
-        : await createThread(ctx, agentComponent, { userId, title: `Voidwatch iMessage ${phone}` });
-    const result = await tenno.generateText(ctx, { threadId, userId }, { prompt: text });
+    const linked = await ctx.runQuery(internal.profiles.photonThread, { phone });
+    if (!linked) return LINK_FIRST;
+    let threadId = linked.threadId;
+    if (!threadId) {
+      threadId = await createThread(ctx, agentComponent, {
+        userId: linked.userId,
+        title: `Voidwatch iMessage ${phone}`,
+      });
+      await ctx.runMutation(internal.profiles.storePhotonThreadId, { phone, threadId });
+    }
+    const result = await tenno.generateText(ctx, { threadId, userId: linked.userId }, { prompt: text });
     return result.text;
   },
 });

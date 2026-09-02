@@ -6,12 +6,15 @@ const state = {
   results: [] as { key: string; role: string; text: string; status: string }[],
   status: "Exhausted" as string,
   loadMore: vi.fn(),
+  threads: [] as { id: string; title: string; createdAt: number }[],
+  mutate: vi.fn(() => new Promise<never>(() => {})),
 };
 
 // The thread never resolves here, which is exactly the first paint we care about.
 vi.mock("convex/react", () => ({
-  useMutation: () => () => new Promise(() => {}),
+  useMutation: () => state.mutate,
   useAction: () => () => new Promise(() => {}),
+  useQuery: () => state.threads,
   usePaginatedQuery: () => ({
     results: state.results,
     status: state.status,
@@ -26,12 +29,26 @@ describe("Chat", () => {
     state.results = [];
     state.status = "Exhausted";
     state.loadMore = vi.fn();
+    state.threads = [];
+    state.mutate = vi.fn(() => new Promise<never>(() => {}));
   });
 
   it("greets the player on the first paint, with no loading line", () => {
     render(<Chat />);
     expect(screen.getByText("What do you want to know, Tenno?")).toBeInTheDocument();
     expect(screen.queryByText(/Loading/i)).not.toBeInTheDocument();
+  });
+
+  it("opens to a new chat, not the last conversation", () => {
+    render(<Chat />);
+    // No thread is created or resumed until the first message is sent.
+    expect(state.mutate).not.toHaveBeenCalled();
+  });
+
+  it("offers a new chat and the chat history", () => {
+    render(<Chat />);
+    expect(screen.getByRole("button", { name: "New chat" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Chat history" })).toBeInTheDocument();
   });
 
   it("offers three suggestions, not a menu", () => {
