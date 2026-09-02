@@ -16,16 +16,16 @@ The block below is generated from the code by `node scripts/readme-diagram.mjs` 
                             |
                   cron: ingest every 5 min, digest hourly, resets hourly, schedule horizon daily, retention weekly
                             v
-  +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-  |  Convex  components: resend, agent, rateLimiter, workflow                                                                                                                             |
-  |                                                                                                                                                                                       |
-  |  tables: profiles, photonInbound, worldState, worldEvents, rules, notifications, completions, items, starNodes, profileCache, mods, builds, dropSources, parts, deNames, goals        |
-  |                                                                                                                                                                                       |
-  |  ingest.pull -> normalize -> apply -> worldEvents                                                                                                                                     |
-  |        rules.evaluate (matcher, rate limit) -> notifications                                                                                                                          |
-  |        notify.send / notify.digest                                                                                                                                                    |
-  |  agent (OpenAI): chat tools, rule builder                                                                                                                                             |
-  +---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+  +--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+  |  Convex  components: resend, agent, rateLimiter, workflow                                                                                                                                        |
+  |                                                                                                                                                                                                  |
+  |  tables: profiles, photonInbound, worldState, worldMeta, worldEvents, rules, notifications, completions, items, starNodes, profileCache, mods, builds, dropSources, parts, deNames, goals        |
+  |                                                                                                                                                                                                  |
+  |  ingest.pull -> normalize -> apply -> worldEvents                                                                                                                                                |
+  |        rules.evaluate (matcher, rate limit) -> notifications                                                                                                                                     |
+  |        notify.send / notify.digest                                                                                                                                                               |
+  |  agent (OpenAI): chat tools, rule builder                                                                                                                                                        |
+  +--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
          |                     |                       |
          v                     v                       v
   Next.js pages          Resend email            Photon iMessage / SMS
