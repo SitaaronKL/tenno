@@ -14,7 +14,7 @@ export const SYSTEM =
   "field null when the user did not ask for it, default mode to instant and channels to email. Give the rule a " +
   "short name. The kinds are fissure, invasion, alert, baro, sortie, archonHunt, cycle, nightwave, bounty, " +
   "archimedea, arbitration and reset. A cycle rule takes leadMinutes when the user wants warning before the state begins, " +
-  "a bounty rule takes syndicates, the board level 1 to 7 where the last row is the hardest, and mission types, an archimedea rule takes the " +
+  "a bounty rule takes syndicates, mission types, and a board level: 1 to 7, or 'top' for the highest row, use 'top' whenever the user says highest or top, an archimedea rule takes the " +
   "variant deep or temporal plus deviations and risks, an arbitration rule takes mission types and node " +
   "tiers S to F, and a reset rule is daily or weekly.";
 

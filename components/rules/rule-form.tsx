@@ -43,7 +43,7 @@ const MISSION_TYPES = [
   "Void Cascade",
 ];
 // Tier 1 is the lowest row on the board, Hex and Cavia print seven of them.
-const BOUNTY_LEVELS = ["any", "1", "2", "3", "4", "5", "6", "7"] as const;
+const BOUNTY_LEVELS = ["any", "top", "1", "2", "3", "4", "5", "6", "7"] as const;
 // The two weekly sets, plus "any" for a player who runs both.
 const ARCHIMEDEA_VARIANTS = [
   { value: "any", label: "Any" },
@@ -251,7 +251,7 @@ export function RuleForm({
         return {
           kind,
           syndicates: some(names),
-          level: level === "any" ? null : Number(level),
+          level: level === "any" ? null : level === "top" ? ("top" as const) : Number(level),
           missionTypes: some(missionTypes),
         };
       case "archimedea":
@@ -351,12 +351,12 @@ export function RuleForm({
 
         {kind === "bounty" && (
           <>
-            <Chip label="Board tier" value={level === "any" ? "any tier" : `tier ${level}`}>
+            <Chip label="Board tier" value={level === "any" ? "any tier" : level === "top" ? "top tier" : `tier ${level}`}>
               <RadioList
                 name="bounty-level"
                 value={level}
                 onChange={setLevel}
-                options={BOUNTY_LEVELS.map((l) => ({ value: l, label: l === "any" ? "Any tier" : `Tier ${l}` }))}
+                options={BOUNTY_LEVELS.map((l) => ({ value: l, label: l === "any" ? "Any tier" : l === "top" ? "Top tier" : `Tier ${l}` }))}
               />
             </Chip>
             <span className="text-muted-foreground">from</span>

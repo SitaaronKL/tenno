@@ -188,6 +188,58 @@ const cases: { name: string; filter: RuleFilter; event: { kind: string; payload:
     want: false,
   },
   {
+    name: "top tier means the last row, whatever size the board is",
+    filter: { kind: "bounty", syndicates: null, level: "top", missionTypes: ["Extermination"] },
+    event: {
+      kind: "bounty",
+      payload: {
+        syndicate: "The Hex",
+        jobs: [
+          { missionType: "Defense" },
+          { missionType: "Extermination" },
+          { missionType: "Survival" },
+          { missionType: "Assassination" },
+          { missionType: "Extermination" },
+          { missionType: "Legacyte Harvest" },
+          { missionType: "Extermination" },
+        ],
+      },
+    },
+    want: true,
+  },
+  {
+    name: "on a seven row board the top bracket is the last two rows",
+    filter: { kind: "bounty", syndicates: null, level: "top", missionTypes: ["Legacyte Harvest"] },
+    event: {
+      kind: "bounty",
+      payload: {
+        syndicate: "The Hex",
+        jobs: [
+          { missionType: "Defense" },
+          { missionType: "Extermination" },
+          { missionType: "Survival" },
+          { missionType: "Assassination" },
+          { missionType: "Extermination" },
+          { missionType: "Legacyte Harvest" },
+          { missionType: "Extermination" },
+        ],
+      },
+    },
+    want: true,
+  },
+  {
+    name: "top tier does not look below the last row",
+    filter: { kind: "bounty", syndicates: null, level: "top", missionTypes: ["Extermination"] },
+    event: {
+      kind: "bounty",
+      payload: {
+        syndicate: "Ostrons",
+        jobs: [{ missionType: "Extermination" }, { missionType: "Capture" }],
+      },
+    },
+    want: false,
+  },
+  {
     name: "Exterminate finds Extermination, upstream never agrees on the suffix",
     filter: { kind: "bounty", syndicates: null, level: null, missionTypes: ["Exterminate"] },
     event: {

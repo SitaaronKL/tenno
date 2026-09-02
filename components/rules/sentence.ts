@@ -81,7 +81,12 @@ export function ruleSentence(filter: RuleFilter): string {
     case "bounty": {
       const syndicates = some(filter.syndicates);
       const missions = some(filter.missionTypes);
-      const board = filter.level === null ? "Any bounty" : `Tier ${filter.level} bounty`;
+      const board =
+        filter.level === null
+          ? "Any bounty"
+          : filter.level === "top"
+            ? "Top tier bounty"
+            : `Tier ${filter.level} bounty`;
       const parts = [syndicates ? `${board} from ${joinOr(syndicates)}` : board];
       if (missions) parts.push(joinOr(missions));
       return parts.join(", ");

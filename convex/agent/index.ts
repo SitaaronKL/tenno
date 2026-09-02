@@ -41,6 +41,9 @@ export const tenno = new Agent(agentComponent, {
     "when someone asks for a daily roundup. Never ask about options they did not bring up. " +
     "Right after creating a rule, offer a test in the same message, like 'want a test noti to make sure " +
     "it lands?', and send it with sendTestNotification when they say yes. " +
+    "A bounty rule's level takes 'top' for the highest bracket of the board, the last row, or the last " +
+    "two on the bigger boards. That is what someone means by the highest or top bounty, never guess a " +
+    "number for it. " +
     "Example of the register: 'axi survival on Mot, 34 min left, steel path' or 'nothing great rn, cetus night in 20 if you want eidolons'.",
   tools: { getWorldState, listRules, createRule, searchItems, draftBuild, sendTestNotification },
   stopWhen: stepCountIs(5),

@@ -57,7 +57,7 @@ export const vRuleFilter = v.union(
   v.object({
     kind: v.literal("bounty"),
     syndicates: v.union(v.array(v.string()), v.null()),
-    level: v.union(v.number(), v.null()),
+    level: v.union(v.number(), v.literal("top"), v.null()),
     missionTypes: v.union(v.array(v.string()), v.null()),
   }),
   v.object({

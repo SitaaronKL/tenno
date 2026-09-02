@@ -92,7 +92,14 @@ export function matches(filter: RuleFilter, event: MatchEvent): boolean {
       if (!oneOf(filter.syndicates, str(p.syndicate))) return false;
       const jobs = arr(p.jobs).map(rec);
       // Level is the job's position on the board, 1 is the row the game lists first.
-      const wanted = filter.level === null ? jobs : jobs.slice(filter.level - 1, filter.level);
+      // "top" is the hardest bracket: the last row on a five row board, and the last two on
+      // the seven row boards, where Hex and Cavia print a pair at the highest level band.
+      const wanted =
+        filter.level === null
+          ? jobs
+          : filter.level === "top"
+            ? jobs.slice(jobs.length >= 7 ? -2 : -1)
+            : jobs.slice(filter.level - 1, filter.level);
       if (wanted.length === 0) return false;
       if (filter.missionTypes === null || filter.missionTypes.length === 0) return true;
       return wanted.some((j) => oneOf(filter.missionTypes, str(j.missionType)));
