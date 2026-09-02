@@ -188,6 +188,44 @@ const cases: { name: string; filter: RuleFilter; event: { kind: string; payload:
     want: false,
   },
   {
+    name: "Exterminate finds Extermination, upstream never agrees on the suffix",
+    filter: { kind: "bounty", syndicates: null, level: null, missionTypes: ["Exterminate"] },
+    event: {
+      kind: "bounty",
+      payload: { syndicate: "The Hex", jobs: [{ missionType: "Extermination" }] },
+    },
+    want: true,
+  },
+  {
+    name: "Assassination finds Assassinate the same way",
+    filter: { kind: "bounty", syndicates: null, level: null, missionTypes: ["Assassination"] },
+    event: {
+      kind: "bounty",
+      payload: { syndicate: "Entrati", jobs: [{ missionType: "Assassinate" }] },
+    },
+    want: true,
+  },
+  {
+    name: "a seventh row board can be filtered at tier 7",
+    filter: { kind: "bounty", syndicates: null, level: 7, missionTypes: ["Extermination"] },
+    event: {
+      kind: "bounty",
+      payload: {
+        syndicate: "The Hex",
+        jobs: [
+          { missionType: "Defense" },
+          { missionType: "Extermination" },
+          { missionType: "Survival" },
+          { missionType: "Assassination" },
+          { missionType: "Extermination" },
+          { missionType: "Legacyte Harvest" },
+          { missionType: "Extermination" },
+        ],
+      },
+    },
+    want: true,
+  },
+  {
     name: "bounty level 5 mission type matches the fifth job on the board",
     filter: { kind: "bounty", syndicates: ["The Holdfasts"], level: 5, missionTypes: ["Exterminate"] },
     event: {

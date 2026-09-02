@@ -42,8 +42,8 @@ const MISSION_TYPES = [
   "Assassinate",
   "Void Cascade",
 ];
-// The board prints five rows, tier 1 is the lowest level bounty on it.
-const BOUNTY_LEVELS = ["any", "1", "2", "3", "4", "5"] as const;
+// Tier 1 is the lowest row on the board, Hex and Cavia print seven of them.
+const BOUNTY_LEVELS = ["any", "1", "2", "3", "4", "5", "6", "7"] as const;
 // The two weekly sets, plus "any" for a player who runs both.
 const ARCHIMEDEA_VARIANTS = [
   { value: "any", label: "Any" },

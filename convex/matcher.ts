@@ -18,9 +18,21 @@ function containsAny(needles: string[] | null, haystacks: string[]): boolean {
   });
 }
 
+// Upstream never agrees on the verb or the noun, Entrati says Assassinate while Hex says
+// Assassination, so both sides of a compare collapse to one spelling.
+const SYNONYMS: Record<string, string> = {
+  exterminate: "extermination",
+  assassinate: "assassination",
+};
+
+function canon(value: string): string {
+  const lowered = value.trim().toLowerCase();
+  return SYNONYMS[lowered] ?? lowered;
+}
+
 function oneOf(allowed: string[] | null, value: string): boolean {
   if (allowed === null || allowed.length === 0) return true;
-  return allowed.some((a) => a.trim().toLowerCase() === value.trim().toLowerCase());
+  return allowed.some((a) => canon(a) === canon(value));
 }
 
 const some = (values: string[] | null): string[] | null =>

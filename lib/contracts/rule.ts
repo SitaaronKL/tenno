@@ -54,7 +54,7 @@ export const CycleFilter = z.object({
 export const BountyFilter = z.object({
   kind: z.literal("bounty"),
   syndicates: z.array(z.string()).nullable(), // "Ostrons", "The Holdfasts", "Cavia", ...
-  level: z.number().int().min(1).max(5).nullable(), // the job's position on the board, 1 is the lowest
+  level: z.number().int().min(1).max(7).nullable(), // the job's position on the board, 1 is the lowest, Hex and Cavia print seven
   missionTypes: z.array(z.string()).nullable(),
 });
 
