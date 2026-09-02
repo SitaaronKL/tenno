@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { createColumnHelper } from "@tanstack/react-table";
 import type { Fissure } from "@/lib/contracts/worldstate";
+import { useHidden } from "@/components/hidden";
+import { FISSURE_LITH_FIRST, FISSURE_PATH_PREFS } from "@/lib/contracts/preferences";
 import { AtomIcon } from "@/components/icons/atom";
 import { Segmented } from "@/components/segmented";
 import { Empty, Panel } from "./panel";
@@ -17,10 +19,13 @@ import {
   type DataTableFeatures,
 } from "@/components/ui/data-table";
 
-// Lith, Meso, Neo, Axi, Requiem, Omnia first, then soonest to expire inside a tier.
-export function sortFissures(fissures: Fissure[]): Fissure[] {
+// Highest tier first by default, the preference flips back to relic order.
+// Inside a tier the soonest to expire sits on top either way.
+export function sortFissures(fissures: Fissure[], lithFirst = false): Fissure[] {
   return [...fissures].sort(
-    (a, b) => tierRank(a.tier) - tierRank(b.tier) || a.expiresAt - b.expiresAt,
+    (a, b) =>
+      (lithFirst ? tierRank(a.tier) - tierRank(b.tier) : tierRank(b.tier) - tierRank(a.tier)) ||
+      a.expiresAt - b.expiresAt,
   );
 }
 
@@ -98,7 +103,12 @@ type Path = (typeof PATH)[number]["value"];
 
 export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
   const now = useNow();
-  const [path, setPath] = useState<Path>("all");
+  const prefs = useHidden();
+  // The saved default is only the opening state, a click on the toggle wins from then on.
+  const [picked, setPicked] = useState<Path | null>(null);
+  const saved = FISSURE_PATH_PREFS.find((entry) => prefs.has(entry.key))?.value;
+  const path: Path = picked ?? saved ?? "all";
+  const lithFirst = prefs.has(FISSURE_LITH_FIRST);
   // The query already drops expired rows, this keeps the list honest between polls.
   const rows = useMemo(() => {
     const open = fissures.filter((f) => f.expiresAt > now);
@@ -108,15 +118,15 @@ export function FissuresPanel({ fissures }: { fissures: Fissure[] }) {
       if (path === "normal") return !f.steelPath && !f.storm;
       return true;
     });
-    return sortFissures(picked);
-  }, [fissures, now, path]);
+    return sortFissures(picked, lithFirst);
+  }, [fissures, now, path, lithFirst]);
 
   return (
     <Panel
       title="Fissures"
       icon={AtomIcon}
       count={rows.length}
-      action={<Segmented label="Steel Path" options={PATH} value={path} onChange={setPath} />}
+      action={<Segmented label="Steel Path" options={PATH} value={path} onChange={setPicked} />}
       className={CLASS}
     >
       <div className="scrollbar-none max-h-[34rem] overflow-y-auto">

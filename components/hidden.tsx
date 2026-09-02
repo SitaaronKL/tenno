@@ -74,6 +74,7 @@ export function HiddenSet({
 export function useHiddenPrefs(): {
   hidden: ReadonlySet<string>;
   setHidden: (key: string, hide: boolean) => void;
+  setKeys: (entries: ReadonlyArray<readonly [string, boolean]>) => void;
 } {
   const profile = useProfile();
   const update = useUpdateProfile();
@@ -83,11 +84,14 @@ export function useHiddenPrefs(): {
   const raw = profile ? JSON.stringify(profile.hidden ?? []) : local;
   const hidden = useMemo(() => new Set(parse(raw)), [raw]);
 
-  const setHidden = useCallback(
-    (key: string, hide: boolean) => {
+  // Radio style choices flip several keys at once, one write keeps them from racing.
+  const setKeys = useCallback(
+    (entries: ReadonlyArray<readonly [string, boolean]>) => {
       const next = new Set(hidden);
-      if (hide) next.add(key);
-      else next.delete(key);
+      for (const [key, on] of entries) {
+        if (on) next.add(key);
+        else next.delete(key);
+      }
       const keys = [...next];
       if (profile) void update({ hidden: keys });
       else writeLocal(keys);
@@ -95,7 +99,12 @@ export function useHiddenPrefs(): {
     [hidden, profile, update],
   );
 
-  return { hidden, setHidden };
+  const setHidden = useCallback(
+    (key: string, hide: boolean) => setKeys([[key, hide]]),
+    [setKeys],
+  );
+
+  return { hidden, setHidden, setKeys };
 }
 
 // One provider over the whole world state page, so every box, board and tile reads one set.

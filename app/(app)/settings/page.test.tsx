@@ -215,6 +215,39 @@ describe("the world state card", () => {
     expect(boxes.getByRole("switch", { name: "Baro" })).toBeChecked();
   });
 
+  it("saves the default fissure view as one preference", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const fissures = within(screen.getByRole("group", { name: "Fissures" }));
+
+    await user.click(fissures.getByRole("radio", { name: "Steel Path" }));
+
+    await waitFor(() => expect(update).toHaveBeenCalledWith({ hidden: ["pref.fissures.steel"] }));
+  });
+
+  it("picking a new default view replaces the old one", async () => {
+    const user = userEvent.setup();
+    profile.hidden = ["pref.fissures.steel"];
+    renderPage();
+    const fissures = within(screen.getByRole("group", { name: "Fissures" }));
+
+    await user.click(fissures.getByRole("radio", { name: "Void Storm" }));
+
+    await waitFor(() => expect(update).toHaveBeenCalledWith({ hidden: ["pref.fissures.storm"] }));
+  });
+
+  it("saves the tier order preference", async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const fissures = within(screen.getByRole("group", { name: "Fissures" }));
+
+    await user.click(fissures.getByRole("radio", { name: "Lowest first" }));
+
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith({ hidden: ["pref.fissures.lithFirst"] }),
+    );
+  });
+
   it("puts a key back when the switch goes on again", async () => {
     const user = userEvent.setup();
     profile.hidden = ["box.nightwave"];

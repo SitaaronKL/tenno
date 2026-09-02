@@ -2,6 +2,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { Fissure } from "@/lib/contracts/worldstate";
+import { HiddenSet } from "@/components/hidden";
 import { FissuresPanel } from "./fissures";
 
 const now = Date.now();
@@ -35,14 +36,37 @@ function nodeOrder() {
 }
 
 describe("Fissures table", () => {
-  it("lists tiers in relic order and the soonest first inside a tier", () => {
+  it("lists the highest tier first and the soonest first inside a tier", () => {
     render(<FissuresPanel fissures={fixture} />);
     const order = nodeOrder();
+    expect(order[0]).toContain("Sechura, Venus");
+    expect(order[1]).toContain("Io, Jupiter");
+    expect(order[2]).toContain("Xini, Eris");
+    expect(order[3]).toContain("Ur, Uranus");
+    expect(order[4]).toContain("Tessera, Venus");
+  });
+
+  it("the lowest first preference restores relic order", () => {
+    render(
+      <HiddenSet hidden={new Set(["pref.fissures.lithFirst"])}>
+        <FissuresPanel fissures={fixture} />
+      </HiddenSet>,
+    );
+    const order = nodeOrder();
     expect(order[0]).toContain("Tessera, Venus");
-    expect(order[1]).toContain("Ur, Uranus");
-    expect(order[2]).toContain("Io, Jupiter");
-    expect(order[3]).toContain("Xini, Eris");
     expect(order[4]).toContain("Sechura, Venus");
+  });
+
+  it("opens on the saved default view", () => {
+    render(
+      <HiddenSet hidden={new Set(["pref.fissures.steel"])}>
+        <FissuresPanel fissures={fixture} />
+      </HiddenSet>,
+    );
+    expect(nodeOrder()).toHaveLength(1);
+    expect(nodeOrder()[0]).toContain("Ur, Uranus");
+    // The toggle still moves, the preference is only the opening state.
+    expect(screen.getByRole("radio", { name: "Steel Path" })).toBeChecked();
   });
 
   it("reverses the tier order when the Tier header is clicked twice", async () => {

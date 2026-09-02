@@ -55,7 +55,20 @@ export const HIDDEN_KEYS: string[] = HIDDEN_GROUPS.flatMap((group) =>
   group.keys.map((entry) => entry.key),
 );
 
-const KNOWN = new Set(HIDDEN_KEYS);
+// Fissure defaults ride the same saved array. At most one path key, absence means All,
+// and absence of the tier key means the highest tier sits on top.
+export const FISSURE_PATH_PREFS = [
+  { key: "pref.fissures.normal", value: "normal", label: "Normal" },
+  { key: "pref.fissures.steel", value: "steel", label: "Steel Path" },
+  { key: "pref.fissures.storm", value: "storm", label: "Void Storm" },
+] as const;
+export const FISSURE_LITH_FIRST = "pref.fissures.lithFirst";
+
+const KNOWN = new Set([
+  ...HIDDEN_KEYS,
+  ...FISSURE_PATH_PREFS.map((entry) => entry.key),
+  FISSURE_LITH_FIRST,
+]);
 
 export function isHiddenKey(key: string): boolean {
   return KNOWN.has(key);
