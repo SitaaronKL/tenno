@@ -251,7 +251,7 @@
       "source": "resend/resend-skills",
       "sourceType": "github",
       "skillPath": "skills/resend/SKILL.md",
-      "computedHash": "97cea2507d410e1f8c8315fe7ca1d4f3c695a2894b97b1d92e28948c079e2131"
+      "computedHash": "8db208d4ca936e078d15bedbe29713463b33eb0084c45eecc011d6a58e0f258b"
     },
     "spectrum": {
       "source": "photon-hq/skills",
