@@ -182,15 +182,50 @@ describe("photon webhook", () => {
     expect(sent.replies).toHaveLength(0);
   });
 
-  test("a sender that is not a phone number is told how to link", async () => {
+  test("a Photon user id sender is resolved to its phone and linked", async () => {
     const t = setup();
     await seedProfile(t, "+15550001234");
+    vi.stubEnv("SPECTRUM_PROJECT_ID", "proj-1");
+    vi.stubEnv("SPECTRUM_PROJECT_SECRET", "proj-secret");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({ succeed: true, data: { id: "usr_9f3a2b", phoneNumber: "+15550001234" } }),
+          { status: 200 },
+        ),
+      ),
+    );
 
     const response = await post(
       t,
       envelope("m1", "+15550001234", "hello", { sender: { id: "usr_9f3a2b" } }),
     );
     await t.finishAllScheduledFunctions(() => {});
+    vi.unstubAllGlobals();
+
+    expect(response.status).toBe(200);
+    const profile = await t.run(async (ctx) => await ctx.db.query("profiles").unique());
+    expect(profile!.phoneVerifiedAt).toBeTypeOf("number");
+    expect(sent.texts.map((m) => m.text)).toEqual(["Voidwatch linked. You will get alerts here."]);
+  });
+
+  test("a sender id that Photon cannot resolve is told how to link", async () => {
+    const t = setup();
+    await seedProfile(t, "+15550001234");
+    vi.stubEnv("SPECTRUM_PROJECT_ID", "proj-1");
+    vi.stubEnv("SPECTRUM_PROJECT_SECRET", "proj-secret");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify({ succeed: false }), { status: 404 })),
+    );
+
+    const response = await post(
+      t,
+      envelope("m1", "+15550001234", "hello", { sender: { id: "usr_unknown" } }),
+    );
+    await t.finishAllScheduledFunctions(() => {});
+    vi.unstubAllGlobals();
 
     expect(response.status).toBe(200);
     // The profile stays unverified, nothing was claimed on its behalf.

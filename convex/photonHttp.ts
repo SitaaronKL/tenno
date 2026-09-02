@@ -12,8 +12,29 @@ const LINK_FIRST =
 // Photon delivers the whole message lifecycle here. Only a text somebody sent us is news.
 const INBOUND_EVENT = "messages";
 
-// Photon hands us E.164 for a real person. Anything else is a Photon user id, not an identity.
+// Photon hands us E.164 for a real person. Anything else is a Photon user id.
 const E164 = /^\+\d{8,15}$/;
+
+// Shared lines deliver registered senders as Photon user ids, the phone lives behind the API.
+async function resolvePhone(photonUserId: string): Promise<string | undefined> {
+  const id = process.env.SPECTRUM_PROJECT_ID;
+  const secret = process.env.SPECTRUM_PROJECT_SECRET;
+  if (!id || !secret) return undefined;
+  try {
+    const res = await fetch(
+      `https://spectrum.photon.codes/projects/${id}/users/${photonUserId}/`,
+      { headers: { Authorization: "Basic " + btoa(`${id}:${secret}`) } },
+    );
+    const body = (await res.json()) as {
+      succeed: boolean;
+      data?: { phoneNumber?: string };
+    };
+    const phone = body.data?.phoneNumber;
+    return res.ok && body.succeed && phone && E164.test(phone) ? phone : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 // The portable verify entry runs in the Convex isolate, app.webhook needs Node.
 export const photonWebhook = httpAction(async (ctx, request) => {
@@ -55,18 +76,23 @@ export const photonWebhook = httpAction(async (ctx, request) => {
     return new Response(null, { status: 200 });
   }
 
-  if (!E164.test(senderId)) {
-    // No phone, no identity. Tell them how to link rather than guessing at an owner.
-    await ctx.scheduler.runAfter(0, internal.photon.sendText, {
-      photonUserId: senderId,
-      text: LINK_FIRST,
-    });
-    return new Response(null, { status: 200 });
+  let phone = senderId;
+  if (!E164.test(phone)) {
+    const resolved = await resolvePhone(senderId);
+    if (!resolved) {
+      // No phone, no identity. Tell them how to link rather than guessing at an owner.
+      await ctx.scheduler.runAfter(0, internal.photon.sendText, {
+        photonUserId: senderId,
+        text: LINK_FIRST,
+      });
+      return new Response(null, { status: 200 });
+    }
+    phone = resolved;
   }
 
   const { duplicate, firstContact } = await ctx.runMutation(internal.profiles.linkInbound, {
     messageId: message.id,
-    phone: senderId,
+    phone,
     spaceId: message.space.id,
     senderId,
   });
@@ -74,13 +100,13 @@ export const photonWebhook = httpAction(async (ctx, request) => {
   if (duplicate) return new Response(null, { status: 200 });
   if (firstContact) {
     await ctx.scheduler.runAfter(0, internal.photon.sendText, {
-      phone: senderId,
+      phone,
       text: LINKED,
     });
   } else {
     // Reply after the 200 so Photon never waits on the agent.
     await ctx.scheduler.runAfter(0, internal.photon.reply, {
-      phone: senderId,
+      phone,
       text: content.text,
     });
   }
