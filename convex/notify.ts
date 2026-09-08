@@ -4,6 +4,7 @@ import { internalAction, internalMutation, internalQuery } from "./_generated/se
 import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+import { bountyRows } from "./matcher";
 
 // The email templates the notifier can name, mirrors vReact in convex/email.ts.
 type EmailBody =
@@ -52,11 +53,30 @@ function text(value: unknown): string {
 }
 
 // What actually matched, per kind, so the message says more than "fissure".
-function summarize(event: Doc<"worldEvents"> | null): string {
+function summarize(event: Doc<"worldEvents"> | null, rule: Doc<"rules"> | null): string {
   const p = (event?.payload ?? {}) as Record<string, unknown>;
   const node = text(p.node);
   const at = node ? ` at ${node}` : "";
   switch (event?.kind) {
+    case "bounty": {
+      // The line names the rows the rule matched, so the reader knows which board and which jobs.
+      const filter =
+        rule?.filter.kind === "bounty"
+          ? rule.filter
+          : { kind: "bounty" as const, syndicates: null, level: null, missionTypes: null };
+      const rows = bountyRows(filter, p)
+        .map((j) => {
+          const band =
+            typeof j.minLevel === "number" && typeof j.maxLevel === "number"
+              ? ` ${j.minLevel}-${j.maxLevel}`
+              : "";
+          return `${text(j.missionType) || "Bounty"}${band}`;
+        })
+        .join(", ");
+      return `${rows || "New bounties"} on ${text(p.syndicate) || "the board"}`;
+    }
+    case "reset":
+      return p.period === "weekly" ? "New week, weeklies are fresh" : "New day, dailies are fresh";
     case "fissure":
       return `${text(p.tier)} ${text(p.missionType)}${p.steelPath ? " (Steel Path)" : ""}${at}`.trim();
     case "alert":
@@ -84,7 +104,7 @@ function summarize(event: Doc<"worldEvents"> | null): string {
 
 // One line per match, used by both the instant message and the digest.
 function describe(rule: Doc<"rules"> | null, event: Doc<"worldEvents"> | null): string {
-  return `${rule?.name ?? "Rule"}: ${summarize(event)}`;
+  return `${rule?.name ?? "Rule"}: ${summarize(event, rule)}`;
 }
 
 // The user reads times in their own clock, not in UTC.

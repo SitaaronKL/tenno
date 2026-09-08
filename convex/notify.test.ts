@@ -132,6 +132,107 @@ describe("the test notification", () => {
   });
 });
 
+describe("what a bounty text says", () => {
+  test("names the board and the matched rows, never the word bounty", async () => {
+    const t = setup();
+    const { eventId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+      await ctx.db.insert("profiles", {
+        userId,
+        email: "tenno@example.com",
+        phone: "+15550001234",
+        phoneVerifiedAt: Date.now(),
+        timezone: "UTC",
+        digestHour: 9,
+        platform: "pc" as const,
+      });
+      await ctx.db.insert("rules", {
+        userId,
+        name: "Top Exterminate",
+        filter: { kind: "bounty", syndicates: null, level: "top", missionTypes: ["Exterminate"] },
+        mode: "instant" as const,
+        channels: ["imessage" as const],
+        enabled: true,
+        source: "manual" as const,
+        createdAt: Date.now(),
+      });
+      const eventId = await ctx.db.insert("worldEvents", {
+        platform: "pc" as const,
+        kind: "bounty",
+        key: "The Hex:123",
+        startsAt: Date.now(),
+        expiresAt: Date.now() + 3_600_000,
+        seenAt: Date.now(),
+        payload: {
+          syndicate: "The Hex",
+          jobs: [
+            { missionType: "Defense", minLevel: 55, maxLevel: 60 },
+            { missionType: "Extermination", minLevel: 65, maxLevel: 70 },
+            { missionType: "Survival", minLevel: 75, maxLevel: 80 },
+            { missionType: "Assassination", minLevel: 85, maxLevel: 90 },
+            { missionType: "Extermination", minLevel: 95, maxLevel: 100 },
+            { missionType: "Legacyte Harvest", minLevel: 105, maxLevel: 110 },
+            { missionType: "Extermination", minLevel: 115, maxLevel: 120 },
+          ],
+        },
+      });
+      return { eventId };
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    expect(sent.texts).toHaveLength(1);
+    const body = sent.texts[0].text;
+    expect(body).toContain("Extermination 115-120 on The Hex");
+    expect(body).not.toMatch(/: bounty/);
+  });
+});
+
+describe("what a reset text says", () => {
+  test("reads as the reset, not the word reset twice", async () => {
+    const t = setup();
+    const { eventId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+      await ctx.db.insert("profiles", {
+        userId,
+        email: "tenno@example.com",
+        phone: "+15550001234",
+        phoneVerifiedAt: Date.now(),
+        timezone: "UTC",
+        digestHour: 9,
+        platform: "pc" as const,
+      });
+      await ctx.db.insert("rules", {
+        userId,
+        name: "Daily reset",
+        filter: { kind: "reset", period: "daily" },
+        mode: "instant" as const,
+        channels: ["imessage" as const],
+        enabled: true,
+        source: "manual" as const,
+        createdAt: Date.now(),
+      });
+      const eventId = await ctx.db.insert("worldEvents", {
+        platform: "pc" as const,
+        kind: "reset",
+        key: "daily:1",
+        startsAt: Date.now(),
+        expiresAt: Date.now() + 3_600_000,
+        seenAt: Date.now(),
+        payload: { period: "daily" },
+      });
+      return { eventId };
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    expect(sent.texts).toHaveLength(1);
+    expect(sent.texts[0].text).toContain("dailies are fresh");
+  });
+});
+
 type SeedOptions = {
   email?: string;
   channels?: ("email" | "imessage")[];

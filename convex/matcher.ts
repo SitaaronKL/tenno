@@ -43,6 +43,25 @@ function rewardItems(reward: unknown): string[] {
   return [str(r.item)].filter((s) => s.length > 0);
 }
 
+// The board rows a bounty filter is talking about, shared with the notification line so
+// the text names exactly what matched. Level is the job's position, 1 is the row the game
+// lists first. "top" is the hardest bracket: the last row on a five row board, and the
+// last two on the seven row boards, where Hex and Cavia print a pair at the highest band.
+export function bountyRows(
+  filter: Extract<RuleFilter, { kind: "bounty" }>,
+  payload: unknown,
+): Rec[] {
+  const jobs = arr(rec(payload).jobs).map(rec);
+  const wanted =
+    filter.level === null
+      ? jobs
+      : filter.level === "top"
+        ? jobs.slice(jobs.length >= 7 ? -2 : -1)
+        : jobs.slice(filter.level - 1, filter.level);
+  if (filter.missionTypes === null || filter.missionTypes.length === 0) return wanted;
+  return wanted.filter((j) => oneOf(filter.missionTypes, str(j.missionType)));
+}
+
 export function matches(filter: RuleFilter, event: MatchEvent): boolean {
   if (filter.kind !== event.kind) return false;
   const p = rec(event.payload);
@@ -90,19 +109,7 @@ export function matches(filter: RuleFilter, event: MatchEvent): boolean {
       return true;
     case "bounty": {
       if (!oneOf(filter.syndicates, str(p.syndicate))) return false;
-      const jobs = arr(p.jobs).map(rec);
-      // Level is the job's position on the board, 1 is the row the game lists first.
-      // "top" is the hardest bracket: the last row on a five row board, and the last two on
-      // the seven row boards, where Hex and Cavia print a pair at the highest level band.
-      const wanted =
-        filter.level === null
-          ? jobs
-          : filter.level === "top"
-            ? jobs.slice(jobs.length >= 7 ? -2 : -1)
-            : jobs.slice(filter.level - 1, filter.level);
-      if (wanted.length === 0) return false;
-      if (filter.missionTypes === null || filter.missionTypes.length === 0) return true;
-      return wanted.some((j) => oneOf(filter.missionTypes, str(j.missionType)));
+      return bountyRows(filter, event.payload).length > 0;
     }
     case "archimedea": {
       if (filter.variant !== null && filter.variant !== str(p.variant)) return false;
