@@ -172,7 +172,12 @@ describe("what a bounty text says", () => {
             { missionType: "Assassination", minLevel: 85, maxLevel: 90 },
             { missionType: "Extermination", minLevel: 95, maxLevel: 100 },
             { missionType: "Legacyte Harvest", minLevel: 105, maxLevel: 110 },
-            { missionType: "Extermination", minLevel: 115, maxLevel: 120 },
+            {
+              missionType: "Extermination",
+              minLevel: 115,
+              maxLevel: 120,
+              challenge: "Exterminate without abilities",
+            },
           ],
         },
       });
@@ -184,7 +189,8 @@ describe("what a bounty text says", () => {
 
     expect(sent.texts).toHaveLength(1);
     const body = sent.texts[0].text;
-    expect(body).toContain("Extermination 115-120 on The Hex");
+    // The bonus objective rides along, so the reader knows the catch before loading in.
+    expect(body).toContain("Extermination 115-120 (Exterminate without abilities) on The Hex");
     expect(body).not.toMatch(/: bounty/);
   });
 });

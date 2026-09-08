@@ -75,7 +75,9 @@ function summarize(event: Doc<"worldEvents"> | null, rule: Doc<"rules"> | null):
             typeof j.minLevel === "number" && typeof j.maxLevel === "number"
               ? ` ${j.minLevel}-${j.maxLevel}`
               : "";
-          return `${text(j.missionType) || "Bounty"}${band}`;
+          // The bonus objective is the catch, so it rides along when the board prints one.
+          const bonus = text(j.challenge) ? ` (${text(j.challenge)})` : "";
+          return `${text(j.missionType) || "Bounty"}${band}${bonus}`;
         })
         .join(", ");
       return `${rows || "New bounties"} on ${text(p.syndicate) || "the board"}`;
