@@ -63,6 +63,8 @@ export function bountyRows(
 }
 
 export function matches(filter: RuleFilter, event: MatchEvent): boolean {
+  // The brief has no event of its own, it wakes on the weekly circuit rotation.
+  if (filter.kind === "weeklyBrief") return event.kind === "circuit";
   if (filter.kind !== event.kind) return false;
   const p = rec(event.payload);
 

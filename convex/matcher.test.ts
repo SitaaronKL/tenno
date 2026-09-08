@@ -188,6 +188,18 @@ const cases: { name: string; filter: RuleFilter; event: { kind: string; payload:
     want: false,
   },
   {
+    name: "a weekly brief wakes on the new circuit rotation",
+    filter: { kind: "weeklyBrief", circuit: true, teshin: true, archimedea: true },
+    event: { kind: "circuit", payload: { normal: ["Garuda"], steelPath: ["Boar"] } },
+    want: true,
+  },
+  {
+    name: "a weekly brief ignores everything that is not the rotation",
+    filter: { kind: "weeklyBrief", circuit: true, teshin: true, archimedea: true },
+    event: { kind: "fissure", payload: {} },
+    want: false,
+  },
+  {
     name: "top tier means the last row, whatever size the board is",
     filter: { kind: "bounty", syndicates: null, level: "top", missionTypes: ["Extermination"] },
     event: {

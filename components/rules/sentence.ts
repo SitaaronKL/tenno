@@ -13,6 +13,7 @@ export const KIND_LABELS: Record<RuleFilter["kind"], string> = {
   archimedea: "Archimedea",
   arbitration: "Arbitration",
   reset: "Reset",
+  weeklyBrief: "Weekly briefing",
 };
 
 export const WORLD_LABELS: Record<string, string> = {
@@ -112,5 +113,13 @@ export function ruleSentence(filter: RuleFilter): string {
     }
     case "reset":
       return filter.period === "daily" ? "Daily reset" : "Weekly reset";
+    case "weeklyBrief": {
+      const sections = [
+        filter.circuit ? "the Circuit" : null,
+        filter.teshin ? "Teshin" : null,
+        filter.archimedea ? "Archimedea" : null,
+      ].filter((s): s is string => s !== null);
+      return sections.length ? `Weekly briefing, ${joinOr(sections)}` : "Weekly briefing";
+    }
   }
 }

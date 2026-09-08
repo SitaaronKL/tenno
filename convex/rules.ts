@@ -152,10 +152,19 @@ export const evaluate = internalMutation({
     for (const eventId of eventIds) {
       const event = await ctx.db.get("worldEvents", eventId);
       if (!event) continue;
-      const rules = await ctx.db
-        .query("rules")
-        .withIndex("by_kind", (q) => q.eq("filter.kind", event.kind as RuleFilter["kind"]).eq("enabled", true))
-        .collect();
+      // The weekly brief has no event of its own, it listens to the circuit rotation.
+      const kinds: RuleFilter["kind"][] =
+        event.kind === "circuit" ? ["weeklyBrief"] : [event.kind as RuleFilter["kind"]];
+      const rules = (
+        await Promise.all(
+          kinds.map((kind) =>
+            ctx.db
+              .query("rules")
+              .withIndex("by_kind", (q) => q.eq("filter.kind", kind).eq("enabled", true))
+              .collect(),
+          ),
+        )
+      ).flat();
 
       for (const rule of rules as Doc<"rules">[]) {
         if (!matches(rule.filter as RuleFilter, { kind: event.kind, payload: event.payload })) continue;

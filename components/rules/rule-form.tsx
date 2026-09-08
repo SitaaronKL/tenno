@@ -29,6 +29,9 @@ const SYNDICATES = [
   "The Hex",
 ] as const;
 
+// One message when the new week is first seen, these are its sections.
+const BRIEF_SECTIONS = ["the Circuit", "Teshin's offering", "Archimedea"] as const;
+
 const MISSION_TYPES = [
   "Survival",
   "Defense",
@@ -219,6 +222,15 @@ export function RuleForm({
   const [nodeTiers, setNodeTiers] = useState<string[]>(f?.kind === "arbitration" ? (f.tiers ?? []) : []);
   const [period, setPeriod] = useState<"daily" | "weekly">(f?.kind === "reset" ? f.period : "daily");
   const [mode, setMode] = useState<"instant" | "digest">(initial?.mode ?? "instant");
+  const [briefSections, setBriefSections] = useState<string[]>(() => {
+    if (f?.kind !== "weeklyBrief") return [...BRIEF_SECTIONS];
+    return BRIEF_SECTIONS.filter(
+      (s) =>
+        (s === "the Circuit" && f.circuit) ||
+        (s === "Teshin's offering" && f.teshin) ||
+        (s === "Archimedea" && f.archimedea),
+    );
+  });
   const [channels, setChannels] = useState<string[]>(initial?.channels ?? ["email"]);
   const [error, setError] = useState<string | null>(null);
 
@@ -265,6 +277,13 @@ export function RuleForm({
         return { kind, missionTypes: some(missionTypes), tiers: some(nodeTiers) };
       case "reset":
         return { kind, period };
+      case "weeklyBrief":
+        return {
+          kind,
+          circuit: briefSections.includes("the Circuit"),
+          teshin: briefSections.includes("Teshin's offering"),
+          archimedea: briefSections.includes("Archimedea"),
+        };
     }
   }
 
@@ -410,6 +429,15 @@ export function RuleForm({
                 { value: "weekly" as const, label: "Weekly, Monday 00:00 UTC" },
               ]}
             />
+          </Chip>
+        )}
+
+        {kind === "weeklyBrief" && (
+          <Chip
+            label="Sections"
+            value={briefSections.length === BRIEF_SECTIONS.length ? "everything" : briefSections.join(", ") || "nothing"}
+          >
+            <CheckboxList options={BRIEF_SECTIONS} values={briefSections} onChange={setBriefSections} />
           </Chip>
         )}
 

@@ -173,3 +173,31 @@ describe("the bounty syndicate picker", () => {
     }
   });
 });
+
+describe("the weekly briefing", () => {
+  it("saves the sections the user kept on", async () => {
+    const user = userEvent.setup();
+    render(
+      <RuleForm
+        initial={{
+          name: "Weekly briefing",
+          filter: { kind: "weeklyBrief", circuit: true, teshin: true, archimedea: true },
+          mode: "instant",
+          channels: ["email"],
+        }}
+        onSubmit={create}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Sections/ }));
+    await user.click(await screen.findByRole("checkbox", { name: "Teshin's offering" }));
+    await user.click(screen.getByRole("button", { name: /Save|Create/ }));
+
+    expect(create.mock.calls.at(-1)![0].filter).toEqual({
+      kind: "weeklyBrief",
+      circuit: true,
+      teshin: false,
+      archimedea: true,
+    });
+  });
+});

@@ -300,6 +300,25 @@ describe("arbitration events", () => {
   });
 });
 
+describe("the circuit event", () => {
+  test("one event per weekly rotation, so a repeat pull stays quiet", async () => {
+    const t = convexTest(schema, modules);
+    // The warframestat fixture carries no circuit, DE does, so the rotation is injected here.
+    const week = { expiresAt: FETCHED_AT + 7 * 86_400_000, normal: ["Garuda"], steelPath: ["Boar", "Gammacor"] };
+    const first = { ...state(), circuit: week };
+    const again = { ...state(FETCHED_AT + 300_000), circuit: week };
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: first });
+    await t.mutation(internal.ingest.apply.apply, { platform: "pc", state: again });
+
+    const events = await t.run(async (ctx) => await ctx.db.query("worldEvents").collect());
+    const circuit = events.filter((e) => e.kind === "circuit");
+    expect(circuit).toHaveLength(1);
+    const payload = circuit[0].payload as { steelPath?: string[]; archimedea?: unknown[] };
+    expect(payload.steelPath!.length).toBeGreaterThan(0);
+    expect(Array.isArray(payload.archimedea)).toBe(true);
+  });
+});
+
 describe("a quiet pull", () => {
   test("unchanged content leaves the snapshot untouched, only the meta freshens", async () => {
     const t = convexTest(schema, modules);

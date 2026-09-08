@@ -73,6 +73,12 @@ export const vRuleFilter = v.union(
     tiers: v.union(v.array(v.string()), v.null()),
   }),
   v.object({ kind: v.literal("reset"), period: v.union(v.literal("daily"), v.literal("weekly")) }),
+  v.object({
+    kind: v.literal("weeklyBrief"),
+    circuit: v.boolean(),
+    teshin: v.boolean(),
+    archimedea: v.boolean(),
+  }),
 );
 
 // What rules.create takes and what the AI rule builder drafts.

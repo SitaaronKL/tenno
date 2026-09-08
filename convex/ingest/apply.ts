@@ -62,6 +62,14 @@ function eventsOf(state: WorldState): NewEvent[] {
     const a = state.arbitration;
     push("arbitration", `${a.node}:${a.expiresAt}`, a.expiresAt - 3_600_000, a.expiresAt, a);
   }
+  // One event per weekly circuit rotation. Archimedea rides along so the brief has the week.
+  if (state.circuit) {
+    const c = state.circuit;
+    push("circuit", `circuit:${c.expiresAt}`, c.expiresAt - 7 * 86_400_000, c.expiresAt, {
+      ...c,
+      archimedea: state.archimedea ?? [],
+    });
+  }
   // One event per phase. The start is rounded to the minute so every pull inside a phase agrees.
   for (const c of state.cycles) {
     const startsAt = Math.round((c.startsAt ?? c.expiresAt) / 60_000) * 60_000;

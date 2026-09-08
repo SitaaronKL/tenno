@@ -5,6 +5,7 @@ import type { ActionCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { bountyRows } from "./matcher";
+import { teshinOffering } from "../lib/teshin";
 
 // The email templates the notifier can name, mirrors vReact in convex/email.ts.
 type EmailBody =
@@ -48,6 +49,10 @@ type Delivery = {
   expiresAtText?: string;
 };
 
+function arrOf(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
+}
+
 function text(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
@@ -77,6 +82,32 @@ function summarize(event: Doc<"worldEvents"> | null, rule: Doc<"rules"> | null):
     }
     case "reset":
       return p.period === "weekly" ? "New week, weeklies are fresh" : "New day, dailies are fresh";
+    case "circuit": {
+      // The weekly brief: one line per section the rule kept on.
+      const wants =
+        rule?.filter.kind === "weeklyBrief"
+          ? rule.filter
+          : { circuit: true, teshin: true, archimedea: true };
+      const lines: string[] = [];
+      if (wants.circuit) {
+        const normal = arrOf(p.normal).join(", ");
+        const sp = arrOf(p.steelPath).join(", ");
+        if (normal) lines.push(`circuit: ${normal}`);
+        if (sp) lines.push(`sp incarnons: ${sp}`);
+      }
+      if (wants.teshin) lines.push(`teshin: ${teshinOffering(Date.now()).item}`);
+      if (wants.archimedea) {
+        for (const week of Array.isArray(p.archimedea) ? p.archimedea : []) {
+          const w = (week ?? {}) as Record<string, unknown>;
+          const missions = (Array.isArray(w.missions) ? w.missions : [])
+            .map((m) => text((m as Record<string, unknown>).missionType))
+            .filter(Boolean)
+            .join(", ");
+          if (missions) lines.push(`${text(w.variant) || "deep"} archimedea: ${missions}`);
+        }
+      }
+      return lines.join("\n") || "New week is up";
+    }
     case "fissure":
       return `${text(p.tier)} ${text(p.missionType)}${p.steelPath ? " (Steel Path)" : ""}${at}`.trim();
     case "alert":

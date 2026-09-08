@@ -189,6 +189,64 @@ describe("what a bounty text says", () => {
   });
 });
 
+describe("what the weekly brief says", () => {
+  test("reads the week in sections and honors the toggles", async () => {
+    const t = setup();
+    const { eventId } = await t.run(async (ctx) => {
+      const userId = await ctx.db.insert("users", { email: "tenno@example.com" });
+      await ctx.db.insert("profiles", {
+        userId,
+        email: "tenno@example.com",
+        phone: "+15550001234",
+        phoneVerifiedAt: Date.now(),
+        timezone: "UTC",
+        digestHour: 9,
+        platform: "pc" as const,
+      });
+      await ctx.db.insert("rules", {
+        userId,
+        name: "Weekly briefing",
+        filter: { kind: "weeklyBrief", circuit: true, teshin: false, archimedea: true },
+        mode: "instant" as const,
+        channels: ["imessage" as const],
+        enabled: true,
+        source: "manual" as const,
+        createdAt: Date.now(),
+      });
+      const eventId = await ctx.db.insert("worldEvents", {
+        platform: "pc" as const,
+        kind: "circuit",
+        key: "circuit:123",
+        startsAt: Date.now(),
+        expiresAt: Date.now() + 7 * 86_400_000,
+        seenAt: Date.now(),
+        payload: {
+          normal: ["Garuda", "Baruuk", "Hildryn"],
+          steelPath: ["Boar", "Gammacor"],
+          expiresAt: Date.now() + 7 * 86_400_000,
+          archimedea: [
+            {
+              variant: "deep",
+              missions: [{ missionType: "Survival" }, { missionType: "Defense" }],
+            },
+          ],
+        },
+      });
+      return { eventId };
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    expect(sent.texts).toHaveLength(1);
+    const body = sent.texts[0].text;
+    expect(body).toContain("circuit: Garuda, Baruuk, Hildryn");
+    expect(body).toContain("sp incarnons: Boar, Gammacor");
+    expect(body).toContain("deep archimedea: Survival, Defense");
+    expect(body).not.toMatch(/teshin/i);
+  });
+});
+
 describe("what a reset text says", () => {
   test("reads as the reset, not the word reset twice", async () => {
     const t = setup();

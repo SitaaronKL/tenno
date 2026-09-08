@@ -10,6 +10,11 @@ export type Suggestion = { label: string; description: string; filter: RuleFilte
 // Rules worth having that a player would not think to write, one click from ready.
 export const SUGGESTIONS: Suggestion[] = [
   {
+    label: "Weekly briefing",
+    description: "One message when the new week lands: Circuit pools, Teshin, Archimedea",
+    filter: { kind: "weeklyBrief", circuit: true, teshin: true, archimedea: true },
+  },
+  {
     label: "Omnia Void Cascade",
     description: "The Omnia fissure rotation lands on Void Cascade",
     filter: { kind: "fissure", tiers: ["Omnia"], missionTypes: ["Void Cascade"], steelPath: null, storm: null },

@@ -81,6 +81,14 @@ export const ResetFilter = z.object({
 
 export const NightwaveFilter = z.object({ kind: z.literal("nightwave") }); // new weekly acts
 
+// One message when the new week's rotation is first seen, sections opt out individually.
+export const WeeklyBriefFilter = z.object({
+  kind: z.literal("weeklyBrief"),
+  circuit: z.boolean(),
+  teshin: z.boolean(),
+  archimedea: z.boolean(),
+});
+
 export const RuleFilter = z.discriminatedUnion("kind", [
   FissureFilter,
   InvasionFilter,
@@ -94,6 +102,7 @@ export const RuleFilter = z.discriminatedUnion("kind", [
   ArchimedeaFilter,
   ArbitrationFilter,
   ResetFilter,
+  WeeklyBriefFilter,
 ]);
 
 export const RuleInput = z.object({
