@@ -11,6 +11,7 @@ const sent = vi.hoisted(() => ({
   texts: [] as { to: string; text: string }[],
   failuresLeft: 0,
   notConfigured: false,
+  cooling: false,
 }));
 
 vi.mock("./email", async () => {
@@ -41,6 +42,10 @@ vi.mock("./photon", async () => {
       args: { photonUserId: v.optional(v.string()), phone: v.optional(v.string()), text: v.string() },
       returns: v.null(),
       handler: async (_ctx, { photonUserId, phone, text }) => {
+        if (sent.cooling)
+          throw new Error(
+            "Uncaught RateLimitError: [upstream] Recipient has not replied; cooling period limits sends to 3/day",
+          );
         sent.texts.push({ to: phone ?? photonUserId ?? "", text });
         return null;
       },
@@ -60,6 +65,7 @@ function setup() {
   sent.texts.length = 0;
   sent.failuresLeft = 0;
   sent.notConfigured = false;
+  sent.cooling = false;
   const t = convexTest(schema, modules);
   rateLimiter.register(t);
   return t;
@@ -129,6 +135,45 @@ describe("the test notification", () => {
     expect(answer).toContain("sent");
     expect(sent.emails).toHaveLength(1);
     expect(sent.emails[0].to).toBe("tenno@example.com");
+  });
+});
+
+describe("when Photon is cooling", () => {
+  test("the alert falls back to email instead of retrying into the cap", async () => {
+    const t = setup();
+    sent.cooling = true;
+    const { eventId } = await seed(t, {
+      channels: ["imessage"],
+      profile: { phone: "+15550001234", phoneVerifiedAt: Date.now() },
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    // No text landed, the same line went out by mail, and nothing is left pending to retry.
+    expect(sent.texts).toHaveLength(0);
+    expect(sent.emails).toHaveLength(1);
+    expect(sent.emails[0].subject).toContain("Axi survival");
+    const rows = await t.run(async (ctx) => await ctx.db.query("notifications").collect());
+    expect(rows).toHaveLength(1);
+    expect(rows[0].status).toBe("skipped");
+    expect(rows[0].error).toMatch(/cooling/i);
+    expect(rows[0].attempts).toBe(1);
+  });
+
+  test("no duplicate mail when the rule already emails", async () => {
+    const t = setup();
+    sent.cooling = true;
+    const { eventId } = await seed(t, {
+      channels: ["email", "imessage"],
+      profile: { phone: "+15550001234", phoneVerifiedAt: Date.now() },
+    });
+
+    await t.mutation(internal.rules.evaluate, { eventIds: [eventId] });
+    await t.finishAllScheduledFunctions(() => {});
+
+    // The email channel already carries the alert, the fallback must not double it.
+    expect(sent.emails).toHaveLength(1);
   });
 });
 

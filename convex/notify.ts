@@ -456,6 +456,9 @@ async function dispatch(
 // Email is not configured, so the row is settled now rather than retried into a wall.
 const NOT_CONFIGURED = "email not configured";
 
+// Photon's shared line cools cold recipients, the error names it and no retry can beat a clock.
+const COOLING = /cooling period|has not replied/i;
+
 function notConfigured(e: unknown): boolean {
   return e instanceof Error && e.message === NOT_CONFIGURED;
 }
@@ -526,6 +529,23 @@ export const sendTest = internalAction({
   },
 });
 
+// The rule may already email this event on its own channel, the fallback must not double it.
+export const hasEmailSibling = internalQuery({
+  args: { notificationId: v.id("notifications") },
+  returns: v.boolean(),
+  handler: async (ctx, { notificationId }) => {
+    const notification = await ctx.db.get("notifications", notificationId);
+    if (!notification) return false;
+    const siblings = await ctx.db
+      .query("notifications")
+      .withIndex("by_rule_event", (q) =>
+        q.eq("ruleId", notification.ruleId).eq("eventId", notification.eventId),
+      )
+      .collect();
+    return siblings.some((row) => row.channel === "email" && row._id !== notificationId);
+  },
+});
+
 export const send = internalAction({
   args: { notificationId: v.id("notifications") },
   returns: v.null(),
@@ -541,20 +561,22 @@ export const send = internalAction({
       });
       return null;
     }
+    const ends = delivery.expiresAtText ? `Ends ${delivery.expiresAtText}` : undefined;
+    const body = ends ? `${delivery.line}\n${ends}` : delivery.line;
+    const subject = `Voidwatch: ${delivery.ruleName}`;
+    // The expiry is on its own line already, the template must not print it twice.
+    const react: EmailBody = {
+      template: "RuleMatch",
+      props: {
+        ruleName: delivery.ruleName,
+        kind: delivery.kind,
+        title: delivery.line,
+        expiresAt: delivery.expiresAtText,
+        url: siteUrl(),
+      },
+    };
     try {
-      const ends = delivery.expiresAtText ? `Ends ${delivery.expiresAtText}` : undefined;
-      const body = ends ? `${delivery.line}\n${ends}` : delivery.line;
-      // The expiry is on its own line already, the template must not print it twice.
-      const emailId = await dispatch(ctx, delivery, `Voidwatch: ${delivery.ruleName}`, body, {
-        template: "RuleMatch",
-        props: {
-          ruleName: delivery.ruleName,
-          kind: delivery.kind,
-          title: delivery.line,
-          expiresAt: delivery.expiresAtText,
-          url: siteUrl(),
-        },
-      });
+      const emailId = await dispatch(ctx, delivery, subject, body, react);
       await ctx.runMutation(internal.notify.mark, {
         notificationIds: [notificationId],
         // Email is queued until Resend reports delivery, iMessage is sent the moment it goes.
@@ -571,6 +593,24 @@ export const send = internalAction({
           notificationIds: [notificationId],
           status: "skipped",
           error: NOT_CONFIGURED,
+          attempts,
+        });
+      } else if (delivery.channel === "imessage" && COOLING.test(error)) {
+        // Photon caps cold sends per day, retrying cannot land until the user texts the line.
+        const doubled = await ctx.runQuery(internal.notify.hasEmailSibling, { notificationId });
+        let note = "iMessage is cooling until you text the Voidwatch line back";
+        if (!doubled && delivery.email) {
+          try {
+            await ctx.runAction(internal.email.sendEmail, { to: delivery.email, subject, react });
+            note += ", sent by email instead";
+          } catch {
+            // The fallback is best effort, the cooling note still explains the miss.
+          }
+        }
+        await ctx.runMutation(internal.notify.mark, {
+          notificationIds: [notificationId],
+          status: "skipped",
+          error: note,
           attempts,
         });
       } else if (attempts < MAX_ATTEMPTS) {
