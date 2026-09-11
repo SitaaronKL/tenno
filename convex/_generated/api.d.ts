@@ -48,6 +48,7 @@ import type * as mastery from "../mastery.js";
 import type * as matcher from "../matcher.js";
 import type * as mods from "../mods.js";
 import type * as notify from "../notify.js";
+import type * as nudge from "../nudge.js";
 import type * as photon from "../photon.js";
 import type * as photonHttp from "../photonHttp.js";
 import type * as profileSync from "../profileSync.js";
@@ -106,6 +107,7 @@ declare const fullApi: ApiFromModules<{
   matcher: typeof matcher;
   mods: typeof mods;
   notify: typeof notify;
+  nudge: typeof nudge;
   photon: typeof photon;
   photonHttp: typeof photonHttp;
   profileSync: typeof profileSync;

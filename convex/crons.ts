@@ -12,6 +12,9 @@ crons.hourly("digest", { minuteUTC: 0 }, internal.notify.digest, {});
 // The daily and weekly resets are a clock, not a feed, so they are generated here.
 crons.hourly("resets", { minuteUTC: 0 }, internal.resets.tick, {});
 
+// Photon cools recipients who go quiet, one gentle text keeps the alert pipe open.
+crons.daily("nudge quiet lines", { hourUTC: 17, minuteUTC: 0 }, internal.nudge.run, {});
+
 // The checked in incursion and arbitration schedules run out, this warns a week before they do.
 crons.daily("schedule horizon", { hourUTC: 5, minuteUTC: 0 }, internal.ingest.horizon.check, {});
 

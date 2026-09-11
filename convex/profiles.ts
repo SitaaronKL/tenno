@@ -327,6 +327,8 @@ export const linkInbound = internalMutation({
     const firstContact = profile.phoneVerifiedAt === undefined;
     await ctx.db.patch(profile._id, {
       photonSpaceId: spaceId,
+      // Every inbound text keeps Photon's cooling clock away, so the nudge knows the last one.
+      lastInboundAt: Date.now(),
       // A sender id that is not a phone number is the Photon user id for this line.
       photonUserId: toE164(senderId) === key ? profile.photonUserId : senderId,
       phoneVerifiedAt: profile.phoneVerifiedAt ?? Date.now(),
